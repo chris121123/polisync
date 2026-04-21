@@ -337,7 +337,54 @@ export const GlobalStateProvider = ({ children }) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for Real-time changes
+    const channel = supabase.channel('system-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setSessions(prev => {
+            if (prev.some(s => s.id === payload.new.id)) return prev;
+            return [...prev, {
+              id: payload.new.id,
+              title: payload.new.title,
+              therapistId: payload.new.therapist_id,
+              studentIds: payload.new.student_ids || [],
+              room: payload.new.room,
+              startHour: payload.new.start_hour,
+              span: payload.new.span,
+              type: payload.new.type
+            }];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setSessions(prev => prev.map(s => s.id === payload.new.id ? {
+            ...s,
+            title: payload.new.title,
+            therapistId: payload.new.therapist_id,
+            studentIds: payload.new.student_ids || [],
+            room: payload.new.room,
+            startHour: payload.new.start_hour,
+            span: payload.new.span,
+            type: payload.new.type
+          } : s));
+        } else if (payload.eventType === 'DELETE') {
+          setSessions(prev => prev.filter(s => s.id !== payload.old.id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+        if (payload.eventType === 'INSERT') setStaff(prev => [...prev, payload.new]);
+        else if (payload.eventType === 'UPDATE') setStaff(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
+        else if (payload.eventType === 'DELETE') setStaff(prev => prev.filter(s => s.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, (payload) => {
+        if (payload.eventType === 'INSERT') setStudents(prev => [...prev, payload.new]);
+        else if (payload.eventType === 'UPDATE') setStudents(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
+        else if (payload.eventType === 'DELETE') setStudents(prev => prev.filter(s => s.id !== payload.old.id));
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      channel.unsubscribe();
+    };
   }, []);
 
   // --- DERIVED STATE / ACTIONS ---
