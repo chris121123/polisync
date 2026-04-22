@@ -9,248 +9,7 @@ export const useGlobalState = () => {
   return context;
 };
 
-// ─── Mock Data Generators ────────────────────────────────────────────────────
-
-const FIRST_NAMES = [
-  'Anna', 'Mark', 'Sarah', 'Luis', 'Maria', 'Jose', 'Clara', 'Miguel', 'Rosa', 'Carlos',
-  'Diana', 'Rafael', 'Teresa', 'Gabriel', 'Patricia', 'Antonio', 'Carmen', 'Francisco', 'Elena', 'Pedro',
-  'Angela', 'Ricardo', 'Lucia', 'Fernando', 'Isabel', 'Manuel', 'Sofia', 'Andres', 'Victoria', 'Ramon',
-  'Beatriz', 'Jorge', 'Lourdes', 'Eduardo', 'Grace', 'David', 'Christine', 'Bryan', 'Denise', 'Ryan',
-  'Janelle', 'Kevin', 'Nicole', 'Aaron', 'Jessica', 'Troy', 'Bianca', 'Jasper', 'Kim', 'Nathan',
-];
-
-const LAST_NAMES = [
-  'Roberts', 'Lee', 'Garcia', 'Santos', 'Cruz', 'Reyes', 'Mendoza', 'Torres', 'Ramos', 'Flores',
-  'Dela Cruz', 'Bautista', 'Gonzales', 'Aquino', 'Villanueva', 'Fernandez', 'Castro', 'Rivera', 'Lopez', 'Diaz',
-  'Morales', 'Navarro', 'Salazar', 'Perez', 'Gutierrez', 'Jimenez', 'Herrera', 'Aguilar', 'Medina', 'Pascual',
-  'Soriano', 'Manalo', 'Enriquez', 'Lim', 'Tan', 'Chua', 'Valdez', 'Miranda', 'Rosario', 'Santiago',
-  'Domingo', 'Mercado', 'Padilla', 'Ocampo', 'Nicolas', 'Magno', 'Corpuz', 'Tolentino', 'Pangan', 'David',
-];
-
-const STAFF_ROLES = [
-  { role: 'Occupational Therapist', dept: 'Rehab' },
-  { role: 'Physiotherapist', dept: 'Rehab' },
-  { role: 'Speech Therapist', dept: 'Rehab' },
-  { role: 'Behavioral Therapist', dept: 'SPED' },
-  { role: 'Lead Teacher', dept: 'Playschool' },
-  { role: 'Teacher Aide', dept: 'Playschool' },
-  { role: 'SPED Teacher', dept: 'SPED' },
-  { role: 'Developmental Pediatrician', dept: 'Rehab' },
-  { role: 'Psychologist', dept: 'SPED' },
-  { role: 'Social Worker', dept: 'SPED' },
-  { role: 'Program Coordinator', dept: 'Admin' },
-  { role: 'Center Director', dept: 'Admin' },
-  { role: 'Guidance Counselor', dept: 'SPED' },
-  { role: 'Music Therapist', dept: 'Rehab' },
-  { role: 'Art Therapist', dept: 'Rehab' },
-];
-
-const STUDENT_PROGRAMS = [
-  { role: 'ASD Program', dept: 'SPED', diagnosis: 'Autism Spectrum Disorder' },
-  { role: 'Speech Therapy', dept: 'Rehab', diagnosis: 'Speech Delay' },
-  { role: 'ADHD Program', dept: 'SPED', diagnosis: 'Attention Deficit Hyperactivity Disorder' },
-  { role: 'Sensory Integration', dept: 'Rehab', diagnosis: 'Sensory Processing Disorder' },
-  { role: 'Early Intervention', dept: 'Playschool', diagnosis: 'Global Developmental Delay' },
-  { role: 'OT Program', dept: 'Rehab', diagnosis: 'Fine Motor Delay' },
-  { role: 'PT Program', dept: 'Rehab', diagnosis: 'Gross Motor Delay' },
-  { role: 'Behavioral Modification', dept: 'SPED', diagnosis: 'Oppositional Defiant Disorder' },
-  { role: 'Learning Support', dept: 'SPED', diagnosis: 'Specific Learning Disability' },
-  { role: 'Social Skills Training', dept: 'SPED', diagnosis: 'Social Communication Disorder' },
-  { role: 'Play-Based Learning', dept: 'Playschool', diagnosis: 'Developmental Coordination Disorder' },
-  { role: 'Language Development', dept: 'Rehab', diagnosis: 'Expressive Language Disorder' },
-  { role: 'Cognitive Development', dept: 'SPED', diagnosis: 'Intellectual Disability' },
-  { role: 'Feeding Therapy', dept: 'Rehab', diagnosis: 'Feeding Disorder' },
-  { role: 'Inclusive Prep', dept: 'Playschool', diagnosis: 'Down Syndrome' },
-];
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function seededName(index, usedNames) {
-  // Generates a unique name by cycling through first/last name combos
-  let fi = index % FIRST_NAMES.length;
-  let li = Math.floor(index / FIRST_NAMES.length) % LAST_NAMES.length;
-  let name = `${FIRST_NAMES[fi]} ${LAST_NAMES[li]}`;
-  // If duplicate, shift last name
-  while (usedNames.has(name)) {
-    li = (li + 1) % LAST_NAMES.length;
-    name = `${FIRST_NAMES[fi]} ${LAST_NAMES[li]}`;
-  }
-  usedNames.add(name);
-  return name;
-}
-
-function generateStaff() {
-  const usedNames = new Set();
-  const result = [];
-
-  // Keep admin as-is for login
-  result.push({
-    id: 0, name: "System Administrator", role: "Admin", department: "Admin",
-    type: "Staff", status: "Active", email: "admin@polisync.com",
-    password: "chris12345", phone: "+63 900 000 0000", joined: "Jan 2024"
-  });
-  usedNames.add("System Administrator");
-
-  // Keep original staff for session references
-  result.push({
-    id: 1, name: "Anna Roberts", role: "Occupational Therapist", department: "Rehab",
-    type: "Staff", status: "Active", email: "anna.r@polisync.com",
-    phone: "+63 912 345 6701", joined: "Aug 2024"
-  });
-  usedNames.add("Anna Roberts");
-
-  result.push({
-    id: 2, name: "Mark Lee", role: "Physiotherapist", department: "Rehab",
-    type: "Staff", status: "Active", email: "mark.l@polisync.com",
-    phone: "+63 912 345 6702", joined: "Sep 2024"
-  });
-  usedNames.add("Mark Lee");
-
-  result.push({
-    id: 5, name: "Sarah Garcia", role: "Lead Teacher", department: "Playschool",
-    type: "Staff", status: "Active", email: "sarah.g@polisync.com",
-    phone: "+63 912 345 6705", joined: "Jan 2025"
-  });
-  usedNames.add("Sarah Garcia");
-
-  // Generate remaining staff to reach 42 total
-  for (let i = 4; i < 42; i++) {
-    const actualId = 100 + i; // safe IDs starting from 100+
-    const name = seededName(i + 10, usedNames);
-    const roleInfo = STAFF_ROLES[i % STAFF_ROLES.length];
-    const joinMonth = MONTHS[(i * 3) % 12];
-    const joinYear = i < 20 ? 2024 : 2025;
-    const firstName = name.split(' ')[0].toLowerCase();
-    const lastInitial = name.split(' ')[1]?.[0]?.toLowerCase() || 'x';
-
-    result.push({
-      id: actualId,
-      name,
-      role: roleInfo.role,
-      department: roleInfo.dept,
-      type: "Staff",
-      status: i % 8 === 0 ? "On Leave" : "Active",
-      email: `${firstName}.${lastInitial}@polisync.com`,
-      phone: `+63 9${String(12 + (i % 8)).padStart(2, '0')} ${String(100 + i).padStart(3, '0')} ${String(6700 + i).padStart(4, '0')}`,
-      joined: `${joinMonth} ${joinYear}`,
-    });
-  }
-
-  return result;
-}
-
-function generateStudents() {
-  const usedNames = new Set();
-  const result = [];
-
-  // Keep original students for session references
-  result.push({
-    id: 3, name: "Marco Santos", role: "ASD Program", department: "SPED",
-    type: "Student", status: "Enrolled", email: "parent.santos@email.com",
-    phone: "+63 917 111 0003", joined: "Oct 2024",
-    diagnosis: "Autism Spectrum Disorder"
-  });
-  usedNames.add("Marco Santos");
-
-  result.push({
-    id: 4, name: "Elena Cruz", role: "Speech Therapy", department: "Rehab",
-    type: "Student", status: "Enrolled", email: "parent.cruz@email.com",
-    phone: "+63 917 111 0004", joined: "Nov 2024",
-    diagnosis: "Speech Delay"
-  });
-  usedNames.add("Elena Cruz");
-
-  // Generate remaining students to reach 257 total
-  for (let i = 2; i < 257; i++) {
-    const studentId = 1000 + i; // safe IDs starting from 1000+
-    const name = seededName(i + 60, usedNames);  // offset to avoid staff names
-    const progInfo = STUDENT_PROGRAMS[i % STUDENT_PROGRAMS.length];
-    const joinMonth = MONTHS[(i * 2) % 12];
-    const joinYear = i < 100 ? 2024 : (i < 200 ? 2025 : 2026);
-    const lastName = name.split(' ').pop().toLowerCase().replace(/\s/g, '');
-
-    result.push({
-      id: studentId,
-      name,
-      role: progInfo.role,
-      department: progInfo.dept,
-      type: "Student",
-      status: i % 12 === 0 ? "Inactive" : "Enrolled",
-      email: `parent.${lastName}${i}@email.com`,
-      phone: `+63 917 ${String(200 + (i % 800)).padStart(3, '0')} ${String(1000 + i).padStart(4, '0')}`,
-      joined: `${joinMonth} ${joinYear}`,
-      diagnosis: progInfo.diagnosis,
-    });
-  }
-
-  return result;
-}
-
-function generateSessions(staffList, studentList) {
-  const sessions = [
-    // Keep original 4 sessions
-    { id: 1, title: "SPED Group A", therapistId: 5, studentIds: [3], room: "Room 1", startHour: 8, span: 2, type: "sped" },
-    { id: 2, title: "OT Individual", therapistId: 1, studentIds: [3], room: "Sensory Room", startHour: 10, span: 1, type: "rehab" },
-    { id: 3, title: "PT Individual", therapistId: 2, studentIds: [4], room: "Room 2", startHour: 10, span: 1, type: "rehab" },
-    { id: 4, title: "Playschool Morning", therapistId: 5, studentIds: [1002, 1003, 1004], room: "Play Area", startHour: 9, span: 3, type: "playschool" },
-  ];
-
-  // Generate additional sessions across rooms
-  const sessionTemplates = [
-    { title: "SPED Group B", type: "sped", span: 2 },
-    { title: "Speech Therapy Block", type: "rehab", span: 1 },
-    { title: "Sensory Integration", type: "rehab", span: 1 },
-    { title: "Behavioral Session", type: "sped", span: 2 },
-    { title: "Early Intervention AM", type: "playschool", span: 2 },
-    { title: "OT Group Session", type: "rehab", span: 1 },
-    { title: "Fine Motor Workshop", type: "rehab", span: 1 },
-    { title: "Social Skills Circle", type: "sped", span: 2 },
-    { title: "Music Therapy", type: "rehab", span: 1 },
-    { title: "Play-Based Learning", type: "playschool", span: 2 },
-    { title: "Language Development", type: "rehab", span: 1 },
-    { title: "Cognitive Training", type: "sped", span: 1 },
-    { title: "Afternoon Play Group", type: "playschool", span: 2 },
-    { title: "Feeding Therapy", type: "rehab", span: 1 },
-    { title: "ASD Support Group", type: "sped", span: 2 },
-    { title: "ADHD Focus Session", type: "sped", span: 1 },
-    { title: "PT Group Session", type: "rehab", span: 1 },
-    { title: "Art Therapy", type: "rehab", span: 1 },
-    { title: "Inclusive Prep Class", type: "playschool", span: 3 },
-    { title: "Parent-Child Session", type: "sped", span: 1 },
-  ];
-
-  const therapistIds = staffList.filter(s => s.role !== 'Admin' && s.role !== 'Program Coordinator' && s.role !== 'Center Director').map(s => s.id);
-
-  for (let i = 0; i < sessionTemplates.length; i++) {
-    const tpl = sessionTemplates[i];
-    const roomNum = (i % 22) + 1; // cycle through rooms 1-22
-    const roomName = roomNum <= 25 ? `Room ${roomNum}` : `Room ${roomNum % 25 + 1}`;
-    const startHour = 8 + (i % 9); // 8am to 4pm start
-    const therapistId = therapistIds[i % therapistIds.length];
-
-    // Assign 1-4 students per session
-    const numStudents = 1 + (i % 4);
-    const studentStartIdx = (i * 3) % (studentList.length - numStudents);
-    const studentIds = studentList.slice(studentStartIdx, studentStartIdx + numStudents).map(s => s.id);
-
-    // Make sure session doesn't extend past 5pm
-    const safeSpan = Math.min(tpl.span, 17 - startHour);
-    if (safeSpan <= 0) continue;
-
-    sessions.push({
-      id: 100 + i,
-      title: tpl.title,
-      therapistId,
-      studentIds,
-      room: roomName,
-      startHour,
-      span: safeSpan,
-      type: tpl.type,
-    });
-  }
-
-  return sessions;
-}
+// ─── No mock data functions ──────────────────────────────────────────────────
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -260,6 +19,10 @@ export const GlobalStateProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [studentPrograms, setStudentPrograms] = useState([]);
+  const [studentAvailability, setStudentAvailability] = useState([]);
+  const [schedulingSettings, setSchedulingSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' | 'info' }
 
@@ -306,9 +69,28 @@ export const GlobalStateProvider = ({ children }) => {
             room: s.room,
             startHour: s.start_hour,
             span: s.span,
-            type: s.type
+            type: s.type,
+            programId: s.program_id,
+            dayOfWeek: s.day_of_week,
+            isConfirmed: s.is_confirmed
           })));
         }
+
+        // Fetch Programs
+        const { data: programsData } = await supabase.from('programs').select('*').eq('is_active', true);
+        if (programsData) setPrograms(programsData.map(p => ({ ...p, id: Number(p.id) })));
+
+        // Fetch Student Programs (requirements)
+        const { data: spData } = await supabase.from('student_programs').select('*');
+        if (spData) setStudentPrograms(spData.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
+
+        // Fetch Student Availability
+        const { data: saData } = await supabase.from('student_availability').select('*').eq('is_active', true);
+        if (saData) setStudentAvailability(saData.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
+
+        // Fetch Scheduling Settings
+        const { data: settingsData } = await supabase.from('scheduling_settings').select('*').single();
+        if (settingsData) setSchedulingSettings(settingsData);
 
       } catch (error) {
         console.error('Error fetching data from Supabase:', error);
@@ -378,6 +160,19 @@ export const GlobalStateProvider = ({ children }) => {
         if (payload.eventType === 'INSERT') setStudents(prev => [...prev, payload.new]);
         else if (payload.eventType === 'UPDATE') setStudents(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
         else if (payload.eventType === 'DELETE') setStudents(prev => prev.filter(s => s.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, (payload) => {
+        if (payload.eventType === 'INSERT') setPrograms(prev => [...prev, payload.new]);
+        else if (payload.eventType === 'UPDATE') setPrograms(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_programs' }, (payload) => {
+        if (payload.eventType === 'INSERT') setStudentPrograms(prev => [...prev, payload.new]);
+        else if (payload.eventType === 'UPDATE') setStudentPrograms(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_availability' }, (payload) => {
+        if (payload.eventType === 'INSERT') setStudentAvailability(prev => [...prev, payload.new]);
+        else if (payload.eventType === 'UPDATE') setStudentAvailability(prev => prev.map(a => a.id === payload.new.id ? payload.new : a));
+        else if (payload.eventType === 'DELETE') setStudentAvailability(prev => prev.filter(a => a.id !== payload.old.id));
       })
       .subscribe();
 
@@ -612,6 +407,165 @@ export const GlobalStateProvider = ({ children }) => {
     return gaps;
   };
 
+  const enhanceConflictDetection = (newSession) => {
+    const list = [];
+    const newStart = newSession.startHour;
+    const newEnd = newSession.startHour + newSession.span;
+    const newDay = newSession.dayOfWeek ?? 0;
+
+    sessions.forEach(existing => {
+      const existStart = existing.startHour;
+      const existEnd = existing.startHour + existing.span;
+      const existDay = existing.dayOfWeek ?? 0;
+
+      // Same day and time overlap
+      const timeOverlap = Math.max(newStart, existStart) < Math.min(newEnd, existEnd);
+      const sameDay = newDay === existDay;
+
+      if (timeOverlap && sameDay) {
+        // Therapist conflict
+        if (String(newSession.therapistId) === String(existing.therapistId)) {
+          list.push({ type: 'therapist', sessionIds: [newSession.id, existing.id], message: 'Therapist already booked' });
+        }
+        // Room conflict
+        if (newSession.room === existing.room) {
+          list.push({ type: 'room', sessionIds: [newSession.id, existing.id], room: newSession.room, message: `Room "${existing.room}" occupied` });
+        }
+        // Student conflict
+        if (newSession.studentIds?.some(id => existing.studentIds?.includes(id))) {
+          list.push({ type: 'student', sessionIds: [newSession.id, existing.id], message: 'Student has conflicting session' });
+        }
+      }
+    });
+
+    // Check student availability constraints
+    const maxDailyHours = schedulingSettings?.max_daily_hours_per_student || 4;
+
+    newSession.studentIds?.forEach(studentId => {
+      const studentSessions = sessions.filter(s => 
+        s.studentIds?.includes(studentId) && s.dayOfWeek === newDay
+      );
+      const totalHours = studentSessions.reduce((sum, s) => sum + s.span, 0) + newSession.span;
+      
+      if (totalHours > maxDailyHours) {
+        list.push({ type: 'student_limit', message: `Student exceeds daily ${maxDailyHours}h limit` });
+      }
+    });
+
+    return list;
+  };
+
+  const autoSchedule = async (options = {}) => {
+    if (!supabase) {
+      return { success: false, error: 'Supabase not configured' };
+    }
+
+    const { dryRun = false } = options;
+
+    try {
+      // Get pending student programs with their priorities
+      const pendingSP = studentPrograms.filter(sp => sp.status === 'pending');
+      
+      const prioritized = pendingSP.map(sp => {
+        const existingCount = sessions.filter(s => 
+          s.studentIds?.includes(sp.student_id) && s.dayOfWeek === (options.dayOfWeek ?? new Date().getDay() - 1)
+        ).length;
+        const score = (sp.sessions_per_week - existingCount) * 10 + (10 - sp.priority);
+        return { ...sp, priorityScore: score };
+      }).sort((a, b) => b.priorityScore - a.priorityScore);
+
+      const results = { scheduled: [], failed: [] };
+
+      for (const sp of prioritized) {
+        // Find best available slot
+        const bestSlot = findBestSlotForProgram(sp, sessions, rooms, staff, programs);
+        
+        if (bestSlot && !dryRun) {
+          const { data, error } = await supabase.from('sessions').insert({
+            title: `Auto-scheduled`,
+            therapist_id: bestSlot.teacherId,
+            student_ids: [Number(sp.student_id)],
+            room: bestSlot.room,
+            start_hour: bestSlot.startHour,
+            span: bestSlot.duration,
+            type: 'sped',
+            program_id: Number(sp.program_id),
+            day_of_week: options.dayOfWeek ?? 0,
+            is_confirmed: false
+          }).select().single();
+
+          if (!error) {
+            results.scheduled.push({ studentProgram: sp, session: data });
+            await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', sp.id);
+            setStudentPrograms(prev => prev.map(p => p.id === sp.id ? { ...p, status: 'scheduled' } : p));
+          } else {
+            results.failed.push({ studentProgram: sp, reason: error.message });
+          }
+        } else if (bestSlot) {
+          results.scheduled.push({ studentProgram: sp, proposedSlot: bestSlot });
+        } else {
+          results.failed.push({ studentProgram: sp, reason: 'No available slots' });
+        }
+      }
+
+      return { success: true, ...results };
+    } catch (error) {
+      console.error('Auto-schedule error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const findBestSlotForProgram = (sp, existingSessions, rooms, teachers, programs) => {
+    const program = programs.find(p => p.id === sp.program_id);
+    if (!program) return null;
+
+    const duration = sp.preferred_duration_hours || program.default_duration_hours;
+    const studentAvail = studentAvailability.filter(sa => 
+      sa.student_id === sp.student_id && sa.is_active
+    );
+
+    // Generate valid time slots
+    const slots = [];
+    for (const avail of studentAvail) {
+      const dayStart = Math.max(parseInt(avail.start_time?.split(':')[0] || 8), 8);
+      const dayEnd = Math.min(parseInt(avail.end_time?.split(':')[0] || 17), 17);
+
+      for (let hour = dayStart; hour + duration <= dayEnd; hour += 0.5) {
+        for (const room of rooms) {
+          // Check room availability
+          const roomBusy = existingSessions.some(s => 
+            s.room === room.name &&
+            Math.max(hour, s.startHour) < Math.min(hour + duration, s.startHour + s.span)
+          );
+
+          if (!roomBusy) {
+            // Find available teacher
+            for (const teacher of teachers) {
+              const teacherBusy = existingSessions.some(s => 
+                String(s.therapistId) === String(teacher.id) &&
+                Math.max(hour, s.startHour) < Math.min(hour + duration, s.startHour + s.span)
+              );
+
+              if (!teacherBusy) {
+                slots.push({
+                  startHour: hour,
+                  duration,
+                  room: room.name,
+                  teacherId: teacher.id,
+                  score: (17 - hour) * 2 // Prefer earlier slots
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (slots.length === 0) return null;
+    slots.sort((a, b) => b.score - a.score);
+    return slots[0];
+  };
+
   const addPerson = async (person) => {
     try {
       if (person.type === 'Staff') {
@@ -659,6 +613,10 @@ export const GlobalStateProvider = ({ children }) => {
     students,
     rooms,
     sessions,
+    programs,
+    studentPrograms,
+    studentAvailability,
+    schedulingSettings,
     conflicts,
     user,
     darkMode,
@@ -668,6 +626,8 @@ export const GlobalStateProvider = ({ children }) => {
     logout,
     deleteAccount,
     findAvailableGaps,
+    enhanceConflictDetection,
+    autoSchedule,
     addSession,
     moveSession,
     deleteSession,
@@ -678,53 +638,6 @@ export const GlobalStateProvider = ({ children }) => {
     toast,
     notify,
     loading,
-    seedDatabase: async () => {
-      setLoading(true);
-      try {
-        // Seed Rooms
-        const roomsToSeed = Array.from({ length: 25 }).map((_, i) => ({
-          name: `Room ${i + 1}`,
-          type: i < 10 ? "General SPED" : i < 18 ? "Therapy Room" : "Playschool Area",
-          max_capacity: 7,
-        }));
-        await supabase.from('rooms').insert(roomsToSeed);
-
-        // Seed Staff
-        const staffToSeed = generateStaff().map(s => ({
-          name: s.name,
-          role: s.role,
-          department: s.department,
-          type: s.type,
-          status: s.status,
-          email: s.email,
-          phone: s.phone,
-          joined: s.joined
-        }));
-        
-        await supabase.from('profiles').insert(staffToSeed);
-
-        // Seed Students
-        const studentsToSeed = generateStudents().map(s => ({
-          name: s.name,
-          role: s.role,
-          department: s.department,
-          type: s.type,
-          status: s.status,
-          email: s.email,
-          phone: s.phone,
-          joined: s.joined,
-          diagnosis: s.diagnosis
-        }));
-        await supabase.from('students').insert(studentsToSeed);
-
-        // Fetch everything back to sync
-        window.location.reload(); 
-      } catch (error) {
-        console.error('Error seeding database:', error);
-      } finally {
-        setLoading(false);
-      }
-    },
     clearDatabase: async () => {
       setLoading(true);
       try {

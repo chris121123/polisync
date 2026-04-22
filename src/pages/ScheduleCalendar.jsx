@@ -485,7 +485,10 @@ const ScheduleCalendar = () => {
     <div className="flex h-full w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 max-h-[calc(100vh-64px)]">
 
       {/* ── Left: Calendar ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col h-full min-w-0">
+      <div 
+        className="flex-1 flex flex-col h-full min-w-0"
+        onClick={() => setSelectedSessionId(null)}
+      >
 
         {/* ── Toolbar ───────── */}
         <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900">
@@ -570,7 +573,7 @@ const ScheduleCalendar = () => {
               </div>
 
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
                 className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-200"
               >
                 <Plus size={16} strokeWidth={2.5} /> Add Session
@@ -670,7 +673,8 @@ const ScheduleCalendar = () => {
                           staffList={staff}
                           isSelected={selectedSessionId === session.id}
                           hasConflict={isConflicted(session.id)}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedSessionId(session.id);
                             setDetailTab('info');
                           }}
@@ -763,7 +767,8 @@ const ScheduleCalendar = () => {
                             staffList={staff}
                             isSelected={selectedSessionId === session.id}
                             hasConflict={isConflicted(session.id)}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedSessionId(session.id);
                               setDetailTab('info');
                             }}
@@ -948,22 +953,7 @@ const ScheduleCalendar = () => {
       </AnimatePresence>
 
       {/* Empty state hint when nothing selected */}
-      <AnimatePresence>
-        {!selectedSession && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="w-[280px] shrink-0 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex flex-col items-center justify-center p-8 text-center gap-3"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
-              <CalendarIcon size={24} className="text-slate-300" />
-            </div>
-            <p className="text-sm font-bold text-slate-400">Select a session</p>
-            <p className="text-xs text-slate-300 font-medium leading-relaxed">Click any session block on the calendar to view details and reschedule options.</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Empty state hint removed as requested */}
 
       <AddSessionModal
         isOpen={isAddModalOpen}

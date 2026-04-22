@@ -130,7 +130,7 @@ const SettingInput = ({ label, icon: Icon, value, placeholder, type = "text" }) 
 );
 
 const Settings = () => {
-  const { darkMode, setDarkMode, seedDatabase, clearDatabase, loading } = useGlobalState();
+  const { darkMode, setDarkMode, clearDatabase, loading } = useGlobalState();
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -258,20 +258,11 @@ const Settings = () => {
         {/* Database Management */}
         <SettingsCard title="Database Management" icon={Database}>
           <div className="space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                Warning: Seeding the database will push mock data (Staff, Students, Rooms) to your Supabase project. 
+            <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+              <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">
+                Warning: Clearing the database will permanently delete all rooms, students, and sessions. Only the system administrator profile will remain.
               </p>
             </div>
-            
-            <button 
-              onClick={seedDatabase}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
-            >
-              {loading ? <RefreshCw size={18} className="animate-spin" /> : <Database size={18} />}
-              {loading ? 'Processing...' : 'Seed Supabase Database'}
-            </button>
 
             <button 
               onClick={() => {
