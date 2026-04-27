@@ -397,9 +397,10 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ScheduleCalendar = () => {
-  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms } = useGlobalState();
+  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify } = useGlobalState();
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const [detailTab, setDetailTab] = useState('info');
   const [filterType, setFilterType] = useState('all');
   const [calendarView, setCalendarView] = useState('daily'); // 'daily' | 'weekly'
@@ -408,6 +409,16 @@ const ScheduleCalendar = () => {
 
   const selectedSession = sessions.find(s => s.id === selectedSessionId);
   const isConflicted = id => conflicts.some(c => c.sessionIds.includes(id));
+
+  const handleAutoSchedule = async () => {
+    setIsAutoScheduling(true);
+    const dayOfWeek = new Date().getDay() === 0 ? 4 : new Date().getDay() - 1; // Default to today's schedule column
+    const result = await smartSchedule({ dayOfWeek });
+    if (!result.success) {
+      notify(result.error || 'Auto-scheduler failed to run', 'error');
+    }
+    setIsAutoScheduling(false);
+  };
 
   // Display 4 rooms at a time in Daily View
   const ROOMS_PER_PAGE = 4;
@@ -571,6 +582,24 @@ const ScheduleCalendar = () => {
                   </button>
                 ))}
               </div>
+
+              <button
+                onClick={handleAutoSchedule}
+                disabled={isAutoScheduling}
+                className={clsx(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md",
+                  isAutoScheduling 
+                    ? "bg-slate-200 text-slate-500 cursor-not-allowed" 
+                    : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-emerald-200"
+                )}
+              >
+                {isAutoScheduling ? (
+                  <RefreshCw size={16} className="animate-spin" />
+                ) : (
+                  <Zap size={16} strokeWidth={2.5} />
+                )}
+                {isAutoScheduling ? 'Scheduling...' : 'Auto-Schedule'}
+              </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}

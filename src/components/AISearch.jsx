@@ -39,12 +39,14 @@ const AISearch = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (!query) {
-      setResults([]);
-      setIsSearching(false);
+      queueMicrotask(() => {
+        setResults([]);
+        setIsSearching(false);
+      });
       return;
     }
 
-    setIsSearching(true);
+    queueMicrotask(() => setIsSearching(true));
     const timeout = setTimeout(() => {
       const lowerQuery = query.toLowerCase();
       let mockResults = [];

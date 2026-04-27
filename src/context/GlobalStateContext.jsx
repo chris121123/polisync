@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { invokeSmartScheduler, localSmartSchedule } from '../lib/scheduler';
 
 const GlobalStateContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalState = () => {
   const context = useContext(GlobalStateContext);
   if (!context) throw new Error('useGlobalState must be used within a GlobalStateProvider');
@@ -455,116 +457,84 @@ export const GlobalStateProvider = ({ children }) => {
     return list;
   };
 
-  const autoSchedule = async (options = {}) => {
-    if (!supabase) {
-      return { success: false, error: 'Supabase not configured' };
+  /**
+   * Smart Schedule — calls the Edge Function for production-grade
+   * backtracking + scoring, with a local fallback for offline/preview.
+   */
+  const smartSchedule = async (options = {}) => {
+    const { dryRun = false, dayOfWeek, config: userConfig } = options;
+
+    // Try Edge Function first (full backtracking + multi-attempt)
+    if (supabase) {
+      try {
+        const result = await invokeSmartScheduler({ dayOfWeek, dryRun, config: userConfig });
+        if (result.success) {
+          // Refresh student programs state after scheduling
+          if (!dryRun && result.scheduled?.length > 0) {
+            const scheduledIds = result.scheduled.map(a => a.studentProgramId);
+            setStudentPrograms(prev =>
+              prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
+            );
+            notify(`Smart scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
+          }
+          return result;
+        }
+      } catch (err) {
+        console.warn('Edge Function failed, falling back to local scheduler:', err);
+      }
     }
 
-    const { dryRun = false } = options;
-
+    // Fallback: run local lightweight solver
     try {
-      // Get pending student programs with their priorities
-      const pendingSP = studentPrograms.filter(sp => sp.status === 'pending');
-      
-      const prioritized = pendingSP.map(sp => {
-        const existingCount = sessions.filter(s => 
-          s.studentIds?.includes(sp.student_id) && s.dayOfWeek === (options.dayOfWeek ?? new Date().getDay() - 1)
-        ).length;
-        const score = (sp.sessions_per_week - existingCount) * 10 + (10 - sp.priority);
-        return { ...sp, priorityScore: score };
-      }).sort((a, b) => b.priorityScore - a.priorityScore);
+      const result = localSmartSchedule({
+        studentPrograms,
+        students,
+        staff,
+        rooms,
+        programs,
+        sessions,
+        studentAvailability,
+        schedulingSettings,
+        dayOfWeek,
+      }, userConfig);
 
-      const results = { scheduled: [], failed: [] };
-
-      for (const sp of prioritized) {
-        // Find best available slot
-        const bestSlot = findBestSlotForProgram(sp, sessions, rooms, staff, programs);
-        
-        if (bestSlot && !dryRun) {
+      // Persist locally-computed schedule if not dry run
+      if (!dryRun && supabase && result.scheduled?.length > 0) {
+        for (const a of result.scheduled) {
           const { data, error } = await supabase.from('sessions').insert({
-            title: `Auto-scheduled`,
-            therapist_id: bestSlot.teacherId,
-            student_ids: [Number(sp.student_id)],
-            room: bestSlot.room,
-            start_hour: bestSlot.startHour,
-            span: bestSlot.duration,
-            type: 'sped',
-            program_id: Number(sp.program_id),
-            day_of_week: options.dayOfWeek ?? 0,
-            is_confirmed: false
+            title: `Auto: ${a.programName}`,
+            therapist_id: a.teacherId,
+            student_ids: [a.studentId],
+            room: a.room,
+            start_hour: a.startHour,
+            span: a.duration,
+            type: a.type,
+            program_id: a.programId,
+            day_of_week: dayOfWeek ?? 0,
+            is_confirmed: false,
           }).select().single();
 
-          if (!error) {
-            results.scheduled.push({ studentProgram: sp, session: data });
-            await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', sp.id);
-            setStudentPrograms(prev => prev.map(p => p.id === sp.id ? { ...p, status: 'scheduled' } : p));
-          } else {
-            results.failed.push({ studentProgram: sp, reason: error.message });
+          if (!error && data) {
+            await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', a.studentProgramId);
           }
-        } else if (bestSlot) {
-          results.scheduled.push({ studentProgram: sp, proposedSlot: bestSlot });
-        } else {
-          results.failed.push({ studentProgram: sp, reason: 'No available slots' });
         }
+        // Refresh state
+        const scheduledIds = result.scheduled.map(a => a.studentProgramId);
+        setStudentPrograms(prev =>
+          prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
+        );
+        notify(`Local scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
       }
 
-      return { success: true, ...results };
+      return { success: true, ...result };
     } catch (error) {
-      console.error('Auto-schedule error:', error);
+      console.error('Local smart schedule error:', error);
       return { success: false, error: error.message };
     }
   };
 
-  const findBestSlotForProgram = (sp, existingSessions, rooms, teachers, programs) => {
-    const program = programs.find(p => p.id === sp.program_id);
-    if (!program) return null;
-
-    const duration = sp.preferred_duration_hours || program.default_duration_hours;
-    const studentAvail = studentAvailability.filter(sa => 
-      sa.student_id === sp.student_id && sa.is_active
-    );
-
-    // Generate valid time slots
-    const slots = [];
-    for (const avail of studentAvail) {
-      const dayStart = Math.max(parseInt(avail.start_time?.split(':')[0] || 8), 8);
-      const dayEnd = Math.min(parseInt(avail.end_time?.split(':')[0] || 17), 17);
-
-      for (let hour = dayStart; hour + duration <= dayEnd; hour += 0.5) {
-        for (const room of rooms) {
-          // Check room availability
-          const roomBusy = existingSessions.some(s => 
-            s.room === room.name &&
-            Math.max(hour, s.startHour) < Math.min(hour + duration, s.startHour + s.span)
-          );
-
-          if (!roomBusy) {
-            // Find available teacher
-            for (const teacher of teachers) {
-              const teacherBusy = existingSessions.some(s => 
-                String(s.therapistId) === String(teacher.id) &&
-                Math.max(hour, s.startHour) < Math.min(hour + duration, s.startHour + s.span)
-              );
-
-              if (!teacherBusy) {
-                slots.push({
-                  startHour: hour,
-                  duration,
-                  room: room.name,
-                  teacherId: teacher.id,
-                  score: (17 - hour) * 2 // Prefer earlier slots
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (slots.length === 0) return null;
-    slots.sort((a, b) => b.score - a.score);
-    return slots[0];
-  };
+  // Keep legacy name for backward compatibility
+  const autoSchedule = smartSchedule;
 
   const addPerson = async (person) => {
     try {
@@ -628,6 +598,7 @@ export const GlobalStateProvider = ({ children }) => {
     findAvailableGaps,
     enhanceConflictDetection,
     autoSchedule,
+    smartSchedule,
     addSession,
     moveSession,
     deleteSession,
