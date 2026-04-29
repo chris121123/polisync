@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Trash2, ShieldAlert, Menu, X, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Trash2, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import AISearch from './AISearch';
@@ -9,7 +9,7 @@ import { useGlobalState } from '../context/GlobalStateContext';
 const Layout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { user, logout, deleteAccount } = useGlobalState();
+  const { user, appRole, logout, deleteAccount, notifications } = useGlobalState();
   const navigate = useNavigate();
 
   // Auto-collapse sidebar on smaller screens
@@ -45,12 +45,28 @@ const Layout = () => {
     }
   };
 
+  const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
+
+  const getNavStyle = (link, isActive) => {
+    if (!isActive) return 'text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100';
+    if (link.isAdmin) return 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-2 border-amber-100 dark:border-amber-900/50 font-bold';
+    if (link.isParent) return 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 border-2 border-pink-100 dark:border-pink-900/50 font-bold';
+    if (link.isTeacher) return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-2 border-indigo-100 dark:border-indigo-900/50 font-bold';
+    if (link.isTherapist) return 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border-2 border-teal-100 dark:border-teal-900/50 font-bold';
+    return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 shadow-sm';
+  };
+
   const navLinks = [
-    ...(user?.role === 'Admin' ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin Dashboard', isAdmin: true }] : []),
+    ...(appRole === 'admin' ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin Dashboard', isAdmin: true }] : []),
+    ...(appRole === 'admin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
+    ...(appRole === 'parent' ? [{ to: '/parent', icon: BookUser, label: 'My Child', isParent: true }] : []),
+    ...(appRole === 'teacher' ? [{ to: '/teacher', icon: GraduationCap, label: 'My Classes', isTeacher: true }] : []),
+    ...(appRole === 'therapist' ? [{ to: '/therapist', icon: ClipboardCheck, label: 'Therapy Sessions', isTherapist: true }] : []),
+    ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes' }] : []),
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/schedule', icon: CalendarDays, label: 'Schedule & Calendar' },
-    { to: '/directory', icon: Users, label: 'Staff & Students' },
-    { to: '/rooms', icon: DoorOpen, label: 'Room Management' },
+    { to: '/schedule', icon: CalendarDays, label: 'Schedule' },
+    { to: '/directory', icon: Users, label: 'Directory' },
+    ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
@@ -94,6 +110,14 @@ const Layout = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
+          <div className="relative">
+            <Bell size={20} className="text-slate-400 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </div>
           <div className="text-xs text-slate-500 dark:text-slate-200 font-bold uppercase tracking-wider">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </div>
@@ -137,9 +161,7 @@ const Layout = () => {
                     "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
                     isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
                     link.isAdmin && "mb-2",
-                    isActive 
-                      ? (link.isAdmin ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-2 border-amber-100 dark:border-amber-900/50 font-bold" : "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 shadow-sm")
-                      : "text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+                    getNavStyle(link, isActive)
                   )
                 }
               >
@@ -173,7 +195,7 @@ const Layout = () => {
                   className="flex-1 min-w-0"
                 >
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-200 truncate">{user?.role || 'Staff'}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-200 truncate capitalize">{appRole || 'Loading...'}</p>
                 </motion.div>
               )}
               

@@ -10,21 +10,16 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
+import ParentDashboard from './pages/parent/ParentDashboard';
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import TherapistDashboard from './pages/therapist/TherapistDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import SessionNotes from './pages/therapist/SessionNotes';
+import { ProtectedRoute, AdminRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useGlobalState();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-};
-
-const AdminRoute = ({ children }) => {
-  const { user } = useGlobalState();
-  if (!user || user.role !== 'Admin') return <Navigate to="/dashboard" replace />;
-  return children;
-};
 
 function App() {
   const { darkMode, loading, toast, notify } = useGlobalState();
@@ -49,15 +44,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* Protected Dashboard Routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+          <Route path="parent" element={<ParentRoute><ParentDashboard /></ParentRoute>} />
+          <Route path="teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
+          <Route path="therapist" element={<TherapistRoute><TherapistDashboard /></TherapistRoute>} />
+          <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<ScheduleCalendar />} />
           <Route path="directory" element={<Directory />} />
           <Route path="profile/:id" element={<ProfilePage />} />
@@ -65,7 +63,6 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
 
@@ -86,7 +83,7 @@ function App() {
             {toast.type === 'success' && <CheckCircle2 size={20} />}
             {toast.type === 'info' && <Info size={20} />}
             <p className="text-sm font-bold">{toast.message}</p>
-            <button 
+            <button
               onClick={() => notify(null)}
               className="ml-2 p-1 hover:bg-black/5 rounded-lg transition-colors"
             >

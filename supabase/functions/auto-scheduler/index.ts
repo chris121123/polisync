@@ -527,7 +527,7 @@ async function runSmartScheduler(
   }
 
   const pending: StudentProgram[] = pendingPrograms || []
-  const programs: Program[] = (programsData || []).map(p => ({ ...p, id: Number(p.id) }))
+  const programs: Program[] = (programsData || []).map((p: any) => ({ ...p, id: Number(p.id) }))
   const rooms: Room[] = roomsData || []
   const teachers: Teacher[] = teachersData || []
   const existing: ExistingSession[] = existingSessions || []
@@ -612,7 +612,7 @@ async function runSmartScheduler(
 
 // ─── Deno Serve Handler ──────────────────────────────────────────────────────
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

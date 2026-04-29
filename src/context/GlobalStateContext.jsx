@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { invokeSmartScheduler, localSmartSchedule } from '../lib/scheduler';
 
@@ -108,7 +108,6 @@ export const GlobalStateProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        // Fetch profile when logged in
         supabase.from('profiles')
           .select('*')
           .eq('id', session.user.id)
@@ -116,8 +115,26 @@ export const GlobalStateProvider = ({ children }) => {
           .then(({ data }) => {
             if (data) setUser(data);
           });
+        supabase.from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setAppRole(data.role);
+          });
+        supabase.from('notifications')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .then(({ data }) => {
+            if (data) setNotifications(data);
+          });
       } else {
         setUser(null);
+        setAppRole(null);
+        setParentChildren([]);
+        setMyAssignments([]);
+        setNotifications([]);
       }
     });
 
@@ -213,6 +230,10 @@ export const GlobalStateProvider = ({ children }) => {
   }, [sessions]);
 
   const [user, setUser] = useState(null);
+  const [appRole, setAppRole] = useState(null);
+  const [parentChildren, setParentChildren] = useState([]);
+  const [myAssignments, setMyAssignments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [darkMode, setDarkModeState] = useState(() => {
     const saved = localStorage.getItem('polisync_dark_mode');
     return saved === 'true';
@@ -228,14 +249,43 @@ export const GlobalStateProvider = ({ children }) => {
     if (error) {
       throw error;
     }
-    
-    const { data: profile } = await supabase.from('profiles')
+
+    let { data: profile } = await supabase.from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
-      
+
+    // Auto-create profile if it doesn't exist yet (e.g. user created before migration)
+    if (!profile) {
+      const fallback = {
+        id: data.user.id,
+        name: data.user.email.split('@')[0],
+        role: 'Staff',
+        department: 'General',
+        type: 'Staff',
+        status: 'Active',
+        email: data.user.email,
+        app_role: 'teacher',
+      };
+      const { data: created } = await supabase.from('profiles').insert([fallback]).select().single();
+      profile = created || fallback;
+
+      // Also ensure a user_roles row exists
+      await supabase.from('user_roles').insert([{ user_id: data.user.id, role: 'teacher' }]);
+    }
+
     setUser(profile);
-    return profile;
+
+    const { data: roleData } = await supabase.from('user_roles')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .single();
+
+    const finalRole = roleData?.role || profile.app_role || 'teacher';
+    setAppRole(finalRole);
+    setUser({ ...profile, app_role: finalRole });
+
+    return { ...profile, app_role: finalRole };
   };
 
   const signup = async (userData) => {
@@ -248,28 +298,163 @@ export const GlobalStateProvider = ({ children }) => {
       throw error;
     }
 
-    const newUser = { 
+    const newProfile = {
       id: data.user.id,
       name: userData.name,
       role: userData.role || 'Staff',
       department: userData.department || 'General',
-      type: 'Staff', 
-      status: 'Active', 
+      type: 'Staff',
+      status: 'Active',
       email: userData.email,
       phone: userData.phone,
-      joined: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      joined: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      app_role: 'teacher',
     };
 
-    const { error: profileError } = await supabase.from('profiles').insert([newUser]);
+    const { error: profileError } = await supabase.from('profiles').insert([newProfile]);
     if (profileError) console.error('Error creating profile:', profileError.message);
-    
-    setStaff(prev => [...prev, newUser]);
-    setUser(newUser);
+
+    const { error: roleError } = await supabase.from('user_roles').insert([{
+      user_id: data.user.id,
+      role: 'teacher',
+    }]);
+    if (roleError) console.error('Error creating role:', roleError.message);
+
+    setStaff(prev => [...prev, newProfile]);
+    setUser(newProfile);
+    setAppRole('teacher');
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setAppRole(null);
+    setParentChildren([]);
+    setMyAssignments([]);
+    setNotifications([]);
+  };
+
+  const isAdmin = () => appRole === 'admin';
+  const isParent = () => appRole === 'parent';
+  const isTeacher = () => appRole === 'teacher';
+  const isTherapist = () => appRole === 'therapist';
+  const isTherapistOrTeacher = () => appRole === 'therapist' || appRole === 'teacher';
+
+  const fetchParentChildren = useCallback(async () => {
+    if (appRole !== 'parent') return;
+    const { data } = await supabase
+      .from('parent_student_relationships')
+      .select('student_id, students(*)')
+      .eq('parent_id', user?.id);
+    if (data) setParentChildren(data.map(r => r.students));
+  }, [appRole, user?.id]);
+
+  const fetchMyAssignments = useCallback(async () => {
+    if (appRole !== 'therapist' && appRole !== 'teacher') return;
+    const { data } = await supabase
+      .from('teacher_program_assignments')
+      .select('*, programs(*)')
+      .eq('teacher_id', user?.id)
+      .eq('is_active', true);
+    if (data) setMyAssignments(data);
+  }, [appRole, user?.id]);
+
+  const addSessionNote = async (noteData) => {
+    try {
+      const { data, error } = await supabase.from('session_notes').insert([{
+        session_id: noteData.sessionId,
+        student_id: noteData.studentId,
+        created_by: user?.id,
+        note_type: noteData.noteType || 'general',
+        content: noteData.content,
+        rating: noteData.rating,
+      }]).select();
+      if (error) throw error;
+      if (data) notify('Session note added');
+      return data;
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  const markAttendance = async (sessionId, studentId, status, notes) => {
+    try {
+      const { data, error } = await supabase.from('attendance').upsert([{
+        session_id: sessionId,
+        student_id: studentId,
+        status,
+        notes,
+        marked_by: user?.id,
+        marked_at: new Date().toISOString(),
+      }]).select();
+      if (error) throw error;
+      if (data) notify('Attendance marked');
+      return data;
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  const fetchAttendance = async (sessionId) => {
+    const { data } = await supabase
+      .from('attendance')
+      .select('*, students(*)')
+      .eq('session_id', sessionId);
+    return data || [];
+  };
+
+  const assignParentToStudent = async (parentId, studentId) => {
+    try {
+      const { error } = await supabase.from('parent_student_relationships').insert([{
+        parent_id: parentId,
+        student_id: studentId,
+      }]);
+      if (error) throw error;
+      notify('Parent linked to student');
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  const assignTeacherToProgram = async (teacherId, programId) => {
+    try {
+      const { error } = await supabase.from('teacher_program_assignments').insert([{
+        teacher_id: teacherId,
+        program_id: programId,
+      }]);
+      if (error) throw error;
+      notify('Teacher assigned to program');
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  const updateUserRole = async (targetUserId, newRole) => {
+    try {
+      const { error } = await supabase.from('user_roles').upsert([{
+        user_id: targetUserId,
+        role: newRole,
+      }]);
+      if (error) throw error;
+      notify(`Role updated to ${newRole}`);
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  const createNotification = async (notifData) => {
+    try {
+      const { error } = await supabase.from('notifications').insert([{
+        user_id: notifData.userId,
+        title: notifData.title,
+        message: notifData.message,
+        type: notifData.type || 'info',
+        related_id: notifData.relatedId,
+      }]);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Notification error:', error);
+    }
   };
 
   const deleteAccount = (userId) => {
@@ -589,6 +774,15 @@ export const GlobalStateProvider = ({ children }) => {
     schedulingSettings,
     conflicts,
     user,
+    appRole,
+    parentChildren,
+    myAssignments,
+    notifications,
+    isAdmin,
+    isParent,
+    isTeacher,
+    isTherapist,
+    isTherapistOrTeacher,
     darkMode,
     setDarkMode,
     login,
@@ -606,6 +800,15 @@ export const GlobalStateProvider = ({ children }) => {
     addRoom,
     updateRoom,
     deleteRoom,
+    addSessionNote,
+    markAttendance,
+    fetchAttendance,
+    fetchParentChildren,
+    fetchMyAssignments,
+    assignParentToStudent,
+    assignTeacherToProgram,
+    updateUserRole,
+    createNotification,
     toast,
     notify,
     loading,

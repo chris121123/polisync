@@ -20,11 +20,13 @@ const Login = () => {
     try {
       const loggedInUser = await login(email, password);
       if (loggedInUser) {
-        if (loggedInUser.role === 'Admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+        const roleRoutes = {
+          admin: '/admin',
+          parent: '/parent',
+          teacher: '/teacher',
+          therapist: '/therapist'
+        };
+        navigate(roleRoutes[loggedInUser.app_role] || '/dashboard');
       }
     } catch (err) {
       setError(err.message || 'Invalid email or password. Please check your credentials.');
