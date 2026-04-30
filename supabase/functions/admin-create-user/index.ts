@@ -149,7 +149,7 @@ Deno.serve(async (req: Request) => {
     // Map app role to display role text
     const roleDisplayMap: Record<AppRole, string> = {
       admin: 'Administrator',
-      teacher: 'Lead Teacher',
+      teacher: 'Teacher',
       therapist: 'Therapist',
       parent: 'Parent',
     }

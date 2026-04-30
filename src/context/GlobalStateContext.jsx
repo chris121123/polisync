@@ -24,6 +24,7 @@ export const GlobalStateProvider = ({ children }) => {
   const [programs, setPrograms] = useState([]);
   const [studentPrograms, setStudentPrograms] = useState([]);
   const [studentAvailability, setStudentAvailability] = useState([]);
+  const [staffAvailability, setStaffAvailabilityState] = useState([]);
   const [schedulingSettings, setSchedulingSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' | 'info' }
@@ -99,9 +100,14 @@ export const GlobalStateProvider = ({ children }) => {
             type: s.type,
             programId: s.program_id,
             dayOfWeek: s.day_of_week,
+            sessionDate: s.session_date || null,
             isConfirmed: s.is_confirmed
           })));
         }
+
+        // Fetch Staff Availability
+        const { data: staffAvailData } = await supabase.from('staff_availability').select('*');
+        if (staffAvailData && mounted) setStaffAvailabilityState(staffAvailData);
 
         // Fetch Programs
         const { data: programsData } = await supabase.from('programs').select('*').eq('is_active', true);
@@ -195,6 +201,14 @@ export const GlobalStateProvider = ({ children }) => {
         if (payload.eventType === 'INSERT') setStudentAvailability(prev => [...prev, payload.new]);
         else if (payload.eventType === 'UPDATE') setStudentAvailability(prev => prev.map(a => a.id === payload.new.id ? payload.new : a));
         else if (payload.eventType === 'DELETE') setStudentAvailability(prev => prev.filter(a => a.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_availability' }, (payload) => {
+        if (payload.eventType === 'INSERT') setStaffAvailabilityState(prev => {
+          if (prev.some(a => a.id === payload.new.id)) return prev;
+          return [...prev, payload.new];
+        });
+        else if (payload.eventType === 'UPDATE') setStaffAvailabilityState(prev => prev.map(a => a.id === payload.new.id ? payload.new : a));
+        else if (payload.eventType === 'DELETE') setStaffAvailabilityState(prev => prev.filter(a => a.id !== payload.old.id));
       })
       .subscribe();
 
@@ -311,7 +325,33 @@ export const GlobalStateProvider = ({ children }) => {
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Failed to create user');
 
+      // Optimistically add the new user to the staff list for instant UI
+      const roleDisplayMap = {
+        admin: 'Administrator',
+        teacher: 'Teacher',
+        therapist: 'Therapist',
+        parent: 'Parent',
+      };
+      const newStaffEntry = {
+        id: data.user?.id,
+        name: userData.name,
+        email: userData.email,
+        role: roleDisplayMap[userData.role] || 'Staff',
+        app_role: userData.role,
+        department: userData.department || 'General',
+        phone: userData.phone || '',
+        type: 'Staff',
+        status: 'Active',
+        is_active: true,
+        must_change_password: true,
+      };
+      setStaff(prev => [...prev, newStaffEntry]);
+
       notify(`User "${userData.name}" created successfully`, 'success');
+
+      // Background: set must_change_password flag (non-blocking)
+      supabase.from('profiles').update({ must_change_password: true }).eq('email', userData.email).then(() => {});
+
       return data;
     } catch (error) {
       notify(error.message, 'error');
@@ -326,6 +366,18 @@ export const GlobalStateProvider = ({ children }) => {
     setParentChildren([]);
     setMyAssignments([]);
     setNotifications([]);
+  };
+
+  const changePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    
+    // Once successful, remove the flag
+    const { error: dbError } = await supabase.from('profiles').update({ must_change_password: false }).eq('id', user.id);
+    if (dbError) throw dbError;
+    
+    setUser(prev => ({ ...prev, must_change_password: false }));
+    notify('Password changed successfully!', 'success');
   };
 
   const isAdmin = () => appRole === 'admin';
@@ -428,11 +480,71 @@ export const GlobalStateProvider = ({ children }) => {
       const { error } = await supabase.from('user_roles').upsert([{
         user_id: targetUserId,
         role: newRole,
-      }]);
+      }], { onConflict: 'user_id' });
       if (error) throw error;
+
+      // Map app role to display role (Job Title)
+      const roleDisplayMap = {
+        admin: 'Administrator',
+        teacher: 'Teacher',
+        therapist: 'Therapist',
+        parent: 'Parent',
+      };
+      const displayRole = roleDisplayMap[newRole] || 'Staff';
+
+      // Update both app_role and the legacy/display 'role' in profiles
+      const { error: profileError } = await supabase.from('profiles')
+        .update({ app_role: newRole, role: displayRole })
+        .eq('id', targetUserId);
+        
+      if (profileError) console.error("Profile role sync failed:", profileError);
+
+      // Optimistically update the local staff list for instant UI feedback
+      setStaff(prev => prev.map(s => s.id === targetUserId ? { ...s, app_role: newRole, role: displayRole } : s));
+
+      // If the user updated their own role, update the local user state
+      if (user && user.id === targetUserId) {
+        setAppRole(newRole);
+        setUser(prev => ({ ...prev, app_role: newRole, role: displayRole }));
+      }
+
       notify(`Role updated to ${newRole}`);
     } catch (error) {
       notify(error.message, 'error');
+    }
+  };
+
+  /**
+   * Admin-only: Delete a user via the Edge Function
+   */
+  const adminDeleteUser = async (userId) => {
+    try {
+      // Optimistically remove from UI immediately
+      setStaff(prev => prev.filter(s => s.id !== userId));
+      notify('User deleted successfully');
+
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Background: audit log (non-blocking)
+      supabase.from('audit_logs').insert([{
+        action: 'user_deleted',
+        performed_by: user?.id,
+        target_user_id: userId,
+        details: { message: 'Admin deleted user' },
+      }]).then(() => {});
+
+    } catch (error) {
+      // Rollback: re-fetch staff if the server-side delete actually failed
+      console.error('Error deleting user:', error);
+      const { data: refreshed } = await supabase.from('profiles').select('*');
+      if (refreshed) setStaff(refreshed);
+      notify('Failed to delete user: ' + error.message, 'error');
+      throw error;
     }
   };
 
@@ -532,15 +644,19 @@ export const GlobalStateProvider = ({ children }) => {
 
   const addSession = async (session) => {
     try {
-      const { data, error } = await supabase.from('sessions').insert([{
+      const insertPayload = {
         title: session.title,
         therapist_id: session.therapistId,
         student_ids: session.studentIds || [],
         room: session.room,
         start_hour: session.startHour,
         span: session.span,
-        type: session.type
-      }]).select();
+        type: session.type,
+      };
+      if (session.sessionDate) insertPayload.session_date = session.sessionDate;
+      if (session.dayOfWeek !== undefined) insertPayload.day_of_week = session.dayOfWeek;
+
+      const { data, error } = await supabase.from('sessions').insert([insertPayload]).select();
 
       if (error) throw error;
       if (data) {
@@ -552,7 +668,9 @@ export const GlobalStateProvider = ({ children }) => {
           room: data[0].room,
           startHour: data[0].start_hour,
           span: data[0].span,
-          type: data[0].type
+          type: data[0].type,
+          sessionDate: data[0].session_date || null,
+          dayOfWeek: data[0].day_of_week,
         }]);
         notify('Session scheduled successfully');
       }
@@ -560,6 +678,55 @@ export const GlobalStateProvider = ({ children }) => {
       console.error(error);
       notify(error.message, 'error');
     }
+  };
+
+  // ── Staff Availability CRUD ─────────────────────────────────────────────────
+  const addStaffAvailability = async (staffId, date, startHour = 8, endHour = 17) => {
+    try {
+      const { data, error } = await supabase.from('staff_availability').upsert([{
+        staff_id: staffId,
+        available_date: date,
+        start_hour: startHour,
+        end_hour: endHour,
+      }], { onConflict: 'staff_id,available_date' }).select();
+      if (error) throw error;
+      if (data) {
+        setStaffAvailabilityState(prev => {
+          const exists = prev.findIndex(a => a.staff_id === staffId && a.available_date === date);
+          if (exists >= 0) {
+            const updated = [...prev];
+            updated[exists] = data[0];
+            return updated;
+          }
+          return [...prev, data[0]];
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      notify(error.message, 'error');
+    }
+  };
+
+  const removeStaffAvailability = async (staffId, date) => {
+    try {
+      const { error } = await supabase.from('staff_availability')
+        .delete()
+        .eq('staff_id', staffId)
+        .eq('available_date', date);
+      if (error) throw error;
+      setStaffAvailabilityState(prev => prev.filter(a => !(a.staff_id === staffId && a.available_date === date)));
+    } catch (error) {
+      console.error(error);
+      notify(error.message, 'error');
+    }
+  };
+
+  const getAvailableStaffForDate = (date) => {
+    if (!date) return staff;
+    const availableIds = staffAvailability
+      .filter(a => a.available_date === date)
+      .map(a => a.staff_id);
+    return staff.filter(s => availableIds.includes(s.id));
   };
   
   const moveSession = async (sessionId, newStartHour, newRoom) => {
@@ -792,6 +959,7 @@ export const GlobalStateProvider = ({ children }) => {
     programs,
     studentPrograms,
     studentAvailability,
+    staffAvailability,
     schedulingSettings,
     conflicts,
     user,
@@ -799,6 +967,7 @@ export const GlobalStateProvider = ({ children }) => {
     parentChildren,
     myAssignments,
     notifications,
+    changePassword,
     isAdmin,
     isParent,
     isTeacher,
@@ -808,6 +977,7 @@ export const GlobalStateProvider = ({ children }) => {
     setDarkMode,
     login,
     adminCreateUser,
+    adminDeleteUser,
     logout,
     deleteAccount,
     findAvailableGaps,
@@ -831,6 +1001,9 @@ export const GlobalStateProvider = ({ children }) => {
     updateUserRole,
     toggleUserActive,
     createNotification,
+    addStaffAvailability,
+    removeStaffAvailability,
+    getAvailableStaffForDate,
     toast,
     notify,
     loading,

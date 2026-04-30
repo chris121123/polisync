@@ -4,6 +4,7 @@ import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, Doo
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import AISearch from './AISearch';
+import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { useGlobalState } from '../context/GlobalStateContext';
 
 const Layout = () => {
@@ -46,18 +47,15 @@ const Layout = () => {
     if (link.isParent) return 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 border-2 border-pink-100 dark:border-pink-900/50 font-bold';
     if (link.isTeacher) return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-2 border-indigo-100 dark:border-indigo-900/50 font-bold';
     if (link.isTherapist) return 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border-2 border-teal-100 dark:border-teal-900/50 font-bold';
-    return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 shadow-sm';
+    return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm';
   };
 
   const navLinks = [
-    { to: '/dashboard', icon: ShieldAlert, label: 'Admin Dashboard', isAdmin: true },
+    { to: '/dashboard', icon: appRole === 'admin' ? ShieldAlert : LayoutDashboard, label: appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard', isAdmin: appRole === 'admin' },
     ...(appRole === 'admin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
-    ...(appRole === 'parent' ? [{ to: '/parent', icon: BookUser, label: 'My Child', isParent: true }] : []),
-    ...(appRole === 'teacher' ? [{ to: '/teacher', icon: GraduationCap, label: 'My Classes', isTeacher: true }] : []),
-    ...(appRole === 'therapist' ? [{ to: '/therapist', icon: ClipboardCheck, label: 'Therapy Sessions', isTherapist: true }] : []),
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes' }] : []),
-    { to: '/schedule', icon: CalendarDays, label: 'Schedule' },
-    { to: '/directory', icon: Users, label: 'Directory' },
+    ...(appRole === 'admin' ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule' }] : []),
+    ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory' }] : []),
     ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
@@ -224,6 +222,9 @@ const Layout = () => {
       </div>
       {/* Global AI Search Modal */}
       <AISearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      
+      {/* Forced Password Change Modal */}
+      <ForceChangePasswordModal />
     </div>
   );
 };

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Clock, Users, CheckCircle2, XCircle, AlertCircle, FileText, Calendar } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 
+import { StatCard } from '../admin/AdminDashboard';
+
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const TeacherDashboard = () => {
@@ -39,73 +41,35 @@ const TeacherDashboard = () => {
         <p className="text-slate-500 font-medium mt-1">Manage your daily schedule and mark attendance</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-              <Calendar size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">This Week</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{mySessions.length}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-              <Users size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Students</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{myAssignments.length}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-              <Clock size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Today</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{todaySessions.length}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
-              <FileText size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Programs</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{myAssignments.length}</p>
-            </div>
-          </div>
-        </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard 
+          title="This Week" 
+          value={mySessions.length} 
+          icon={Calendar} 
+          subtext="Total sessions"
+          color="indigo" 
+        />
+        <StatCard 
+          title="Students" 
+          value={myAssignments.length} 
+          icon={Users} 
+          subtext="Total assigned"
+          color="emerald" 
+        />
+        <StatCard 
+          title="Today" 
+          value={todaySessions.length} 
+          icon={Clock} 
+          subtext="Sessions today"
+          color="amber" 
+        />
+        <StatCard 
+          title="Programs" 
+          value={myAssignments.length} 
+          icon={FileText} 
+          subtext="Active programs"
+          color="rose" 
+        />
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -183,11 +147,15 @@ const TeacherDashboard = () => {
       </div>
 
       {showAttendanceModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={() => setShowAttendanceModal(null)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Mark Attendance</h3>
             {(() => {

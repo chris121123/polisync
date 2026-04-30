@@ -4,6 +4,8 @@ import { Clock, Calendar, Users, FileText, ChevronRight, Star, Activity, BookOpe
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { useNavigate } from 'react-router-dom';
 
+import { StatCard } from '../admin/AdminDashboard';
+
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const TherapistDashboard = () => {
@@ -46,73 +48,35 @@ const TherapistDashboard = () => {
         <p className="text-slate-500 font-medium mt-1">Manage therapy sessions and track progress</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-              <Calendar size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sessions</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{mySessions.length}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-              <Clock size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hours / Week</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{totalHoursThisWeek}h</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-              <Users size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Students</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{uniqueStudents}</p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-              <FileText size={20} />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Programs</p>
-              <p className="text-2xl font-black text-slate-900 dark:text-slate-100">{myAssignments.length}</p>
-            </div>
-          </div>
-        </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard 
+          title="Sessions" 
+          value={mySessions.length} 
+          icon={Calendar} 
+          subtext="Total this week"
+          color="indigo" 
+        />
+        <StatCard 
+          title="Hours / Week" 
+          value={`${totalHoursThisWeek}h`} 
+          icon={Clock} 
+          subtext="Total contact hours"
+          color="emerald" 
+        />
+        <StatCard 
+          title="Students" 
+          value={uniqueStudents} 
+          icon={Users} 
+          subtext="Unique caseload"
+          color="amber" 
+        />
+        <StatCard 
+          title="Programs" 
+          value={myAssignments.length} 
+          icon={FileText} 
+          subtext="Assigned programs"
+          color="rose" 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -242,11 +206,15 @@ const TherapistDashboard = () => {
       </div>
 
       {selectedSession && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={() => { setSelectedSession(null); setNoteContent(''); setNoteRating(3); }}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6"
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">Add Session Note</h3>
             <p className="text-sm text-slate-500 mb-4">{selectedSession.title} · {dayNames[selectedSession.dayOfWeek ?? 0]}</p>
@@ -280,7 +248,8 @@ const TherapistDashboard = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleAddNote}
-                className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors"
+                disabled={!noteContent.trim()}
+                className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-teal-600 disabled:cursor-default"
               >
                 Save Note
               </button>

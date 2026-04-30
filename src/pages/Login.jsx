@@ -56,6 +56,11 @@ const Login = () => {
     try {
       const loggedInUser = await login(email, password);
       if (loggedInUser) {
+        // Store password temporarily to prevent reusing it in the force-change-password modal
+        if (loggedInUser.must_change_password) {
+          sessionStorage.setItem('temp_pass', password);
+        }
+        
         const roleRoutes = {
           admin: '/dashboard',
           parent: '/parent',

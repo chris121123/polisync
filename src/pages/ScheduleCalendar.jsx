@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock,
   Users, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
-  LayoutGrid, List, BookOpen, MapPin, RefreshCw, TrendingUp
+  LayoutGrid, List, BookOpen, MapPin, RefreshCw, TrendingUp, UserCheck
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -160,15 +160,186 @@ const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, onClic
   );
 };
 
+// ─── Manage Staff Availability Modal ──────────────────────────────────────────
+const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, addStaffAvailability, removeStaffAvailability, notify }) => {
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  });
+
+  if (!isOpen) return null;
+
+  const availableIdsForDate = staffAvailability
+    .filter(a => a.available_date === selectedDate)
+    .map(a => a.staff_id);
+
+  const therapistsAndTeachers = staff.filter(s => 
+    s.role && !['Admin'].includes(s.role)
+  );
+
+  const handleToggle = async (staffId) => {
+    if (availableIdsForDate.includes(staffId)) {
+      await removeStaffAvailability(staffId, selectedDate);
+    } else {
+      await addStaffAvailability(staffId, selectedDate);
+    }
+  };
+
+  const handleSelectAll = async () => {
+    const allSelected = therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id));
+    if (allSelected) {
+      // Deselect all
+      for (const s of therapistsAndTeachers) {
+        if (availableIdsForDate.includes(s.id)) {
+          await removeStaffAvailability(s.id, selectedDate);
+        }
+      }
+    } else {
+      // Select all
+      for (const s of therapistsAndTeachers) {
+        if (!availableIdsForDate.includes(s.id)) {
+          await addStaffAvailability(s.id, selectedDate);
+        }
+      }
+    }
+  };
+
+  const dateObj = new Date(selectedDate + 'T00:00:00');
+  const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 md:p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: '100%' }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: '100%' }}
+        className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 md:p-6 bg-gradient-to-r from-teal-500 to-emerald-600 relative shrink-0">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_white,_transparent)]" />
+          <div className="relative flex justify-between items-start">
+            <div>
+              <p className="text-white/70 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Staff Availability</p>
+              <h3 className="text-white text-lg md:text-xl font-bold">Manage Schedule</h3>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
+          {/* Date Picker */}
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Select Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 text-sm font-semibold transition-all"
+            />
+            <p className="text-xs text-slate-400 font-medium mt-1">{dayLabel}</p>
+          </div>
+
+          {/* Available Count */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{availableIdsForDate.length}</span> / {therapistsAndTeachers.length} available
+            </p>
+            <button
+              onClick={handleSelectAll}
+              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+            >
+              {therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id)) ? 'Deselect All' : 'Select All'}
+            </button>
+          </div>
+
+          {/* Staff Checklist */}
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {therapistsAndTeachers.map(person => {
+              const isAvailable = availableIdsForDate.includes(person.id);
+              return (
+                <button
+                  key={person.id}
+                  onClick={() => handleToggle(person.id)}
+                  className={clsx(
+                    'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
+                    isAvailable
+                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                  )}
+                >
+                  <div className={clsx(
+                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                    isAvailable ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
+                  )}>
+                    {isAvailable ? <CheckCircle2 size={16} /> : <UserCheck size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={clsx('text-sm font-semibold truncate', isAvailable ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-300')}>
+                      {person.name}
+                    </p>
+                    <p className="text-[10px] font-medium text-slate-400 truncate">{person.role} · {person.department || 'General'}</p>
+                  </div>
+                  {isAvailable && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 shrink-0">
+                      Available
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-4 md:px-6 pb-4 md:pb-6">
+          <button
+            onClick={() => { notify(`Availability saved for ${dayLabel}`); onClose(); }}
+            className="w-full py-3 text-sm font-bold bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition-all shadow-md shadow-emerald-200 flex items-center justify-center gap-2"
+          >
+            <CheckCircle2 size={16} /> Done
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── Add Session Modal ────────────────────────────────────────────────────────
-const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions }) => {
+const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '', therapistId: '', room: rooms[0]?.name || '',
-    startHour: 9, span: 1, type: 'sped', studentIds: []
+    startHour: 9, span: 1, type: 'sped', studentIds: [],
+    sessionDate: new Date().toISOString().split('T')[0]
   });
 
-  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [] }); };
+  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: new Date().toISOString().split('T')[0] }); };
+
+  // Filter staff by availability on the selected date
+  const availableStaff = useMemo(() => {
+    if (!formData.sessionDate) {
+      return []; // Must choose a date first to see available staff
+    }
+    
+    // If we have no availability records at all or none for this date, nobody is available
+    if (!staffAvailability || staffAvailability.length === 0) {
+      return [];
+    }
+
+    const availableIds = staffAvailability
+      .filter(a => a.available_date === formData.sessionDate)
+      .map(a => a.staff_id);
+      
+    if (availableIds.length === 0) return [];
+    
+    return staff.filter(s => s.role !== 'Admin' && availableIds.includes(s.id));
+  }, [staff, staffAvailability, formData.sessionDate]);
 
   const conflictMessage = useMemo(() => {
     if (step !== 2) return null;
@@ -191,33 +362,37 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
   const typeCfg = TYPE_CONFIG[formData.type];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 md:p-4"
+      onClick={() => { reset(); onClose(); }}
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92 }}
-        className="bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+        initial={{ opacity: 0, y: "100%" }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: "100%" }}
+        className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className={clsx('p-6 bg-gradient-to-r relative overflow-hidden', typeCfg.gradient)}>
+        <div className={clsx('p-4 md:p-6 bg-gradient-to-r relative shrink-0', typeCfg.gradient)}>
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_white,_transparent)]" />
           <div className="relative flex justify-between items-start">
             <div>
-              <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1">New Session</p>
-              <h3 className="text-white text-xl font-bold">{formData.title || 'Untitled Session'}</h3>
+              <p className="text-white/70 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">New Session</p>
+              <h3 className="text-white text-lg md:text-xl font-bold">{formData.title || 'Untitled Session'}</h3>
             </div>
-            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-white dark:bg-slate-900 dark:bg-slate-900/30 text-white transition-colors">
+            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-white dark:bg-slate-900/20 hover:bg-white dark:bg-slate-900/30 text-white transition-colors">
               <X size={18} />
             </button>
           </div>
           <div className="relative flex gap-2 mt-4">
             {[1, 2].map(s => (
-              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-white dark:bg-slate-900 dark:bg-slate-900' : 'bg-white dark:bg-slate-900 dark:bg-slate-900/30')} />
+              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-white dark:bg-slate-900' : 'bg-white/30 dark:bg-slate-900/30')} />
             ))}
           </div>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
           {step === 1 && (
             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <div>
@@ -249,6 +424,26 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   ))}
                 </div>
               </div>
+              {/* Session Date */}
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Session Date *</label>
+                <input
+                  type="date"
+                  value={formData.sessionDate}
+                  onChange={e => {
+                    setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
+                  }}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-semibold transition-all"
+                />
+                {formData.sessionDate && (
+                  <p className="text-xs text-slate-400 font-medium mt-1">
+                    {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    {staffAvailability?.filter(a => a.available_date === formData.sessionDate).length > 0 && (
+                      <span className="text-emerald-500 ml-2">· {staffAvailability.filter(a => a.available_date === formData.sessionDate).length} staff available</span>
+                    )}
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Provider / Therapist *</label>
                 <select
@@ -256,9 +451,14 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   value={formData.therapistId}
                   onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
                 >
-                  <option value="">Select staff member…</option>
-                  {staff.filter(s => s.role !== 'Admin').map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
+                  <option value="">{availableStaff.length === 0 ? 'No staff available for this date' : 'Select staff member…'}</option>
+                  {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
                 </select>
+                {formData.sessionDate && staffAvailability?.filter(a => a.available_date === formData.sessionDate).length > 0 && availableStaff.length > 0 && (
+                  <p className="text-[10px] text-emerald-500 font-medium mt-1 flex items-center gap-1">
+                    <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Assign Students</label>
@@ -376,7 +576,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
             <button
               onClick={() => setStep(2)}
               disabled={!formData.title || !formData.therapistId}
-              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-40 transition-all shadow-md shadow-indigo-200"
+              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-md shadow-indigo-200"
             >
               Next: Choose Slot →
             </button>
@@ -384,7 +584,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
             <button
               onClick={() => { onAdd(formData); reset(); onClose(); }}
               disabled={!!conflictMessage}
-              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:grayscale transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2"
+              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2"
             >
               <CheckCircle2 size={16} /> Create Session
             </button>
@@ -397,9 +597,10 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ScheduleCalendar = () => {
-  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify } = useGlobalState();
+  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify, staffAvailability, addStaffAvailability, removeStaffAvailability } = useGlobalState();
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const [detailTab, setDetailTab] = useState('info');
   const [filterType, setFilterType] = useState('all');
@@ -407,12 +608,68 @@ const ScheduleCalendar = () => {
   const [roomPage, setRoomPage] = useState(0);
   const scrollRef = useRef(null);
 
+  // ── Selected Date State ──
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  const formatDateISO = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const selectedDateISO = formatDateISO(selectedDate);
+
+  const navigateDate = (offset) => {
+    setSelectedDate(prev => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + offset);
+      return next;
+    });
+  };
+
+  const navigateWeek = (offset) => {
+    setSelectedDate(prev => {
+      const next = new Date(prev);
+      next.setDate(next.getDate() + (offset * 7));
+      return next;
+    });
+  };
+
+  const goToToday = () => setSelectedDate(new Date());
+
+  // Get the Monday of the selected week
+  const getWeekStart = (d) => {
+    const day = d.getDay(); // 0=Sun, 1=Mon...
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust for Sunday
+    const mon = new Date(d);
+    mon.setDate(diff);
+    return mon;
+  };
+
+  const weekStart = getWeekStart(selectedDate);
+  const weekDates = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  // Count available staff for selected date
+  const availableStaffCount = staffAvailability?.filter(a => a.available_date === selectedDateISO).length || 0;
+
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const selectedSession = sessions.find(s => s.id === selectedSessionId);
   const isConflicted = id => conflicts.some(c => c.sessionIds.includes(id));
 
   const handleAutoSchedule = async () => {
     setIsAutoScheduling(true);
-    const dayOfWeek = new Date().getDay() === 0 ? 4 : new Date().getDay() - 1; // Default to today's schedule column
+    const dayOfWeek = selectedDate.getDay() === 0 ? 4 : selectedDate.getDay() - 1;
     const result = await smartSchedule({ dayOfWeek });
     if (!result.success) {
       notify(result.error || 'Auto-scheduler failed to run', 'error');
@@ -429,21 +686,41 @@ const ScheduleCalendar = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, []);
 
-  const filteredSessions = sessions.filter(s => filterType === 'all' || s.type === filterType);
+  // Filter sessions by type AND by selected date
+  const filteredSessions = useMemo(() => {
+    let filtered = sessions.filter(s => filterType === 'all' || s.type === filterType);
+    if (calendarView === 'daily') {
+      // Show sessions matching the selected date, or sessions with no date (legacy)
+      filtered = filtered.filter(s => {
+        if (s.sessionDate) return s.sessionDate === selectedDateISO;
+        // Legacy fallback: match by day_of_week
+        const dow = selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1;
+        return s.dayOfWeek === dow || s.dayOfWeek === undefined || s.dayOfWeek === null;
+      });
+    }
+    return filtered;
+  }, [sessions, filterType, calendarView, selectedDateISO, selectedDate]);
 
   // Group sessions by weekday for weekly view
   const sessionsByDay = useMemo(() => {
     const grouped = [[], [], [], [], []];
-    filteredSessions.forEach(s => {
-      const day = getSessionDay(s);
-      grouped[day].push(s);
+    const typeFiltered = sessions.filter(s => filterType === 'all' || s.type === filterType);
+    typeFiltered.forEach(s => {
+      if (s.sessionDate) {
+        // Match sessions to weekDates
+        const idx = weekDates.findIndex(d => formatDateISO(d) === s.sessionDate);
+        if (idx >= 0) grouped[idx].push(s);
+      } else {
+        const day = getSessionDay(s);
+        grouped[day].push(s);
+      }
     });
     return grouped;
-  }, [filteredSessions]);
+  }, [sessions, filterType, weekDates]);
 
-  // Stats
-  const totalStudents = new Set(sessions.flatMap(s => s.studentIds)).size;
-  const activeRooms = new Set(sessions.map(s => s.room)).size;
+  // Stats for the selected date
+  const totalStudents = new Set(filteredSessions.flatMap(s => s.studentIds)).size;
+  const activeRooms = new Set(filteredSessions.map(s => s.room)).size;
 
   const handleReschedule = (newHour) => {
     if (selectedSession) {
@@ -489,8 +766,7 @@ const ScheduleCalendar = () => {
     }
   };
 
-  // Get today's weekday index (0=Mon...4=Fri)
-  const todayIdx = Math.min(Math.max(new Date().getDay() - 1, 0), 4);
+  // Removed unused todayIdx
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 max-h-[calc(100vh-64px)]">
@@ -540,21 +816,30 @@ const ScheduleCalendar = () => {
 
               {/* Date nav */}
               <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
-                <button className="p-1.5 rounded-lg hover:bg-white dark:bg-slate-900 dark:bg-slate-900 hover:shadow-sm text-slate-500 transition-all">
+                <button 
+                  onClick={() => calendarView === 'daily' ? navigateDate(-1) : navigateWeek(-1)}
+                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm text-slate-500 transition-all"
+                >
                   <ChevronLeft size={16} />
                 </button>
                 <span className="px-3 text-sm font-bold text-slate-700 dark:text-slate-200">
                   {calendarView === 'daily'
-                    ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
-                    : `Week of ${new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 1)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 5)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                    ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
+                    : `Week of ${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                   }
                 </span>
-                <button className="p-1.5 rounded-lg hover:bg-white dark:bg-slate-900 dark:bg-slate-900 hover:shadow-sm text-slate-500 transition-all">
+                <button 
+                  onClick={() => calendarView === 'daily' ? navigateDate(1) : navigateWeek(1)}
+                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm text-slate-500 transition-all"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
 
-              <button className="px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700 rounded-lg transition-colors">
+              <button 
+                onClick={goToToday}
+                className="px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-700 rounded-lg transition-colors"
+              >
                 Today
               </button>
             </div>
@@ -602,6 +887,17 @@ const ScheduleCalendar = () => {
               </button>
 
               <button
+                onClick={(e) => { e.stopPropagation(); setIsAvailabilityModalOpen(true); }}
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-teal-200"
+              >
+                <UserCheck size={16} strokeWidth={2.5} />
+                <span className="hidden sm:inline">Availability</span>
+                {availableStaffCount > 0 && (
+                  <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{availableStaffCount}</span>
+                )}
+              </button>
+
+              <button
                 onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
                 className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-200"
               >
@@ -613,9 +909,10 @@ const ScheduleCalendar = () => {
           {/* Stats strip */}
           <div className="px-6 pb-3 flex flex-wrap items-center gap-4 xl:gap-6">
             {[
-              { label: 'Sessions Today', value: sessions.length, icon: BookOpen, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-              { label: 'Students Active', value: totalStudents, icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
-              { label: 'Rooms in Use',  value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
+              { label: 'Students', value: totalStudents, icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
+              { label: 'Rooms',  value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400', bg: availableStaffCount > 0 ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-slate-50 dark:bg-slate-800/50' },
               { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400', bg: conflicts.length > 0 ? 'bg-rose-50 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-slate-800/50' },
             ].map(stat => (
               <div key={stat.label} className="flex items-center gap-2">
@@ -632,9 +929,60 @@ const ScheduleCalendar = () => {
         {/* ── Grid ───────── */}
         <div ref={scrollRef} className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-800/50">
 
-          {/* ════════════ DAILY VIEW ════════════ */}
-          {calendarView === 'daily' && (
-            <div className="min-w-[760px] pb-10">
+          {/* ════════════ MOBILE LIST VIEW ════════════ */}
+          {isMobile ? (
+            <div className="p-4 space-y-4 pb-20">
+              {filteredSessions.sort((a, b) => a.startHour - b.startHour).map(session => {
+                const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
+                const provider = staff.find(s => String(s.id) === String(session.therapistId));
+                const hasConflict = isConflicted(session.id);
+                return (
+                  <div 
+                    key={session.id} 
+                    onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); }}
+                    className={clsx(
+                      "bg-white dark:bg-slate-900 p-4 rounded-2xl border shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform",
+                      hasConflict ? "border-rose-300 ring-2 ring-rose-500/20" : cfg.border,
+                      selectedSessionId === session.id ? "ring-2 ring-indigo-500" : ""
+                    )}
+                  >
+                    <div className={clsx('absolute left-0 top-0 bottom-0 w-1.5', cfg.gradient)} />
+                    <div className="flex justify-between items-start mb-2 pl-2">
+                      <h3 className={clsx("font-bold text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
+                      {hasConflict ? (
+                        <span className="shrink-0 px-2 py-1 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-lg flex items-center gap-1"><AlertCircle size={10}/> Conflict</span>
+                      ) : (
+                        <span className={clsx('text-[10px] font-bold px-2 py-1 rounded-lg shrink-0', cfg.badge)}>{cfg.label}</span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 pl-2 mt-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <Clock size={14} className="opacity-70" /> {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <MapPin size={14} className="opacity-70" /> {session.room}
+                      </div>
+                      {provider && (
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          <Users size={14} className="opacity-70" /> {provider.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredSessions.length === 0 && (
+                <div className="text-center p-8 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 text-slate-400">
+                  <CalendarIcon size={32} className="mx-auto mb-3 opacity-20" />
+                  <p className="font-semibold text-sm">No sessions found</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* ════════════ DAILY VIEW ════════════ */}
+              {calendarView === 'daily' && (
+                <div className="min-w-[760px] pb-10">
               {/* Room header row */}
               <div className="flex sticky top-0 z-30 bg-white dark:bg-slate-900 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="w-20 shrink-0 bg-white dark:bg-slate-900 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center gap-1">
@@ -725,9 +1073,8 @@ const ScheduleCalendar = () => {
               <div className="flex sticky top-0 z-30 bg-white dark:bg-slate-900 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="w-16 shrink-0" />
                 {WEEKDAYS.map((day, idx) => {
-                  const isToday = idx === todayIdx;
-                  const dayDate = new Date();
-                  dayDate.setDate(dayDate.getDate() - dayDate.getDay() + 1 + idx);
+                  const dayDate = weekDates[idx];
+                  const isToday = formatDateISO(dayDate) === formatDateISO(new Date());
                   const dateNum = dayDate.getDate();
                   const sessionCount = sessionsByDay[idx].length;
 
@@ -780,7 +1127,8 @@ const ScheduleCalendar = () => {
                   </div>
 
                   {WEEKDAYS.map((day, dayIdx) => {
-                    const isToday = dayIdx === todayIdx;
+                    const dayDate = weekDates[dayIdx];
+                    const isToday = formatDateISO(dayDate) === formatDateISO(new Date());
                     return (
                       <div key={day} className={clsx(
                         'flex-1 relative border-l border-slate-200 dark:border-slate-700',
@@ -813,21 +1161,38 @@ const ScheduleCalendar = () => {
               </div>
             </div>
           )}
-
+          </>
+        )}
         </div>
       </div>
 
       {/* ── Right: Detail Panel ─────────────────────────────────────────── */}
       <AnimatePresence>
         {selectedSession && (
-          <motion.div
-            key="detail"
-            initial={{ x: 380, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 380, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="w-[360px] shrink-0 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900 flex flex-col"
-          >
+          <>
+            {/* Mobile Overlay Backdrop */}
+            {isMobile && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedSessionId(null)}
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+              />
+            )}
+            <motion.div
+              key="detail"
+              initial={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
+              animate={isMobile ? { y: 0, opacity: 1 } : { x: 0, opacity: 1 }}
+              exit={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className={clsx(
+                "bg-white dark:bg-slate-900 flex flex-col z-50",
+                isMobile 
+                  ? "fixed bottom-0 left-0 right-0 h-[85vh] rounded-t-3xl shadow-2xl" 
+                  : "w-[360px] shrink-0 border-l border-slate-200 dark:border-slate-700 h-full relative"
+              )}
+            >
             {(() => {
               const cfg = TYPE_CONFIG[selectedSession.type] || TYPE_CONFIG.sped;
               const provider = staff.find(s => String(s.id) === String(selectedSession.therapistId));
@@ -977,7 +1342,8 @@ const ScheduleCalendar = () => {
                 </>
               );
             })()}
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
@@ -991,7 +1357,18 @@ const ScheduleCalendar = () => {
         staff={staff}
         students={students}
         rooms={rooms}
-        sessions={sessions}
+        sessions={filteredSessions}
+        staffAvailability={staffAvailability}
+      />
+
+      <ManageAvailabilityModal
+        isOpen={isAvailabilityModalOpen}
+        onClose={() => setIsAvailabilityModalOpen(false)}
+        staff={staff}
+        staffAvailability={staffAvailability}
+        addStaffAvailability={addStaffAvailability}
+        removeStaffAvailability={removeStaffAvailability}
+        notify={notify}
       />
     </div>
   );

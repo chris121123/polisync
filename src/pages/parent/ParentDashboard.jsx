@@ -45,14 +45,6 @@ const ParentDashboard = () => {
           </h1>
           <p className="text-slate-500 font-medium mt-1">Your child's schedule at a glance</p>
         </div>
-        <div className="relative">
-          <Bell size={22} className="text-slate-500 dark:text-slate-300 cursor-pointer hover:text-indigo-600 transition-colors" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
-        </div>
       </div>
 
       {parentChildren.length > 1 && (
@@ -166,6 +158,18 @@ const ParentDashboard = () => {
             </div>
           </div>
         </>
+      )}
+
+      {!activeChild && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-full flex items-center justify-center mb-6">
+            <User size={40} />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">No Children Assigned</h2>
+          <p className="text-slate-500 max-w-md">
+            Your account is currently not linked to any enrolled students. Please contact the administration to have your child linked to your account.
+          </p>
+        </div>
       )}
     </div>
   );

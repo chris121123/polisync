@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Star, User, UserPlus, Shield, X, Mail, Lock, Briefcase, Phone, Building, Eye, EyeOff, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
+import { FileText, Star, User, UserPlus, Shield, ShieldAlert, X, Mail, Lock, Briefcase, Phone, Building, Eye, EyeOff, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
 import clsx from 'clsx';
 
 const UserManagement = () => {
-  const { staff, updateUserRole, adminCreateUser, toggleUserActive } = useGlobalState();
+  const { staff, updateUserRole, adminCreateUser, adminDeleteUser, toggleUserActive, user } = useGlobalState();
   const [activeTab, setActiveTab] = useState('users');
   const [showRoleModal, setShowRoleModal] = useState(null);
   const [selectedRole, setSelectedRole] = useState('teacher');
   const [sessionNotes, setSessionNotes] = useState([]);
   const [filterRole, setFilterRole] = useState('all');
   const [openMenuId, setOpenMenuId] = useState(null);
+
+  // ── Delete User Modal State ──
+  const [deleteModalData, setDeleteModalData] = useState(null);
+  const [deleteCountdown, setDeleteCountdown] = useState(0);
 
   // ── Create User Modal State ──
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -21,6 +25,10 @@ const UserManagement = () => {
   const [createSuccess, setCreateSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // ── Self Role Warning State ──
+  const [showSelfRoleWarning, setShowSelfRoleWarning] = useState(false);
+  const [selfRoleCountdown, setSelfRoleCountdown] = useState(0);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -37,8 +45,38 @@ const UserManagement = () => {
 
   React.useEffect(() => { fetchSessionNotes(); }, [fetchSessionNotes]);
 
+  React.useEffect(() => {
+    let timer;
+    if (deleteModalData && deleteCountdown > 0) {
+      timer = setTimeout(() => setDeleteCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [deleteModalData, deleteCountdown]);
+
+  React.useEffect(() => {
+    let timer;
+    if (showSelfRoleWarning && selfRoleCountdown > 0) {
+      timer = setTimeout(() => setSelfRoleCountdown(prev => prev - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [showSelfRoleWarning, selfRoleCountdown]);
+
   const handleUpdateRole = async (userId) => {
+    // If admin is changing their OWN role to something non-admin, trigger extra warning
+    if (user && user.id === userId && selectedRole !== 'admin') {
+      setShowSelfRoleWarning(true);
+      setSelfRoleCountdown(5);
+      return;
+    }
+    
     await updateUserRole(userId, selectedRole);
+    setShowRoleModal(null);
+  };
+
+  const confirmSelfRoleChange = async () => {
+    if (!showRoleModal) return;
+    await updateUserRole(showRoleModal, selectedRole);
+    setShowSelfRoleWarning(false);
     setShowRoleModal(null);
   };
 
@@ -56,17 +94,20 @@ const UserManagement = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleDeleteUser = async (member) => {
-    if (window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone.`)) {
-      try {
-        const { error } = await supabase.from('profiles').delete().eq('id', member.id);
-        if (error) throw error;
-        // The real-time listener in GlobalStateContext will handle the local state update
-        setOpenMenuId(null);
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user: ' + error.message);
-      }
+  const handleDeleteUser = (member) => {
+    setDeleteModalData(member);
+    setDeleteCountdown(5);
+    setOpenMenuId(null);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteModalData) return;
+    try {
+      await adminDeleteUser(deleteModalData.id);
+      setDeleteModalData(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user: ' + error.message);
     }
   };
 
@@ -96,26 +137,48 @@ const UserManagement = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
-    setCreateError('');
-    setCreateSuccess('');
+
     setCreateLoading(true);
+    setCreateError('');
 
     try {
       await adminCreateUser(newUser);
-      setCreateSuccess(`User "${newUser.name}" created successfully!`);
-      setNewUser({ name: '', email: '', password: '', role: 'teacher', department: 'General', phone: '' });
-      setErrors({});
-      // Auto-close after success delay
+      setCreateSuccess('User created successfully!');
+
+      // Explicitly ask Chrome to save the password
+      try {
+        if (window.PasswordCredential && navigator.credentials) {
+          const cred = new window.PasswordCredential({
+            id: newUser.email,
+            password: newUser.password,
+            name: newUser.name,
+          });
+          navigator.credentials.store(cred).catch(() => {});
+        }
+      } catch (err) {
+        // Ignore credential api errors
+      }
+      
+      // Delay closing modal so user sees success message
       setTimeout(() => {
         setShowCreateModal(false);
         setCreateSuccess('');
-      }, 2000);
+        setNewUser({ name: '', email: '', password: '', role: 'teacher', department: 'General', phone: '' });
+      }, 1000);
     } catch (err) {
       setCreateError(err.message || 'Failed to create user');
     } finally {
       setCreateLoading(false);
     }
+  };
+
+  const handleCancelCreate = () => {
+    setTimeout(() => {
+      setNewUser({ name: '', email: '', password: '', role: 'teacher', department: 'General', phone: '' });
+      setErrors({});
+      setShowCreateModal(false);
+      setCreateError('');
+    }, 100);
   };
 
   const handleToggleActive = async (userId, currentActive) => {
@@ -355,14 +418,39 @@ const UserManagement = () => {
       {/* ── Change Role Modal ── */}
       <AnimatePresence>
         {showRoleModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={() => setShowRoleModal(null)}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6"
+              onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Change User Role</h3>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Change User Role</h3>
+              
+              {/* Security Warning */}
+              {user && user.id === showRoleModal && selectedRole !== 'admin' ? (
+                <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl flex gap-3 items-start animate-pulse">
+                  <ShieldAlert size={20} className="text-rose-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-[11px] text-rose-700 dark:text-rose-400 font-black uppercase tracking-wider mb-1">CRITICAL WARNING</p>
+                    <p className="text-xs text-rose-600 dark:text-rose-300 font-bold leading-tight">
+                      You are changing your OWN role. You will LOSE administrative access and be locked out of this page immediately.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex gap-3 items-start">
+                  <ShieldAlert size={18} className="text-amber-600 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-tight">
+                    This will immediately update the user's access permissions across the entire system.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2 mb-4">
                 {['admin', 'teacher', 'therapist', 'parent'].map(role => (
                   <button
@@ -406,12 +494,16 @@ const UserManagement = () => {
       {/* ── Create User Modal ── */}
       <AnimatePresence>
         {showCreateModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={handleCancelCreate}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
@@ -421,7 +513,7 @@ const UserManagement = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setShowCreateModal(false); setErrors({}); }}
+                  onClick={handleCancelCreate}
                   className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <X size={18} />
@@ -429,7 +521,7 @@ const UserManagement = () => {
               </div>
 
               {/* Body */}
-              <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+              <div className="p-6 space-y-4">
                 {createError && (
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 text-red-700 dark:text-red-400 text-sm">
                     <AlertCircle size={16} />
@@ -474,6 +566,7 @@ const UserManagement = () => {
                     <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-400' : 'text-slate-400'}`} size={16} />
                     <input
                       type="email"
+                      autoComplete="username"
                       value={newUser.email}
                       onChange={(e) => {
                         setNewUser(p => ({ ...p, email: e.target.value }));
@@ -497,7 +590,10 @@ const UserManagement = () => {
                   <div className="relative">
                     <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-red-400' : 'text-slate-400'}`} size={16} />
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      id="temp_password_input"
+                      type="text"
+                      style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
+                      autoComplete="new-password"
                       value={newUser.password}
                       onChange={(e) => {
                         setNewUser(p => ({ ...p, password: e.target.value }));
@@ -524,7 +620,7 @@ const UserManagement = () => {
                 </div>
 
                 {/* Role + Department row */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className={clsx("grid gap-4", newUser.role === 'parent' ? "grid-cols-1" : "grid-cols-2")}>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Role</label>
                     <div className="relative">
@@ -541,23 +637,25 @@ const UserManagement = () => {
                       </select>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <select
-                        value={newUser.department}
-                        onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all appearance-none"
-                      >
-                        <option value="General">General</option>
-                        <option value="SPED">SPED</option>
-                        <option value="Rehab">Rehab</option>
-                        <option value="Playschool">Playschool</option>
-                        <option value="Admin">Admin</option>
-                      </select>
+                  {newUser.role !== 'parent' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <select
+                          value={newUser.department}
+                          onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all appearance-none"
+                        >
+                          <option value="General">General</option>
+                          <option value="SPED">SPED</option>
+                          <option value="Rehab">Rehab</option>
+                          <option value="Playschool">Playschool</option>
+                          <option value="Admin">Admin</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Phone */}
@@ -578,9 +676,10 @@ const UserManagement = () => {
                 {/* Actions */}
                 <div className="flex gap-3 pt-2">
                   <button
-                    type="submit"
-                    disabled={createLoading}
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                    type="button"
+                    onClick={handleCreateUser}
+                    disabled={createLoading || !newUser.name || !newUser.email || !newUser.password}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-default text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                   >
                     {createLoading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -593,13 +692,123 @@ const UserManagement = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowCreateModal(false); setErrors({}); }}
+                    onClick={handleCancelCreate}
                     className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                   >
                     Cancel
                   </button>
                 </div>
-              </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* ── Delete User Modal ── */}
+      <AnimatePresence>
+        {deleteModalData && (
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+            onClick={() => setDeleteModalData(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0">
+                  <AlertCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Delete User?</h3>
+                  <p className="text-sm font-medium text-slate-500 truncate">{deleteModalData.name}</p>
+                </div>
+              </div>
+              
+              <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-xl p-4 mb-6">
+                <p className="text-sm text-rose-700 dark:text-rose-400 font-medium">
+                  This action cannot be undone. This will permanently delete the user's account and remove their access to the system.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteModalData(null)}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  disabled={deleteCountdown > 0}
+                  className={clsx(
+                    "flex-1 py-2.5 font-bold rounded-xl transition-all flex items-center justify-center gap-2",
+                    deleteCountdown > 0
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 dark:shadow-none"
+                  )}
+                >
+                  {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* ── Self Role Change Warning Modal ── */}
+      <AnimatePresence>
+        {showSelfRoleWarning && (
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+            onClick={() => setShowSelfRoleWarning(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0">
+                  <ShieldAlert size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Change Own Role?</h3>
+                  <p className="text-sm font-medium text-slate-500 truncate">Target Role: <span className="capitalize text-indigo-500">{selectedRole}</span></p>
+                </div>
+              </div>
+              
+              <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-xl p-4 mb-6">
+                <p className="text-sm text-rose-700 dark:text-rose-400 font-medium leading-relaxed">
+                  You are stripping yourself of admin access.<br />
+                  This action is irreversible from this account.<br />
+                  You will be locked out immediately.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowSelfRoleWarning(false)}
+                  className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSelfRoleChange}
+                  disabled={selfRoleCountdown > 0}
+                  className={clsx(
+                    "flex-1 py-2.5 font-bold rounded-xl transition-all flex items-center justify-center gap-2",
+                    selfRoleCountdown > 0
+                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 dark:shadow-none"
+                  )}
+                >
+                  {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

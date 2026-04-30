@@ -49,9 +49,6 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
-          <Route path="parent" element={<ParentRoute><ParentDashboard /></ParentRoute>} />
-          <Route path="teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
-          <Route path="therapist" element={<TherapistRoute><TherapistDashboard /></TherapistRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<ScheduleCalendar />} />
           <Route path="directory" element={<Directory />} />
