@@ -1,19 +1,55 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Stethoscope, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Stethoscope, Mail, Lock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login } = useGlobalState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!email.trim()) {
+      newErrors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setFieldErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateField = (field) => {
+    const newErrors = { ...fieldErrors };
+    
+    if (field === 'email') {
+      if (!email.trim()) newErrors.email = 'Email address is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Please enter a valid email address';
+      else delete newErrors.email;
+    }
+    
+    if (field === 'password') {
+      if (!password) newErrors.password = 'Password is required';
+      else delete newErrors.password;
+    }
+
+    setFieldErrors(newErrors);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    
     setError('');
     setLoading(true);
     
@@ -21,7 +57,7 @@ const Login = () => {
       const loggedInUser = await login(email, password);
       if (loggedInUser) {
         const roleRoutes = {
-          admin: '/admin',
+          admin: '/dashboard',
           parent: '/parent',
           teacher: '/teacher',
           therapist: '/therapist'
@@ -40,7 +76,7 @@ const Login = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 transition-colors duration-300"
+        className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 transition-colors duration-300"
       >
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white mb-4">
@@ -67,31 +103,47 @@ const Login = () => {
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 dark:text-slate-300 mb-1.5">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-300" size={18} />
+              <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${fieldErrors.email ? 'text-red-400' : 'text-slate-400 dark:text-slate-300'}`} size={18} />
               <input
                 type="email"
-                required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: '' }));
+                }}
+                onBlur={() => validateField('email')}
                 placeholder="name@polisync.com"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                  fieldErrors.email
+                    ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'
+                }`}
               />
             </div>
+            {fieldErrors.email && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {fieldErrors.email}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 dark:text-slate-300 mb-1.5">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-300" size={18} />
+              <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${fieldErrors.password ? 'text-red-400' : 'text-slate-400 dark:text-slate-300'}`} size={18} />
               <input
                 type="password"
-                required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: '' }));
+                }}
+                onBlur={() => validateField('password')}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
+                  fieldErrors.password
+                    ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'
+                }`}
               />
             </div>
+            {fieldErrors.password && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {fieldErrors.password}</p>}
           </div>
 
           <button
@@ -105,12 +157,10 @@ const Login = () => {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-200">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline underline-offset-4">
-            Create Account
-          </Link>
-        </p>
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+          <ShieldCheck size={14} />
+          <span>Access is managed by your administrator.</span>
+        </div>
       </motion.div>
     </div>
   );

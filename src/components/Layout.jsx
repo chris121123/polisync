@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Trash2, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import AISearch from './AISearch';
@@ -9,7 +9,7 @@ import { useGlobalState } from '../context/GlobalStateContext';
 const Layout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { user, appRole, logout, deleteAccount, notifications } = useGlobalState();
+  const { user, appRole, logout, notifications } = useGlobalState();
   const navigate = useNavigate();
 
   // Auto-collapse sidebar on smaller screens
@@ -31,13 +31,6 @@ const Layout = () => {
     navigate('/login');
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This will remove you from the staff directory.')) {
-      deleteAccount(user.id);
-      navigate('/login');
-    }
-  };
-
   const handleNavClick = () => {
     // Close sidebar on tablet when clicking a nav link
     if (window.innerWidth < 1024) {
@@ -57,13 +50,12 @@ const Layout = () => {
   };
 
   const navLinks = [
-    ...(appRole === 'admin' ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin Dashboard', isAdmin: true }] : []),
+    { to: '/dashboard', icon: ShieldAlert, label: 'Admin Dashboard', isAdmin: true },
     ...(appRole === 'admin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
     ...(appRole === 'parent' ? [{ to: '/parent', icon: BookUser, label: 'My Child', isParent: true }] : []),
     ...(appRole === 'teacher' ? [{ to: '/teacher', icon: GraduationCap, label: 'My Classes', isTeacher: true }] : []),
     ...(appRole === 'therapist' ? [{ to: '/therapist', icon: ClipboardCheck, label: 'Therapy Sessions', isTherapist: true }] : []),
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes' }] : []),
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/schedule', icon: CalendarDays, label: 'Schedule' },
     { to: '/directory', icon: Users, label: 'Directory' },
     ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
@@ -208,13 +200,6 @@ const Layout = () => {
                   >
                     <LogOut size={16} />
                   </button>
-                  <button 
-                    onClick={handleDeleteAccount}
-                    className="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    title="Delete Account"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
               ) : (
                 <div className="absolute left-full ml-4 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50 flex flex-col gap-2">
@@ -223,12 +208,6 @@ const Layout = () => {
                       className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
                     >
                       <LogOut size={14} /> Logout
-                    </button>
-                    <button 
-                      onClick={handleDeleteAccount}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"
-                    >
-                      <Trash2 size={14} /> Delete
                     </button>
                 </div>
               )}

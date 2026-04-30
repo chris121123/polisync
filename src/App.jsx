@@ -7,8 +7,6 @@ import Directory from './pages/Directory';
 import ProfilePage from './pages/ProfilePage';
 import Rooms from './pages/Rooms';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
-import AdminDashboard from './pages/AdminDashboard';
 import Settings from './pages/Settings';
 import ParentDashboard from './pages/parent/ParentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -45,12 +43,11 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/signup" element={<Navigate to="/login" replace />} />
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
           <Route path="parent" element={<ParentRoute><ParentDashboard /></ParentRoute>} />
           <Route path="teacher" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   DoorOpen, Users, AlertTriangle, Plus, LayoutGrid, List, X, 
-  MapPin, CheckCircle2, Clock, Info, ArrowUpRight, Filter
+  MapPin, CheckCircle2, Clock, Info, ArrowUpRight, Filter, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,12 +14,41 @@ const Rooms = () => {
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', type: 'General SPED', maxCapacity: 5 });
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!newRoom.name.trim()) newErrors.name = 'Room name is required';
+    if (!newRoom.maxCapacity || newRoom.maxCapacity < 1) newErrors.maxCapacity = 'Capacity must be at least 1';
+    
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateField = (field) => {
+    const newErrors = { ...formErrors };
+    
+    if (field === 'name') {
+      if (!newRoom.name.trim()) newErrors.name = 'Room name is required';
+      else delete newErrors.name;
+    }
+    
+    if (field === 'maxCapacity') {
+      if (!newRoom.maxCapacity || newRoom.maxCapacity < 1) newErrors.maxCapacity = 'Capacity must be at least 1';
+      else delete newErrors.maxCapacity;
+    }
+
+    setFormErrors(newErrors);
+  };
 
   const handleAddRoom = (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    
     addRoom(newRoom);
     setIsAddModalOpen(false);
     setNewRoom({ name: '', type: 'General SPED', maxCapacity: 5 });
+    setFormErrors({});
   };
 
   // Calculate room details based on live sessions
@@ -115,7 +144,7 @@ const Rooms = () => {
               </button>
             </div>
             <button 
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => { setIsAddModalOpen(true); setFormErrors({}); }}
               className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <Plus size={18} strokeWidth={2.5}/> Add New Room
@@ -430,7 +459,7 @@ const Rooms = () => {
             >
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Add New Room</h3>
-                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                <button onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
                   <X size={20} className="text-slate-400" />
                 </button>
               </div>
@@ -439,13 +468,22 @@ const Rooms = () => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Room Name</label>
                   <input 
-                    required
                     type="text" 
                     placeholder="e.g. Room 101"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className={clsx(
+                      "w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border text-sm font-bold focus:ring-2 outline-none transition-all",
+                      formErrors.name 
+                        ? "border-red-500 focus:ring-red-500/20 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50" 
+                        : "border-slate-200 dark:border-slate-700 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                    )}
                     value={newRoom.name}
-                    onChange={e => setNewRoom({...newRoom, name: e.target.value})}
+                    onChange={e => {
+                      setNewRoom({...newRoom, name: e.target.value});
+                      if (formErrors.name) setFormErrors(p => ({ ...p, name: '' }));
+                    }}
+                    onBlur={() => validateField('name')}
                   />
+                  {formErrors.name && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.name}</p>}
                 </div>
                 
                 <div>
@@ -465,20 +503,29 @@ const Rooms = () => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Max Capacity</label>
                   <input 
-                    required
                     type="number" 
                     min="1"
                     max="50"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className={clsx(
+                      "w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border text-sm font-bold focus:ring-2 outline-none transition-all",
+                      formErrors.maxCapacity 
+                        ? "border-red-500 focus:ring-red-500/20 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50" 
+                        : "border-slate-200 dark:border-slate-700 focus:ring-indigo-500 text-slate-900 dark:text-white"
+                    )}
                     value={newRoom.maxCapacity}
-                    onChange={e => setNewRoom({...newRoom, maxCapacity: parseInt(e.target.value)})}
+                    onChange={e => {
+                      setNewRoom({...newRoom, maxCapacity: parseInt(e.target.value)});
+                      if (formErrors.maxCapacity) setFormErrors(p => ({ ...p, maxCapacity: '' }));
+                    }}
+                    onBlur={() => validateField('maxCapacity')}
                   />
+                  {formErrors.maxCapacity && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.maxCapacity}</p>}
                 </div>
                 
                 <div className="pt-4 flex gap-3">
                   <button 
                     type="button"
-                    onClick={() => setIsAddModalOpen(false)}
+                    onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
                     className="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
                   >
                     Cancel

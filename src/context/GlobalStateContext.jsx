@@ -36,33 +36,58 @@ export const GlobalStateProvider = ({ children }) => {
   // --- SUPABASE INTEGRATION ---
 
   useEffect(() => {
-    const fetchAllData = async () => {
+    let mounted = true;
+
+    const initializeSession = async () => {
       if (!supabase) {
         setLoading(false);
         return;
       }
+      
       setLoading(true);
+      
       try {
+        // 1. Fetch Auth Session first so RouteGuards don't prematurely redirect
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Fetch profile and role concurrently
+          const [profileRes, roleRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+            supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
+          ]);
+          
+          if (mounted) {
+            const finalRole = roleRes.data?.role || profileRes.data?.app_role || 'teacher';
+            if (profileRes.data) setUser({ ...profileRes.data, app_role: finalRole });
+            setAppRole(finalRole);
+          }
+          
+          supabase.from('notifications')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .then(({ data }) => {
+              if (mounted && data) setNotifications(data);
+            });
+        }
+        
+        // 2. Fetch all other data
         // Fetch Rooms
         const { data: roomsData } = await supabase.from('rooms').select('*');
-        if (roomsData) {
-          setRooms(roomsData.map(r => ({
-            ...r,
-            maxCapacity: r.max_capacity
-          })));
-        }
+        if (roomsData && mounted) setRooms(roomsData.map(r => ({ ...r, maxCapacity: r.max_capacity })));
 
         // Fetch Staff
         const { data: staffData } = await supabase.from('profiles').select('*');
-        if (staffData) setStaff(staffData);
+        if (staffData && mounted) setStaff(staffData);
 
         // Fetch Students
         const { data: studentsData } = await supabase.from('students').select('*');
-        if (studentsData) setStudents(studentsData);
+        if (studentsData && mounted) setStudents(studentsData);
 
         // Fetch Sessions
         const { data: sessionsData } = await supabase.from('sessions').select('*');
-        if (sessionsData) {
+        if (sessionsData && mounted) {
           setSessions(sessionsData.map(s => ({
             id: s.id,
             title: s.title,
@@ -80,56 +105,34 @@ export const GlobalStateProvider = ({ children }) => {
 
         // Fetch Programs
         const { data: programsData } = await supabase.from('programs').select('*').eq('is_active', true);
-        if (programsData) setPrograms(programsData.map(p => ({ ...p, id: Number(p.id) })));
+        if (programsData && mounted) setPrograms(programsData.map(p => ({ ...p, id: Number(p.id) })));
 
-        // Fetch Student Programs (requirements)
+        // Fetch Student Programs
         const { data: spData } = await supabase.from('student_programs').select('*');
-        if (spData) setStudentPrograms(spData.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
+        if (spData && mounted) setStudentPrograms(spData.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
 
         // Fetch Student Availability
         const { data: saData } = await supabase.from('student_availability').select('*').eq('is_active', true);
-        if (saData) setStudentAvailability(saData.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
+        if (saData && mounted) setStudentAvailability(saData.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
 
         // Fetch Scheduling Settings
         const { data: settingsData } = await supabase.from('scheduling_settings').select('*').single();
-        if (settingsData) setSchedulingSettings(settingsData);
+        if (settingsData && mounted) setSchedulingSettings(settingsData);
 
       } catch (error) {
-        console.error('Error fetching data from Supabase:', error);
+        console.error('Error fetching data during initialization:', error);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    fetchAllData();
+    initializeSession();
 
     if (!supabase) return;
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        supabase.from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) setUser(data);
-          });
-        supabase.from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) setAppRole(data.role);
-          });
-        supabase.from('notifications')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .order('created_at', { ascending: false })
-          .then(({ data }) => {
-            if (data) setNotifications(data);
-          });
-      } else {
+    // Listen for ongoing auth changes (like login/logout from other tabs)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session?.user) {
         setUser(null);
         setAppRole(null);
         setParentChildren([]);
@@ -288,41 +291,32 @@ export const GlobalStateProvider = ({ children }) => {
     return { ...profile, app_role: finalRole };
   };
 
-  const signup = async (userData) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-    });
+  /**
+   * Admin-only: Create a new user account via the Edge Function.
+   * The Edge Function uses the service_role key securely on the server.
+   */
+  const adminCreateUser = async (userData) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+          role: userData.role,
+          department: userData.department || 'General',
+          phone: userData.phone || '',
+        },
+      });
 
-    if (error) {
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to create user');
+
+      notify(`User "${userData.name}" created successfully`, 'success');
+      return data;
+    } catch (error) {
+      notify(error.message, 'error');
       throw error;
     }
-
-    const newProfile = {
-      id: data.user.id,
-      name: userData.name,
-      role: userData.role || 'Staff',
-      department: userData.department || 'General',
-      type: 'Staff',
-      status: 'Active',
-      email: userData.email,
-      phone: userData.phone,
-      joined: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      app_role: 'teacher',
-    };
-
-    const { error: profileError } = await supabase.from('profiles').insert([newProfile]);
-    if (profileError) console.error('Error creating profile:', profileError.message);
-
-    const { error: roleError } = await supabase.from('user_roles').insert([{
-      user_id: data.user.id,
-      role: 'teacher',
-    }]);
-    if (roleError) console.error('Error creating role:', roleError.message);
-
-    setStaff(prev => [...prev, newProfile]);
-    setUser(newProfile);
-    setAppRole('teacher');
   };
 
   const logout = async () => {
@@ -437,6 +431,33 @@ export const GlobalStateProvider = ({ children }) => {
       }]);
       if (error) throw error;
       notify(`Role updated to ${newRole}`);
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  };
+
+  /**
+   * Admin-only: Toggle a user's is_active status.
+   */
+  const toggleUserActive = async (targetUserId, isActive) => {
+    try {
+      const { error } = await supabase.from('profiles')
+        .update({ is_active: isActive })
+        .eq('id', targetUserId);
+      if (error) throw error;
+
+      // Log to audit_logs
+      await supabase.from('audit_logs').insert([{
+        action: isActive ? 'user_activated' : 'user_deactivated',
+        performed_by: user?.id,
+        target_user_id: targetUserId,
+        details: { is_active: isActive },
+      }]);
+
+      setStaff(prev => prev.map(s =>
+        s.id === targetUserId ? { ...s, is_active: isActive } : s
+      ));
+      notify(isActive ? 'User activated' : 'User deactivated');
     } catch (error) {
       notify(error.message, 'error');
     }
@@ -786,7 +807,7 @@ export const GlobalStateProvider = ({ children }) => {
     darkMode,
     setDarkMode,
     login,
-    signup,
+    adminCreateUser,
     logout,
     deleteAccount,
     findAvailableGaps,
@@ -808,6 +829,7 @@ export const GlobalStateProvider = ({ children }) => {
     assignParentToStudent,
     assignTeacherToProgram,
     updateUserRole,
+    toggleUserActive,
     createNotification,
     toast,
     notify,
