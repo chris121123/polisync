@@ -9,7 +9,13 @@ export const ProtectedRoute = ({ children }) => {
 
 export const AdminRoute = ({ children }) => {
   const { user } = useGlobalState();
-  if (!user || user.app_role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (!user || (user.app_role !== 'admin' && user.app_role !== 'superadmin')) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
+export const SuperAdminRoute = ({ children }) => {
+  const { user } = useGlobalState();
+  if (!user || user.app_role !== 'superadmin') return <Navigate to="/dashboard" replace />;
   return children;
 };
 

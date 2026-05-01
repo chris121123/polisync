@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import AISearch from './AISearch';
+import GlobalSearch from './GlobalSearch';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { useGlobalState } from '../context/GlobalStateContext';
 
@@ -43,6 +43,7 @@ const Layout = () => {
 
   const getNavStyle = (link, isActive) => {
     if (!isActive) return 'text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100';
+    if (link.isSuperAdmin) return 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-2 border-violet-100 dark:border-violet-900/50 font-bold';
     if (link.isAdmin) return 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-2 border-amber-100 dark:border-amber-900/50 font-bold';
     if (link.isParent) return 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 border-2 border-pink-100 dark:border-pink-900/50 font-bold';
     if (link.isTeacher) return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-2 border-indigo-100 dark:border-indigo-900/50 font-bold';
@@ -50,13 +51,21 @@ const Layout = () => {
     return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm';
   };
 
+  const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
+
   const navLinks = [
-    { to: '/dashboard', icon: appRole === 'admin' ? ShieldAlert : LayoutDashboard, label: appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard', isAdmin: appRole === 'admin' },
-    ...(appRole === 'admin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
+    { 
+      to: '/dashboard', 
+      icon: isAdminLevel ? ShieldAlert : LayoutDashboard, 
+      label: appRole === 'superadmin' ? 'Super Admin Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'), 
+      isAdmin: appRole === 'admin',
+      isSuperAdmin: appRole === 'superadmin'
+    },
+    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes' }] : []),
-    ...(appRole === 'admin' ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule' }] : []),
-    ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory' }] : []),
-    ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
+    ...(isAdminLevel ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule' }] : []),
+    ...(isAdminLevel ? [{ to: '/directory', icon: Users, label: 'Directory' }] : []),
+    ...(isAdminLevel ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings' },
   ];
 
@@ -92,7 +101,7 @@ const Layout = () => {
             className="flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 px-4 py-2 rounded-xl transition-all w-full max-w-sm border border-slate-200 dark:border-slate-700"
           >
             <Search size={16} />
-            <span className="text-sm font-medium truncate">Ask AI to find a schedule, student...</span>
+            <span className="text-sm font-medium truncate">Search schedules, students...</span>
             <div className="ml-auto hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-sm">
               <Command size={10} />K
             </div>
@@ -220,8 +229,8 @@ const Layout = () => {
           </React.Suspense>
         </main>
       </div>
-      {/* Global AI Search Modal */}
-      <AISearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {/* Global Search Modal */}
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       
       {/* Forced Password Change Modal */}
       <ForceChangePasswordModal />

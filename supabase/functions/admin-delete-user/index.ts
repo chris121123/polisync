@@ -51,8 +51,8 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .single()
 
-    if (roleError || roleData?.role !== 'admin') {
-      throw new Error('Only admins can delete users')
+    if (roleError || (roleData?.role !== 'admin' && roleData?.role !== 'superadmin')) {
+      throw new Error('Only admins or superadmins can delete users')
     }
 
     // Get the target user ID from request body
@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Delete user error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 // Return 200 so the client can parse the JSON error

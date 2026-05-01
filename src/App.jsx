@@ -13,7 +13,7 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SessionNotes from './pages/therapist/SessionNotes';
-import { ProtectedRoute, AdminRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
+import { ProtectedRoute, AdminRoute, SuperAdminRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
@@ -48,7 +48,7 @@ function App() {
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+          <Route path="admin/users" element={<SuperAdminRoute><UserManagement /></SuperAdminRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<ScheduleCalendar />} />
           <Route path="directory" element={<Directory />} />

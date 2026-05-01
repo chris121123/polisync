@@ -174,7 +174,7 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
     .map(a => a.staff_id);
 
   const therapistsAndTeachers = staff.filter(s => 
-    s.role && !['Admin'].includes(s.role)
+    s.role && !['Admin', 'Administrator', 'Super Administrator'].includes(s.role)
   );
 
   const handleToggle = async (staffId) => {

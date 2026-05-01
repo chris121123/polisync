@@ -23,7 +23,7 @@ const corsHeaders = {
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type AppRole = 'admin' | 'parent' | 'teacher' | 'therapist'
+type AppRole = 'admin' | 'parent' | 'teacher' | 'therapist' | 'superadmin'
 
 interface CreateUserRequest {
   email: string
@@ -62,7 +62,7 @@ async function verifyAdmin(
     .eq('user_id', user.id)
     .single()
 
-  if (roleError || roleData?.role !== 'admin') {
+  if (roleError || (roleData?.role !== 'admin' && roleData?.role !== 'superadmin')) {
     return { isAdmin: false, userId: user.id, error: 'Insufficient permissions: admin role required' }
   }
 
@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const validRoles: AppRole[] = ['admin', 'parent', 'teacher', 'therapist']
+    const validRoles: AppRole[] = ['admin', 'parent', 'teacher', 'therapist', 'superadmin']
     if (!validRoles.includes(role)) {
       return new Response(
         JSON.stringify({ success: false, error: `Invalid role. Must be one of: ${validRoles.join(', ')}` }),
@@ -148,6 +148,7 @@ Deno.serve(async (req: Request) => {
 
     // Map app role to display role text
     const roleDisplayMap: Record<AppRole, string> = {
+      superadmin: 'Super Administrator',
       admin: 'Administrator',
       teacher: 'Teacher',
       therapist: 'Therapist',

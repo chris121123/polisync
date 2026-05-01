@@ -37,3 +37,32 @@ body {
   background-color: #020617;
   color: #f1f5f9;
 }
+
+/* ── Global Interactive Micro-Animations ── */
+/* Ensures all clickable elements across the system feel alive and responsive */
+button, 
+a, 
+[role="button"],
+select {
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+button:active:not(:disabled), 
+a:active, 
+[role="button"]:active {
+  transform: scale(0.96);
+}
+
+/* Gentle brightness adjustment for hover */
+button:hover:not(:disabled), 
+a:hover, 
+[role="button"]:hover {
+  filter: brightness(0.95);
+}
+
+.dark button:hover:not(:disabled), 
+.dark a:hover, 
+.dark [role="button"]:hover {
+  filter: brightness(1.15);
+}

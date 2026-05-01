@@ -190,6 +190,7 @@ const UserManagement = () => {
     : staff.filter(s => s.app_role === filterRole);
 
   const roleColors = {
+    superadmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
     admin: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     therapist: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
     parent: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
@@ -432,7 +433,7 @@ const UserManagement = () => {
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Change User Role</h3>
               
               {/* Security Warning */}
-              {user && user.id === showRoleModal && selectedRole !== 'admin' ? (
+              {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
                 <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl flex gap-3 items-start animate-pulse">
                   <ShieldAlert size={20} className="text-rose-600 shrink-0" />
                   <div className="flex-1">
@@ -452,7 +453,7 @@ const UserManagement = () => {
               )}
 
               <div className="space-y-2 mb-4">
-                {['admin', 'teacher', 'therapist', 'parent'].map(role => (
+                {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
                   <button
                     key={role}
                     onClick={() => setSelectedRole(role)}
@@ -462,9 +463,10 @@ const UserManagement = () => {
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
                     }`}
                   >
-                    <span className="capitalize">{role}</span>
+                    <span className="capitalize">{role === 'superadmin' ? 'Super Admin' : role}</span>
                     <p className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {role === 'admin' ? 'Full system access' :
+                      {role === 'superadmin' ? 'Full system access + user management + database control' :
+                       role === 'admin' ? 'Schedule, directory, and room management' :
                        role === 'teacher' ? 'Manage classes and attendance' :
                        role === 'therapist' ? 'Session notes and progress' :
                        'View child schedule'}
@@ -548,7 +550,7 @@ const UserManagement = () => {
                         if (errors.name) setErrors(p => ({ ...p, name: '' }));
                       }}
                       onBlur={() => validateField('name')}
-                      placeholder="Jane Doe"
+                      placeholder="FirstName LastName"
                       className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
                         errors.name
                           ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
@@ -573,7 +575,7 @@ const UserManagement = () => {
                         if (errors.email) setErrors(p => ({ ...p, email: '' }));
                       }}
                       onBlur={() => validateField('email')}
-                      placeholder="jane@polisync.com"
+                      placeholder="email@polisync.com"
                       className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
                         errors.email
                           ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
@@ -634,6 +636,7 @@ const UserManagement = () => {
                         <option value="therapist">Therapist</option>
                         <option value="parent">Parent</option>
                         <option value="admin">Admin</option>
+                        <option value="superadmin">Super Admin</option>
                       </select>
                     </div>
                   </div>

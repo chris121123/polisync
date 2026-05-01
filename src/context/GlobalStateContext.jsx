@@ -16,7 +16,7 @@ export const useGlobalState = () => {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const GlobalStateProvider = ({ children }) => {
-  // --- MOCK DATA INITIALIZATION ---
+  // --- STATE INITIALIZATION ---
   const [staff, setStaff] = useState([]);
   const [students, setStudents] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -380,7 +380,8 @@ export const GlobalStateProvider = ({ children }) => {
     notify('Password changed successfully!', 'success');
   };
 
-  const isAdmin = () => appRole === 'admin';
+  const isSuperAdmin = () => appRole === 'superadmin';
+  const isAdmin = () => appRole === 'admin' || appRole === 'superadmin';
   const isParent = () => appRole === 'parent';
   const isTeacher = () => appRole === 'teacher';
   const isTherapist = () => appRole === 'therapist';
@@ -485,6 +486,7 @@ export const GlobalStateProvider = ({ children }) => {
 
       // Map app role to display role (Job Title)
       const roleDisplayMap = {
+        superadmin: 'Super Administrator',
         admin: 'Administrator',
         teacher: 'Teacher',
         therapist: 'Therapist',
@@ -969,6 +971,7 @@ export const GlobalStateProvider = ({ children }) => {
     notifications,
     changePassword,
     isAdmin,
+    isSuperAdmin,
     isParent,
     isTeacher,
     isTherapist,

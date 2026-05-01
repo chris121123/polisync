@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
 
-const AISearch = ({ isOpen, onClose }) => {
+const GlobalSearch = ({ isOpen, onClose }) => {
   const { staff, students, sessions, rooms } = useGlobalState();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -49,12 +49,12 @@ const AISearch = ({ isOpen, onClose }) => {
     queueMicrotask(() => setIsSearching(true));
     const timeout = setTimeout(() => {
       const lowerQuery = query.toLowerCase();
-      let mockResults = [];
+      let searchResults = [];
 
       // Search Staff
       staff.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery))
         .slice(0, 5)
-        .forEach(s => mockResults.push({
+        .forEach(s => searchResults.push({
           id: `staff-${s.id}`,
           title: s.name,
           sub: `${s.role} · ${s.department}`,
@@ -65,7 +65,7 @@ const AISearch = ({ isOpen, onClose }) => {
       // Search Students
       students.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery) || (s.diagnosis && s.diagnosis.toLowerCase().includes(lowerQuery)))
         .slice(0, 5)
-        .forEach(s => mockResults.push({
+        .forEach(s => searchResults.push({
           id: `student-${s.id}`,
           title: s.name,
           sub: `${s.role} · ${s.department}${s.diagnosis ? ` · ${s.diagnosis}` : ''}`,
@@ -76,7 +76,7 @@ const AISearch = ({ isOpen, onClose }) => {
       // Search Sessions
       sessions.filter(s => s.title.toLowerCase().includes(lowerQuery))
         .slice(0, 3)
-        .forEach(s => mockResults.push({
+        .forEach(s => searchResults.push({
           id: `session-${s.id}`,
           title: s.title,
           sub: `${s.room} · ${s.startHour}:00–${s.startHour + s.span}:00 · ${s.type}`,
@@ -87,7 +87,7 @@ const AISearch = ({ isOpen, onClose }) => {
       // Search Rooms
       rooms.filter(r => r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery))
         .slice(0, 4)
-        .forEach(r => mockResults.push({
+        .forEach(r => searchResults.push({
           id: `room-${r.id}`,
           title: r.name,
           sub: `${r.type} · ${roomOccupancy(r.name)}`,
@@ -97,7 +97,7 @@ const AISearch = ({ isOpen, onClose }) => {
 
       // Settings Search
       if ("settings".includes(lowerQuery) || "preferences".includes(lowerQuery)) {
-        mockResults.push({
+        searchResults.push({
           id: 'nav-settings',
           title: 'System Settings',
           sub: 'Manage preferences, center details, and appearance',
@@ -107,7 +107,7 @@ const AISearch = ({ isOpen, onClose }) => {
       }
 
       if ("dark mode".includes(lowerQuery) || "theme".includes(lowerQuery) || "appearance".includes(lowerQuery)) {
-        mockResults.push({
+        searchResults.push({
           id: 'nav-appearance',
           title: 'Appearance Settings',
           sub: 'Toggle dark mode and change theme colors',
@@ -117,10 +117,10 @@ const AISearch = ({ isOpen, onClose }) => {
       }
 
       // Natural language queries
-      if (mockResults.length === 0) {
+      if (searchResults.length === 0) {
         // Try common natural language patterns
         if (lowerQuery.includes('conflict') || lowerQuery.includes('overlap')) {
-          mockResults.push({
+          searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule Conflicts',
             sub: 'Open the scheduling calendar to see detected conflicts',
@@ -128,7 +128,7 @@ const AISearch = ({ isOpen, onClose }) => {
             action: () => navigate('/schedule'),
           });
         } else if (lowerQuery.includes('room') || lowerQuery.includes('available') || lowerQuery.includes('venue')) {
-          mockResults.push({
+          searchResults.push({
             id: 'nav-rooms',
             title: 'Room Availability',
             sub: 'Check room status and occupancy',
@@ -136,7 +136,7 @@ const AISearch = ({ isOpen, onClose }) => {
             action: () => navigate('/rooms'),
           });
         } else if (lowerQuery.includes('schedule') || lowerQuery.includes('session') || lowerQuery.includes('calendar')) {
-          mockResults.push({
+          searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule',
             sub: 'Open the daily/weekly scheduling calendar',
@@ -145,8 +145,8 @@ const AISearch = ({ isOpen, onClose }) => {
           });
         }
 
-        if (mockResults.length === 0) {
-          mockResults = [{
+        if (searchResults.length === 0) {
+          searchResults = [{
             id: 'none',
             title: `No results for "${query}"`,
             sub: 'Try searching by name, room, diagnosis, or role.',
@@ -156,7 +156,7 @@ const AISearch = ({ isOpen, onClose }) => {
         }
       }
 
-      setResults(mockResults.slice(0, 8));
+      setResults(searchResults.slice(0, 8));
       setIsSearching(false);
     }, 400);
 
@@ -236,4 +236,4 @@ const AISearch = ({ isOpen, onClose }) => {
   );
 };
 
-export default AISearch;
+export default GlobalSearch;

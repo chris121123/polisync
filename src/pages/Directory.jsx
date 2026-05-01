@@ -39,7 +39,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Full Name</label>
             <input 
               className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-medium"
-              placeholder="e.g., John Doe"
+              placeholder="FirstName LastName"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
             />
@@ -78,7 +78,9 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
               </select>
           </div>
           <div>
-             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Contact Email *</label>
+             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">
+               Contact Email <span className="normal-case lowercase font-medium text-slate-400 ml-1">(optional)</span>
+             </label>
              <input 
                 type="email"
                 className={clsx(
@@ -98,7 +100,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
           <button onClick={onClose} className="flex-1 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-xl transition-colors">Cancel</button>
           <button 
             onClick={() => { onAdd(formData); onClose(); }}
-            disabled={!formData.name || !formData.role || !formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)}
+            disabled={!formData.name || !formData.role || (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))}
             className="flex-1 py-3 text-sm font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-default transition-colors"
           >
             Save Record
@@ -115,7 +117,7 @@ const Directory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const combinedData = [...staff, ...students];
+  const combinedData = [...staff.filter(s => s.app_role !== 'superadmin'), ...students];
 
   const filteredData = combinedData.filter(item => {
     const matchesFilter = filterType === 'All' ? true : item.type === filterType || item.department === filterType;

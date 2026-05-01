@@ -8,7 +8,7 @@ import ParentDashboard from './parent/ParentDashboard';
 const Dashboard = () => {
   const { appRole } = useGlobalState();
 
-  if (appRole === 'admin') {
+  if (appRole === 'admin' || appRole === 'superadmin') {
     return <AdminDashboard />;
   }
   if (appRole === 'teacher') {
