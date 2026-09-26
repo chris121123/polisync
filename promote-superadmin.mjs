@@ -1,9 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-const supabase = createClient(
-  'https://jrxydghwkyjnflbqiffs.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyeHlkZ2h3a3lqbmZsYnFpZmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NjM4MjcsImV4cCI6MjA5MjMzOTgyN30.Ky7jSSiyhe_ZA37gpS5GEcsq9cbUKVDcPJDYTDwdCGQ'
-);
+// Load .env variables dynamically
+let supabaseUrl = process.env.VITE_SUPABASE_URL;
+let supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      envContent.split('\n').forEach(line => {
+        const [key, ...vals] = line.trim().split('=');
+        if (key === 'VITE_SUPABASE_URL') supabaseUrl = vals.join('=');
+        if (key === 'VITE_SUPABASE_ANON_KEY') supabaseAnonKey = vals.join('=');
+      });
+    }
+  } catch (_e) {
+    // fallback
+  }
+}
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Could not find VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function promote() {
   // Find all current admins

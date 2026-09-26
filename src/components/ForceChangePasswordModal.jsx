@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, ShieldAlert, AlertCircle } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
-import clsx from 'clsx';
 
 const ForceChangePasswordModal = () => {
   const { user, changePassword, logout } = useGlobalState();
@@ -45,11 +44,11 @@ const ForceChangePasswordModal = () => {
           });
           navigator.credentials.store(cred).catch(() => {});
         }
-      } catch (err) {}
+      } catch (_err) { /* silently ignore credential save errors */ }
 
       sessionStorage.removeItem('temp_pass');
-    } catch (err) {
-      setError(err.message || 'Failed to update password. Please try again.');
+    } catch (_err) {
+      setError(_err.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);
     }

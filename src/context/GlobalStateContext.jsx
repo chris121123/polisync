@@ -210,6 +210,10 @@ export const GlobalStateProvider = ({ children }) => {
         else if (payload.eventType === 'UPDATE') setStaffAvailabilityState(prev => prev.map(a => a.id === payload.new.id ? payload.new : a));
         else if (payload.eventType === 'DELETE') setStaffAvailabilityState(prev => prev.filter(a => a.id !== payload.old.id));
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_documents' }, (payload) => {
+        // Notify staff that a parent has submitted a new document
+        notify(`New document uploaded: "${payload.new.file_name}"`, 'info');
+      })
       .subscribe();
 
     return () => {
@@ -644,6 +648,25 @@ export const GlobalStateProvider = ({ children }) => {
     }
   };
 
+  const dispatchNotification = async (recipientId, message) => {
+    try {
+      // Find user in profiles (stored in staff array currently)
+      const user = staff.find(s => String(s.id) === String(recipientId));
+      if (!user) return;
+      
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'both',
+          recipient: { phone: user.phone || '', email: user.email || '' },
+          message: message,
+          subject: 'Polisync Schedule Update'
+        }
+      });
+    } catch (err) {
+      console.error('Notification dispatch failed', err);
+    }
+  };
+
   const addSession = async (session) => {
     try {
       const insertPayload = {
@@ -675,6 +698,11 @@ export const GlobalStateProvider = ({ children }) => {
           dayOfWeek: data[0].day_of_week,
         }]);
         notify('Session scheduled successfully');
+        
+        // Notify Therapist
+        if (data[0].therapist_id) {
+          dispatchNotification(data[0].therapist_id, `New session "${data[0].title}" has been scheduled for you at ${data[0].start_hour}:00.`);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -740,6 +768,12 @@ export const GlobalStateProvider = ({ children }) => {
       if (error) throw error;
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, startHour: newStartHour, room: newRoom || s.room } : s));
       notify('Session moved');
+      
+      // Notify Therapist
+      const session = sessions.find(s => s.id === sessionId);
+      if (session && session.therapistId) {
+        dispatchNotification(session.therapistId, `Your session "${session.title}" has been moved to ${newStartHour}:00 in room ${newRoom || session.room}.`);
+      }
     } catch (error) {
       console.error(error);
       notify(error.message, 'error');
@@ -750,8 +784,14 @@ export const GlobalStateProvider = ({ children }) => {
     try {
       const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
       if (error) throw error;
+      const session = sessions.find(s => s.id === sessionId);
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       notify('Session cancelled');
+      
+      // Notify Therapist
+      if (session && session.therapistId) {
+        dispatchNotification(session.therapistId, `Your session "${session.title}" has been cancelled.`);
+      }
     } catch (error) {
       console.error(error);
       notify(error.message, 'error');

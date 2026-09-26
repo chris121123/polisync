@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, BookOpen, Bell, ChevronRight, User } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
+import RequirementsUpload from './RequirementsUpload';
 
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -28,7 +29,7 @@ const ParentDashboard = () => {
     return grouped;
   }, [activeChild, sessions]);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const _unreadCount = notifications.filter(n => !n.is_read).length;
 
   const formatTime = (hour) => {
     const h = hour > 12 ? hour - 12 : hour;
@@ -158,6 +159,12 @@ const ParentDashboard = () => {
             </div>
           </div>
         </>
+      )}
+
+      {activeChild && (
+        <div className="mt-6">
+          <RequirementsUpload studentId={activeChild.id} />
+        </div>
       )}
 
       {!activeChild && (

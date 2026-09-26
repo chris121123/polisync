@@ -1,16 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, User, Users, Mail, Phone, Calendar, FileText, CheckCircle2, Clock, Stethoscope, BookOpen, Activity } from 'lucide-react';
+import { ArrowLeft, User, Users, Mail, Phone, Calendar, FileText, CheckCircle2, Clock, Stethoscope, BookOpen, Activity, Download, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { supabase } from '../lib/supabase';
 
 const ProfilePage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { staff, students, sessions } = useGlobalState();
+  const { staff, students, sessions, appRole } = useGlobalState();
+  const [studentDocs, setStudentDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
   
   const type = searchParams.get('type') || 'student';
+
+  useEffect(() => {
+    if (type === 'student' && id && ['admin', 'superadmin', 'teacher', 'therapist'].includes(appRole)) {
+      (async () => {
+        setDocsLoading(true);
+        const { data } = await supabase
+          .from('student_documents')
+          .select('*')
+          .eq('student_id', id)
+          .order('created_at', { ascending: false });
+        if (data) setStudentDocs(data);
+        setDocsLoading(false);
+      })();
+    }
+  }, [id, type, appRole]);
   
   const profile = type === 'staff' 
     ? staff.find(s => String(s.id) === String(id)) 
@@ -228,6 +246,50 @@ const ProfilePage = () => {
                <button className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors">Save Note</button>
              </div>
           </motion.div>
+
+          {/* ── Student Documents (visible to Admin/Teachers) ─── */}
+          {type === 'student' && ['admin', 'superadmin', 'teacher', 'therapist'].includes(appRole) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
+            >
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <Download size={18} className="text-indigo-500" />
+                Submitted Requirements
+              </h2>
+              {docsLoading ? (
+                <div className="flex justify-center py-6"><Loader2 className="animate-spin text-indigo-500" /></div>
+              ) : studentDocs.length > 0 ? (
+                <div className="space-y-2">
+                  {studentDocs.map(doc => (
+                    <a
+                      key={doc.id}
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors group"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                        <FileText size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-indigo-600 transition-colors">{doc.file_name}</p>
+                        <p className="text-xs text-slate-500">{new Date(doc.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <Download size={15} className="text-slate-400 group-hover:text-indigo-500 transition-colors shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                  <FileText size={28} className="mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm font-medium text-slate-400">No documents submitted yet.</p>
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
 
       </div>

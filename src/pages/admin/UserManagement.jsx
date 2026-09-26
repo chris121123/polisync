@@ -155,7 +155,7 @@ const UserManagement = () => {
           });
           navigator.credentials.store(cred).catch(() => {});
         }
-      } catch (err) {
+      } catch (_err) {
         // Ignore credential api errors
       }
       
