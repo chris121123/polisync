@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
+import NotificationPanel from './NotificationPanel';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { useGlobalState } from '../context/GlobalStateContext';
 
 const Layout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { user, appRole, logout, notifications } = useGlobalState();
   const navigate = useNavigate();
+  const bellRef = useRef(null);
 
   // Auto-collapse sidebar on smaller screens
   useEffect(() => {
@@ -108,14 +111,25 @@ const Layout = () => {
           </button>
         </div>
 
-        <div className="hidden md:flex items-center gap-4">
-          <div className="relative">
-            <Bell size={20} className="text-slate-400 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="relative" ref={bellRef}>
+            <button
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              title="Notifications"
+            >
+              <Bell size={20} className="text-slate-400 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationPanel
+              isOpen={isNotifOpen}
+              onClose={() => setIsNotifOpen(false)}
+              anchorRef={bellRef}
+            />
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-200 font-bold uppercase tracking-wider">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}

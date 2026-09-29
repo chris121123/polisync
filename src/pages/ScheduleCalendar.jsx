@@ -313,13 +313,23 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
 // ─── Add Session Modal ────────────────────────────────────────────────────────
 const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability }) => {
   const [step, setStep] = useState(1);
+
+  // Helper: get today's date in local timezone as YYYY-MM-DD
+  const getLocalToday = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
   const [formData, setFormData] = useState({
     title: '', therapistId: '', room: rooms[0]?.name || '',
     startHour: 9, span: 1, type: 'sped', studentIds: [],
-    sessionDate: new Date().toISOString().split('T')[0]
+    sessionDate: getLocalToday()
   });
 
-  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: new Date().toISOString().split('T')[0] }); };
+  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: getLocalToday() }); };
 
   // Filter staff by availability on the selected date
   const availableStaff = useMemo(() => {

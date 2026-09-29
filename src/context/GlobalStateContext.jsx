@@ -136,14 +136,34 @@ export const GlobalStateProvider = ({ children }) => {
 
     if (!supabase) return;
 
-    // Listen for ongoing auth changes (like login/logout from other tabs)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Listen for ongoing auth changes (login/logout from other tabs or account switch)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session?.user) {
+        // Logout: clear all user-specific state
         setUser(null);
         setAppRole(null);
         setParentChildren([]);
         setMyAssignments([]);
         setNotifications([]);
+      } else if (event === 'SIGNED_IN') {
+        // Only re-fetch notifications for the newly signed-in user.
+        // Do NOT touch loading or profile here — initializeSession handles the initial
+        // load, and for account switches the login page handles navigation.
+        // We use a short delay so initializeSession (which runs concurrently on
+        // initial page load) can finish first.
+        setTimeout(async () => {
+          if (!mounted) return;
+          try {
+            const { data: notifData } = await supabase
+              .from('notifications')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .order('created_at', { ascending: false });
+            if (mounted) setNotifications(notifData || []);
+          } catch (err) {
+            console.error('onAuthStateChange notifications fetch error:', err);
+          }
+        }, 1500); // wait for initializeSession to settle
       }
     });
 
@@ -213,6 +233,28 @@ export const GlobalStateProvider = ({ children }) => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_documents' }, (payload) => {
         // Notify staff that a parent has submitted a new document
         notify(`New document uploaded: "${payload.new.file_name}"`, 'info');
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted && payload.new && session?.user?.id === payload.new.user_id) {
+          setNotifications(prev => {
+            if (prev.some(n => n.id === payload.new.id)) return prev;
+            return [payload.new, ...prev];
+          });
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, async (payload) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted && payload.new && session?.user?.id === payload.new.user_id) {
+          setNotifications(prev => prev.map(n => n.id === payload.new.id ? payload.new : n));
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications' }, async (payload) => {
+        // For delete, we might only get the old id (if REPLICA IDENTITY is default).
+        // But if it's in our state, we can just try to remove it.
+        if (mounted && payload.old) {
+          setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
+        }
       })
       .subscribe();
 
@@ -352,6 +394,23 @@ export const GlobalStateProvider = ({ children }) => {
       setStaff(prev => [...prev, newStaffEntry]);
 
       notify(`User "${userData.name}" created successfully`, 'success');
+
+      // Send in-app notification to the new user about their account
+      if (data.user?.id) {
+        createNotification({
+          userId: data.user.id,
+          title: 'Welcome to PoliSync!',
+          message: `Your account has been created as a ${roleDisplayMap[userData.role] || 'Staff'} member. Please change your password on first login.`,
+          type: 'success',
+        });
+      }
+
+      // Notify other admins about the new user
+      notifyRoleUsers(['admin', 'superadmin'], {
+        title: 'New User Created',
+        message: `"${userData.name}" (${roleDisplayMap[userData.role] || 'Staff'}) has been added to the system.`,
+        type: 'info',
+      });
 
       // Background: set must_change_password flag (non-blocking)
       supabase.from('profiles').update({ must_change_password: true }).eq('email', userData.email).then(() => {});
@@ -515,6 +574,24 @@ export const GlobalStateProvider = ({ children }) => {
       }
 
       notify(`Role updated to ${newRole}`);
+
+      // Notify the target user about their role change
+      if (user?.id !== targetUserId) {
+        createNotification({
+          userId: targetUserId,
+          title: 'Your Role Has Changed',
+          message: `Your role has been updated to ${displayRole}. Your permissions have been adjusted accordingly.`,
+          type: 'info',
+        });
+      }
+
+      // Notify admins about the role change
+      const targetUser = staff.find(s => s.id === targetUserId);
+      notifyRoleUsers(['admin', 'superadmin'], {
+        title: 'User Role Updated',
+        message: `${targetUser?.name || 'A user'}'s role was changed to ${displayRole}.`,
+        type: 'info',
+      });
     } catch (error) {
       notify(error.message, 'error');
     }
@@ -576,6 +653,16 @@ export const GlobalStateProvider = ({ children }) => {
         s.id === targetUserId ? { ...s, is_active: isActive } : s
       ));
       notify(isActive ? 'User activated' : 'User deactivated');
+
+      // Notify the target user about their status change
+      createNotification({
+        userId: targetUserId,
+        title: isActive ? 'Account Activated' : 'Account Deactivated',
+        message: isActive
+          ? 'Your account has been reactivated. You can now access all features.'
+          : 'Your account has been deactivated. Please contact an administrator.',
+        type: isActive ? 'success' : 'warning',
+      });
     } catch (error) {
       notify(error.message, 'error');
     }
@@ -583,16 +670,90 @@ export const GlobalStateProvider = ({ children }) => {
 
   const createNotification = async (notifData) => {
     try {
-      const { error } = await supabase.from('notifications').insert([{
+      const validTypes = ['info', 'success', 'warning', 'error', 'schedule'];
+      const safeType = validTypes.includes(notifData.type) ? notifData.type : 'info';
+      console.log('[Notification] Inserting:', { ...notifData, type: safeType });
+      const { data, error } = await supabase.from('notifications').insert([{
         user_id: notifData.userId,
         title: notifData.title,
         message: notifData.message,
-        type: notifData.type || 'info',
+        type: safeType,
         related_id: notifData.relatedId,
-      }]);
-      if (error) throw error;
+      }]).select();
+      if (error) {
+        console.error('[Notification] Insert failed:', error.message, error.details, error.hint);
+        throw error;
+      }
+      console.log('[Notification] Inserted successfully:', data);
     } catch (error) {
-      console.error('Notification error:', error);
+      console.error('[Notification] createNotification error:', error);
+    }
+  };
+
+  /**
+   * Send an in-app notification to all users matching a given role.
+   * @param {string|string[]} roles - 'admin', 'therapist', etc. or array of roles
+   * @param {{ title: string, message: string, type?: string, relatedId?: string }} notifData
+   */
+  const notifyRoleUsers = async (roles, notifData) => {
+    try {
+      const roleList = Array.isArray(roles) ? roles : [roles];
+      // Get user IDs for the target roles
+      const { data: roleRows } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', roleList);
+      if (!roleRows?.length) return;
+
+      // Don't notify the current user (they already see the toast)
+      const targetIds = roleRows
+        .map(r => r.user_id)
+        .filter(id => id !== user?.id);
+      if (!targetIds.length) return;
+
+      const rows = targetIds.map(uid => ({
+        user_id: uid,
+        title: notifData.title,
+        message: notifData.message,
+        type: notifData.type || 'info',
+        related_id: notifData.relatedId || null,
+      }));
+      await supabase.from('notifications').insert(rows);
+    } catch (error) {
+      console.error('notifyRoleUsers error:', error);
+    }
+  };
+
+  /** Mark a single notification as read */
+  const markNotificationRead = async (notifId) => {
+    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+    try {
+      await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
+    } catch (error) {
+      console.error('markNotificationRead error:', error);
+    }
+  };
+
+  /** Mark all notifications as read for the current user */
+  const markAllNotificationsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    try {
+      await supabase.from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user?.id)
+        .eq('is_read', false);
+    } catch (error) {
+      console.error('markAllNotificationsRead error:', error);
+    }
+  };
+
+  /** Delete a single notification */
+  const deleteNotification = async (notifId) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    try {
+      await supabase.from('notifications').delete().eq('id', notifId);
+    } catch (error) {
+      console.error('deleteNotification error:', error);
     }
   };
 
@@ -699,10 +860,23 @@ export const GlobalStateProvider = ({ children }) => {
         }]);
         notify('Session scheduled successfully');
         
-        // Notify Therapist
+        // Notify Therapist via external dispatch + in-app notification
         if (data[0].therapist_id) {
           dispatchNotification(data[0].therapist_id, `New session "${data[0].title}" has been scheduled for you at ${data[0].start_hour}:00.`);
+          createNotification({
+            userId: data[0].therapist_id,
+            title: 'New Session Assigned',
+            message: `"${data[0].title}" scheduled at ${data[0].start_hour}:00 in ${data[0].room}.`,
+            type: 'schedule',
+          });
         }
+
+        // Notify admins about the new session
+        notifyRoleUsers(['admin', 'superadmin'], {
+          title: 'New Session Created',
+          message: `"${data[0].title}" was scheduled at ${data[0].start_hour}:00 in ${data[0].room}.`,
+          type: 'info',
+        });
       }
     } catch (error) {
       console.error(error);
@@ -769,11 +943,24 @@ export const GlobalStateProvider = ({ children }) => {
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, startHour: newStartHour, room: newRoom || s.room } : s));
       notify('Session moved');
       
-      // Notify Therapist
+      // Notify Therapist via external dispatch + in-app notification
       const session = sessions.find(s => s.id === sessionId);
       if (session && session.therapistId) {
         dispatchNotification(session.therapistId, `Your session "${session.title}" has been moved to ${newStartHour}:00 in room ${newRoom || session.room}.`);
+        createNotification({
+          userId: session.therapistId,
+          title: 'Session Rescheduled',
+          message: `"${session.title}" moved to ${newStartHour}:00 in ${newRoom || session.room}.`,
+          type: 'schedule',
+        });
       }
+
+      // Notify admins
+      notifyRoleUsers(['admin', 'superadmin'], {
+        title: 'Session Rescheduled',
+        message: `"${session?.title || 'A session'}" was moved to ${newStartHour}:00.`,
+        type: 'info',
+      });
     } catch (error) {
       console.error(error);
       notify(error.message, 'error');
@@ -788,10 +975,23 @@ export const GlobalStateProvider = ({ children }) => {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       notify('Session cancelled');
       
-      // Notify Therapist
+      // Notify Therapist via external dispatch + in-app notification
       if (session && session.therapistId) {
         dispatchNotification(session.therapistId, `Your session "${session.title}" has been cancelled.`);
+        createNotification({
+          userId: session.therapistId,
+          title: 'Session Cancelled',
+          message: `"${session.title}" has been cancelled.`,
+          type: 'warning',
+        });
       }
+
+      // Notify admins
+      notifyRoleUsers(['admin', 'superadmin'], {
+        title: 'Session Cancelled',
+        message: `"${session?.title || 'A session'}" has been cancelled.`,
+        type: 'warning',
+      });
     } catch (error) {
       console.error(error);
       notify(error.message, 'error');
@@ -1044,6 +1244,10 @@ export const GlobalStateProvider = ({ children }) => {
     updateUserRole,
     toggleUserActive,
     createNotification,
+    notifyRoleUsers,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification,
     addStaffAvailability,
     removeStaffAvailability,
     getAvailableStaffForDate,

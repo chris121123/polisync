@@ -270,11 +270,24 @@ CREATE POLICY "attendance_all" ON attendance
     )
   );
 
--- notifications: User reads own only
+-- notifications: Users read/update/delete their own, but anyone authenticated can insert
 DROP POLICY IF EXISTS "notifications_own" ON notifications;
+DROP POLICY IF EXISTS "notifications_select" ON notifications;
+DROP POLICY IF EXISTS "notifications_insert" ON notifications;
+DROP POLICY IF EXISTS "notifications_update" ON notifications;
+DROP POLICY IF EXISTS "notifications_delete" ON notifications;
 
-CREATE POLICY "notifications_own" ON notifications
-  FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "notifications_select" ON notifications
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "notifications_insert" ON notifications
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "notifications_update" ON notifications
+  FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "notifications_delete" ON notifications
+  FOR DELETE USING (user_id = auth.uid());
 
 -- rooms, programs, student_programs, student_availability,
 -- scheduling_settings, session_scheduling_log: Admin only for writes
