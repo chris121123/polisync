@@ -713,6 +713,8 @@ const ScheduleCalendar = () => {
     const result = await smartSchedule({ dayOfWeek });
     if (!result.success) {
       notify(result.error || 'Auto-scheduler failed to run', 'error');
+    } else if (!result.scheduled || result.scheduled.length === 0) {
+      notify('Auto-scheduler: No pending student programs found to schedule for this day.', 'info');
     }
     setIsAutoScheduling(false);
   };
