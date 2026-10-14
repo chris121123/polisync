@@ -122,7 +122,14 @@ export function localSmartSchedule({
   }));
 
   const roomList = (rooms || []).map(r => ({ id: r.id, name: r.name, max_capacity: r.maxCapacity || r.max_capacity || 5 }));
-  const teacherList = (staff || []).filter(s => s.role !== 'Admin' && s.status === 'Active');
+  const teacherList = (staff || []).filter(s => {
+    const appRole = (s.app_role || '').toLowerCase();
+    const role = (s.role || '').toLowerCase();
+    if (appRole === 'parent' || role === 'parent') return false;
+    if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
+    if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
+    return s.status === 'Active' || s.is_active !== false;
+  });
   const programList = (programs || []).map(p => ({ ...p, id: Number(p.id) }));
 
   // Run solver with MRV ordering

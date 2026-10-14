@@ -39,6 +39,26 @@ const formatHour = (h) => {
 // Assign sessions to weekdays deterministically based on session id
 const getSessionDay = (session) => session.id % 5;
 
+// Helper to filter eligible therapists and teachers (exclude parents, admins, superadmins)
+const isTherapistOrTeacher = (s) => {
+  if (!s) return false;
+  const appRole = (s.app_role || '').toLowerCase();
+  const role = (s.role || '').toLowerCase();
+
+  // Explicitly exclude parent and admin roles
+  if (appRole === 'parent' || role === 'parent') return false;
+  if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
+  if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
+
+  // If app_role is defined, must be therapist or teacher
+  if (appRole) {
+    return ['therapist', 'teacher'].includes(appRole);
+  }
+
+  // Fallback if app_role is not populated
+  return Boolean(s.role);
+};
+
 // ─── Current-time indicator ──────────────────────────────────────────────────
 const NowIndicator = () => {
   const [top, setTop] = useState(null);
@@ -169,13 +189,13 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
 
   if (!isOpen) return null;
 
+  const therapistsAndTeachers = staff.filter(isTherapistOrTeacher);
+
   const availableIdsForDate = staffAvailability
     .filter(a => a.available_date === selectedDate)
     .map(a => a.staff_id);
 
-  const therapistsAndTeachers = staff.filter(s => 
-    s.role && !['Admin', 'Administrator', 'Super Administrator'].includes(s.role)
-  );
+  const availableStaffForDate = therapistsAndTeachers.filter(s => availableIdsForDate.includes(s.id));
 
   const handleToggle = async (staffId) => {
     if (availableIdsForDate.includes(staffId)) {
@@ -186,7 +206,7 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
   };
 
   const handleSelectAll = async () => {
-    const allSelected = therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id));
+    const allSelected = therapistsAndTeachers.length > 0 && therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id));
     if (allSelected) {
       // Deselect all
       for (const s of therapistsAndTeachers) {
@@ -249,13 +269,13 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
           {/* Available Count */}
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{availableIdsForDate.length}</span> / {therapistsAndTeachers.length} available
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
             </p>
             <button
               onClick={handleSelectAll}
               className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
             >
-              {therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id)) ? 'Deselect All' : 'Select All'}
+              {therapistsAndTeachers.length > 0 && therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id)) ? 'Deselect All' : 'Select All'}
             </button>
           </div>
 
@@ -348,7 +368,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
       
     if (availableIds.length === 0) return [];
     
-    return staff.filter(s => s.role !== 'Admin' && availableIds.includes(s.id));
+    return staff.filter(s => isTherapistOrTeacher(s) && availableIds.includes(s.id));
   }, [staff, staffAvailability, formData.sessionDate]);
 
   const conflictMessage = useMemo(() => {
@@ -448,8 +468,8 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                 {formData.sessionDate && (
                   <p className="text-xs text-slate-400 font-medium mt-1">
                     {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                    {staffAvailability?.filter(a => a.available_date === formData.sessionDate).length > 0 && (
-                      <span className="text-emerald-500 ml-2">· {staffAvailability.filter(a => a.available_date === formData.sessionDate).length} staff available</span>
+                    {availableStaff.length > 0 && (
+                      <span className="text-emerald-500 ml-2">· {availableStaff.length} staff available</span>
                     )}
                   </p>
                 )}
@@ -470,7 +490,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   <option value="">{availableStaff.length === 0 ? 'No staff available for this date' : 'Select staff member…'}</option>
                   {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
                 </select>
-                {formData.sessionDate && staffAvailability?.filter(a => a.available_date === formData.sessionDate).length > 0 && availableStaff.length > 0 && (
+                {formData.sessionDate && availableStaff.length > 0 && (
                   <p className="text-[10px] text-emerald-500 font-medium mt-1 flex items-center gap-1">
                     <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
@@ -670,8 +690,11 @@ const ScheduleCalendar = () => {
     return d;
   });
 
-  // Count available staff for selected date
-  const availableStaffCount = staffAvailability?.filter(a => a.available_date === selectedDateISO).length || 0;
+  // Count available staff for selected date (excluding parents/admins)
+  const availableStaffCount = useMemo(() => {
+    const eligibleIds = new Set((staff || []).filter(isTherapistOrTeacher).map(s => s.id));
+    return staffAvailability?.filter(a => a.available_date === selectedDateISO && eligibleIds.has(a.staff_id)).length || 0;
+  }, [staff, staffAvailability, selectedDateISO]);
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {

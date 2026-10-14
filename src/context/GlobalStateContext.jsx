@@ -926,11 +926,20 @@ export const GlobalStateProvider = ({ children }) => {
   };
 
   const getAvailableStaffForDate = (date) => {
-    if (!date) return staff;
+    const isEligible = (s) => {
+      const appRole = (s.app_role || '').toLowerCase();
+      const role = (s.role || '').toLowerCase();
+      if (appRole === 'parent' || role === 'parent') return false;
+      if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
+      if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
+      return true;
+    };
+    const eligibleStaff = staff.filter(isEligible);
+    if (!date) return eligibleStaff;
     const availableIds = staffAvailability
       .filter(a => a.available_date === date)
       .map(a => a.staff_id);
-    return staff.filter(s => availableIds.includes(s.id));
+    return eligibleStaff.filter(s => availableIds.includes(s.id));
   };
   
   const moveSession = async (sessionId, newStartHour, newRoom) => {
