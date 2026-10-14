@@ -23,7 +23,7 @@ const ForceChangePasswordModal = () => {
       setError('Passwords do not match.');
       return;
     }
-    
+
     if (newPassword === sessionStorage.getItem('temp_pass')) {
       setError('New password must be different from the temporary password.');
       return;
@@ -33,7 +33,7 @@ const ForceChangePasswordModal = () => {
     setError('');
     try {
       await changePassword(newPassword);
-      
+
       // Explicitly ask Chrome to save the new password
       try {
         if (window.PasswordCredential && navigator.credentials && user?.email) {
@@ -41,8 +41,8 @@ const ForceChangePasswordModal = () => {
             id: user.email,
             password: newPassword,
             name: user.name || user.email,
-          });
-          navigator.credentials.store(cred).catch(() => {});
+          }); 
+          navigator.credentials.store(cred).catch(() => { });
         }
       } catch (_err) { /* silently ignore credential save errors */ }
 

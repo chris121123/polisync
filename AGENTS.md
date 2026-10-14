@@ -1,46 +1,34 @@
 # polisync Agent Guidelines
 
-## Development Commands
-- `npm run dev` - Start development server with HMR
-- `npm run build` - Production build
-- `npm run lint` - Run ESLint
-- `npm run preview` - Preview production build locally
+## Commands
+- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint
+- No test / typecheck scripts. Verify with `npm run lint` + `npm run build` + manual check in dev server
+- One-off: `node promote-superadmin.mjs` — promotes existing `admin` rows to `superadmin` (reads `.env`)
 
-## ESLint Configuration
-- Ignores `dist` directory
-- Uses `eslint-plugin-react-hooks` and `eslint-plugin-react-refresh`
-- `no-unused-vars` rule ignores variables matching `^[A-Z_]` pattern
+## Stack / Entrypoints
+- React 19 JS (not TS), Vite 8, React Router 7, Tailwind 4 via `@tailwindcss/vite`, Framer Motion, `lucide-react`, `date-fns`, `clsx` + `tailwind-merge`
+- `src/main.jsx` → `GlobalStateProvider` → `src/App.jsx` → `Layout` (protected `/` shell)
+- `/login` public; `/signup` redirects to `/login`. SPA deploy: `netlify.toml` redirects `/*` → `/index.html`, publish `dist/`
 
-## Build Tooling
-- Vite with `@tailwindcss/vite` and `@vitejs/plugin-react` plugins
-- Outputs to `/dist` (gitignored via `.gitignore`)
-- CSS processed via Tailwind CSS 4
+## State (do not bypass)
+- Single source of truth: `src/context/GlobalStateContext.jsx` via `useGlobalState()` hook
+- Call provider actions (`login`, `addSession`, `moveSession`, `addPerson`, `adminCreateUser`, `smartSchedule`, …) — never mutate state directly
+- DB is `snake_case`, UI is `camelCase` — map at boundary (`therapist_id→therapistId`, `start_hour→startHour`, `max_capacity→maxCapacity`, `student_ids→studentIds`, `day_of_week→dayOfWeek`)
+- Realtime: `supabase.channel('system-changes')` syncs `sessions/profiles/students/notifications` — optimistic updates must dedupe by `id`
 
-## Technology Stack
-- React 19 (JavaScript, not TypeScript)
-- Tailwind CSS 4 for styling (utility-first)
-- React Router DOM v7 for routing
-- Framer Motion for animations
-- Context API for state management (`GlobalStateContext`)
+## Auth / Roles
+- Role source: `user_roles.role` wins, fallback `profiles.app_role`. Values: `superadmin | admin | teacher | therapist | parent`
+- Guards in `src/components/RouteGuards.jsx` (`ProtectedRoute`, `AdminRoute`, `SuperAdminRoute`, `Parent/Teacher/TherapistRoute`, `RoleRoute`) — reuse them; check helpers are `isAdmin()`, `isSuperAdmin()`, etc.
+- New users: `supabase.functions.invoke('admin-create-user' | 'admin-delete-user')` — never use service_role key in frontend
+- `supabase` export in `src/lib/supabase.js` is `null` when `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` missing — guard callers
 
-## Project Structure
-- `/src` - Application source
-  - `/components` - Reusable UI components
-  - `/pages` - Route components
-  - `/context` - React context providers
-  - `/assets` - Static assets (images, icons)
-- `/public` - Static assets served directly
-- `/dist` - Build output
+## Supabase
+- Env: copy `.env.example` → `.env`. Notification secrets (`SEMAPHORE_*`, `RESEND_*`) live in Supabase Dashboard → Edge Functions Secrets, not `.env`
+- Migrations: `supabase/migrations/*.sql`. Edge functions: `admin-create-user`, `admin-delete-user`, `auto-scheduler`, `send-notification`
+- Scheduler: `src/lib/scheduler.js` — try `invokeSmartScheduler` (edge) first, fallback `localSmartSchedule`; persist via `sessions` + `student_programs.status='scheduled'`
 
-## Important Notes
-- Uses JavaScript standard (not TypeScript)
-- React Compiler not enabled (see README for details)
-- Dark/light mode toggle via `document.documentElement.classList`
-- Protected routes implemented via `ProtectedRoute` and `AdminRoute` components
-- State managed through `GlobalStateContext` with `useGlobalState` hook
-
-## Verification
-No test framework configured. Verify changes via:
-1. `npm run lint`
-2. Manual inspection (typechecking via IDE support for JS)
-3. Visual review in development server
+## Conventions
+- Styling: Tailwind 4 utilities; icons `lucide-react` ~18–20px; transitions via `motion` + `AnimatePresence`; toasts via `notify(msg, type)`
+- Dark mode: `document.documentElement.classList` + `localStorage polisync_dark_mode` (see `App.jsx`)
+- ESLint ignores `dist`; `no-unused-vars` ignores `^[A-Z_]|^motion$|^Icon$`
+- New pages/data types: index in `src/components/GlobalSearch.jsx`; scheduling conflicts via `conflicts` / `enhanceConflictDetection`

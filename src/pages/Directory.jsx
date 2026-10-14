@@ -31,7 +31,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Add Folder / Record</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Add Student Record</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors"><X size={20}/></button>
         </div>
         <div className="p-6 grid grid-cols-2 gap-4">
@@ -45,15 +45,8 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Category</label>
-            <select 
-              className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-medium"
-              value={formData.type}
-              onChange={e => setFormData({...formData, type: e.target.value})}
-            >
-              <option value="Student">Student</option>
-              <option value="Staff">Staff / Provider</option>
-            </select>
+            <p className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Category</p>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-200 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">Student</p>
           </div>
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 block">Program / Role</label>
@@ -117,7 +110,7 @@ const Directory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const combinedData = [...staff.filter(s => s.app_role !== 'superadmin'), ...students];
+  const combinedData = [...staff, ...students];
 
   const filteredData = combinedData.filter(item => {
     const matchesFilter = filterType === 'All' ? true : item.type === filterType || item.department === filterType;

@@ -1,21 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, User, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon } from 'lucide-react';
+import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
 
-const GlobalSearch = ({ isOpen, onClose }) => {
-  const { staff, students, sessions, rooms } = useGlobalState();
+const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
+  const { staff, students, sessions, rooms, appRole, parentChildren, fetchParentChildren } = useGlobalState();
+  const isParent = appRole === 'parent';
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState([]);
 
+  // Parents search only linked children: load links on mount so results
+  // fail closed (empty) until the links arrive.
+  useEffect(() => {
+    if (isParent) fetchParentChildren();
+  }, [isParent, fetchParentChildren]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        onClose();
+        if (onToggle) onToggle();
+        else onClose();
       }
       if (e.key === 'Escape' && isOpen) {
         onClose();
@@ -23,7 +31,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onToggle, onClose]);
 
   // Reset logic moved to a handler to avoid sync setState in effect
   const handleClose = useCallback(() => {
@@ -51,19 +59,24 @@ const GlobalSearch = ({ isOpen, onClose }) => {
       const lowerQuery = query.toLowerCase();
       let searchResults = [];
 
-      // Search Staff
-      staff.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery))
-        .slice(0, 5)
-        .forEach(s => searchResults.push({
-          id: `staff-${s.id}`,
-          title: s.name,
-          sub: `${s.role} · ${s.department}`,
-          icon: User,
-          action: () => navigate(`/profile/${s.id}?type=staff`),
-        }));
+      // Parent role: no staff results (limited to own linked children)
+      if (!isParent) {
+        // Search Staff
+        staff.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery))
+          .slice(0, 5)
+          .forEach(s => searchResults.push({
+            id: `staff-${s.id}`,
+            title: s.name,
+            sub: `${s.role} · ${s.department}`,
+            icon: User,
+            action: () => navigate(`/profile/${s.id}?type=staff`),
+          }));
+      }
 
-      // Search Students
+      // Search Students (parents: only their linked children)
+      const linkedIds = new Set((parentChildren || []).map(c => String(c.id)));
       students.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery) || (s.diagnosis && s.diagnosis.toLowerCase().includes(lowerQuery)))
+        .filter(s => !isParent || linkedIds.has(String(s.id)))
         .slice(0, 5)
         .forEach(s => searchResults.push({
           id: `student-${s.id}`,
@@ -73,8 +86,11 @@ const GlobalSearch = ({ isOpen, onClose }) => {
           action: () => navigate(`/profile/${s.id}?type=student`),
         }));
 
+      // Admin-level gate: /schedule, /directory, /rooms are AdminRoute-guarded
+      const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
+
       // Search Sessions
-      sessions.filter(s => s.title.toLowerCase().includes(lowerQuery))
+      sessions.filter(s => isAdminLevel && s.title.toLowerCase().includes(lowerQuery))
         .slice(0, 3)
         .forEach(s => searchResults.push({
           id: `session-${s.id}`,
@@ -85,7 +101,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
         }));
 
       // Search Rooms
-      rooms.filter(r => r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery))
+      rooms.filter(r => isAdminLevel && (r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery)))
         .slice(0, 4)
         .forEach(r => searchResults.push({
           id: `room-${r.id}`,
@@ -116,10 +132,30 @@ const GlobalSearch = ({ isOpen, onClose }) => {
         });
       }
 
+      // Phase 2.5 — superadmin/admin page results
+      if (appRole === 'superadmin' && ("user management".includes(lowerQuery) || "users".includes(lowerQuery) || "accounts".includes(lowerQuery))) {
+        searchResults.push({
+          id: 'nav-usermgmt',
+          title: 'User Management',
+          sub: 'Create accounts, manage roles and permissions',
+          icon: Users,
+          action: () => navigate('/admin/users'),
+        });
+      }
+      if (isAdminLevel && ("directory".includes(lowerQuery) || "staff".includes(lowerQuery) || "people".includes(lowerQuery))) {
+        searchResults.push({
+          id: 'nav-directory',
+          title: 'Directory',
+          sub: 'Browse all staff and students',
+          icon: Users,
+          action: () => navigate('/directory'),
+        });
+      }
+
       // Natural language queries
       if (searchResults.length === 0) {
         // Try common natural language patterns
-        if (lowerQuery.includes('conflict') || lowerQuery.includes('overlap')) {
+        if (isAdminLevel && (lowerQuery.includes('conflict') || lowerQuery.includes('overlap'))) {
           searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule Conflicts',
@@ -127,7 +163,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
             icon: Calendar,
             action: () => navigate('/schedule'),
           });
-        } else if (lowerQuery.includes('room') || lowerQuery.includes('available') || lowerQuery.includes('venue')) {
+        } else if (isAdminLevel && (lowerQuery.includes('room') || lowerQuery.includes('available') || lowerQuery.includes('venue'))) {
           searchResults.push({
             id: 'nav-rooms',
             title: 'Room Availability',
@@ -135,7 +171,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
             icon: DoorOpen,
             action: () => navigate('/rooms'),
           });
-        } else if (lowerQuery.includes('schedule') || lowerQuery.includes('session') || lowerQuery.includes('calendar')) {
+        } else if (isAdminLevel && (lowerQuery.includes('schedule') || lowerQuery.includes('session') || lowerQuery.includes('calendar'))) {
           searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule',
@@ -149,7 +185,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
           searchResults = [{
             id: 'none',
             title: `No results for "${query}"`,
-            sub: 'Try searching by name, room, diagnosis, or role.',
+            sub: isParent ? "Try searching by your child's name." : 'Try searching by name, room, diagnosis, or role.',
             icon: ArrowRight,
             action: null,
           }];
@@ -161,7 +197,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [query, staff, students, rooms, sessions, navigate, roomOccupancy]);
+  }, [query, staff, students, rooms, sessions, navigate, roomOccupancy, appRole, isParent, parentChildren]);
 
   if (!isOpen) return null;
 
@@ -193,8 +229,9 @@ const GlobalSearch = ({ isOpen, onClose }) => {
             <input
               type="text"
               autoFocus
-              placeholder="Search students, staff, rooms, sessions... (Ctrl+K)"
-              className="w-full pl-12 pr-4 py-3 text-lg bg-transparent border-none outline-none focus:ring-0 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+              placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
+              aria-label="Global search"
+              className="w-full pl-12 pr-4 py-3 text-lg bg-transparent border-none outline-none focus:ring-0 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 font-medium"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -205,9 +242,9 @@ const GlobalSearch = ({ isOpen, onClose }) => {
 
           <div className="p-2 max-h-[60vh] overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
             {!query && (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-300">
-                <p className="text-sm font-medium">Search for students, staff, rooms, sessions, or diagnoses.</p>
-                <p className="text-xs mt-2 text-slate-300 dark:text-slate-200">Try: "Room 5", "autism", "therapist", "speech"</p>
+              <div className="p-8 text-center text-slate-500 dark:text-slate-300">
+                <p className="text-sm font-medium">{isParent ? 'Search your linked children by name.' : 'Search for students, staff, rooms, sessions, or diagnoses.'}</p>
+                <p className="text-xs mt-2 text-slate-500 dark:text-slate-400">{isParent ? "Try: your child's first name" : 'Try: "Room 5", "autism", "therapist", "speech"'}</p>
               </div>
             )}
             
@@ -217,15 +254,15 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                 onClick={() => handleResultClick(result)}
                 className="w-full flex items-start gap-4 p-4 text-left rounded-xl hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 hover:shadow-sm dark:hover:shadow-none transition-all group"
               >
-                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 group-hover:border-indigo-100 dark:border-indigo-800 dark:group-hover:border-indigo-900 text-slate-400 dark:text-slate-300 group-hover:text-indigo-600 dark:text-indigo-400 dark:group-hover:text-indigo-400 shadow-sm">
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 group-hover:border-indigo-100 dark:border-indigo-800 dark:group-hover:border-indigo-900 text-slate-500 dark:text-slate-300 group-hover:text-indigo-600 dark:text-indigo-400 dark:group-hover:text-indigo-400 shadow-sm">
                   <result.icon size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{result.title}</h4>
-                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-300 mt-0.5 truncate">{result.sub}</p>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mt-0.5 truncate">{result.sub}</p>
                 </div>
                 {result.action && (
-                  <ArrowRight size={16} className="text-slate-300 dark:text-slate-200 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 shrink-0 mt-1 transition-colors" />
+                  <ArrowRight size={16} className="text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 shrink-0 mt-1 transition-colors" />
                 )}
               </button>
             ))}

@@ -311,7 +311,7 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
 };
 
 // ─── Add Session Modal ────────────────────────────────────────────────────────
-const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability }) => {
+const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability, onOpenAvailability }) => {
   const [step, setStep] = useState(1);
 
   // Helper: get today's date in local timezone as YYYY-MM-DD
@@ -451,6 +451,12 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                     {staffAvailability?.filter(a => a.available_date === formData.sessionDate).length > 0 && (
                       <span className="text-emerald-500 ml-2">· {staffAvailability.filter(a => a.available_date === formData.sessionDate).length} staff available</span>
                     )}
+                  </p>
+                )}
+                {formData.sessionDate && !availableStaff.length && (
+                  <p className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 font-medium mt-1 flex items-center gap-1 px-2 py-1 rounded-lg">
+                    <AlertCircle size={10} /> No staff marked available for this date —
+                    <button onClick={onOpenAvailability} className="ml-1 underline font-bold">Open Availability</button> to mark staff first.
                   </p>
                 )}
               </div>
@@ -613,6 +619,7 @@ const ScheduleCalendar = () => {
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const [detailTab, setDetailTab] = useState('info');
+  const [pendingDelete, setPendingDelete] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [calendarView, setCalendarView] = useState('daily'); // 'daily' | 'weekly'
   const [roomPage, setRoomPage] = useState(0);
@@ -737,6 +744,21 @@ const ScheduleCalendar = () => {
       moveSession(selectedSession.id, newHour);
       setSelectedSessionId(null);
     }
+  };
+
+  // True when moving the selected session to `hour` would double-book the
+  // same therapist or room (same overlap logic as AddSessionModal.conflictMessage).
+  const slotHasConflict = (hour) => {
+    const s = selectedSession;
+    if (!s) return true;
+    const end = hour + s.span;
+    const dayOf = s => s.sessionDate || s.dayOfWeek;
+    return sessions.some(o =>
+      o.id !== s.id &&
+      dayOf(o) === dayOf(s) &&
+      Math.max(hour, o.startHour) < Math.min(end, o.startHour + o.span) &&
+      (String(o.therapistId) === String(s.therapistId) || o.room === s.room)
+    );
   };
 
   const handleDragEnd = (sessionId, e, info, isWeekly = false) => {
@@ -942,14 +964,14 @@ const ScheduleCalendar = () => {
           {/* ════════════ MOBILE LIST VIEW ════════════ */}
           {isMobile ? (
             <div className="p-4 space-y-4 pb-20">
-              {filteredSessions.sort((a, b) => a.startHour - b.startHour).map(session => {
+              {[...filteredSessions].sort((a, b) => a.startHour - b.startHour).map(session => {
                 const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
                 const provider = staff.find(s => String(s.id) === String(session.therapistId));
                 const hasConflict = isConflicted(session.id);
                 return (
                   <div 
                     key={session.id} 
-                    onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); }}
+                    onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); setPendingDelete(false); }}
                     className={clsx(
                       "bg-white dark:bg-slate-900 p-4 rounded-2xl border shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform",
                       hasConflict ? "border-rose-300 ring-2 ring-rose-500/20" : cfg.border,
@@ -1064,6 +1086,7 @@ const ScheduleCalendar = () => {
                             e.stopPropagation();
                             setSelectedSessionId(session.id);
                             setDetailTab('info');
+                            setPendingDelete(false);
                           }}
                           onDragEnd={(id, e, info) => handleDragEnd(id, e, info, false)}
                         />
@@ -1158,6 +1181,7 @@ const ScheduleCalendar = () => {
                               e.stopPropagation();
                               setSelectedSessionId(session.id);
                               setDetailTab('info');
+                              setPendingDelete(false);
                             }}
                             onDragEnd={(id, e, info) => handleDragEnd(id, e, info, true)}
                           />
@@ -1215,14 +1239,35 @@ const ScheduleCalendar = () => {
                       <div className="flex justify-between items-start mb-3">
                         <span className="text-white/70 text-[10px] font-bold uppercase tracking-widest">{cfg.label}</span>
                         <div className="flex items-center gap-1">
+                          {pendingDelete ? (
+                            <>
+                              <button
+                                onClick={() => { deleteSession(selectedSession.id); setSelectedSessionId(null); }}
+                                aria-label="Confirm delete session"
+                                className="px-2.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold transition-colors"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                onClick={() => setPendingDelete(false)}
+                                aria-label="Cancel delete"
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-500 hover:bg-slate-600 text-white text-[10px] font-bold transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setPendingDelete(true)}
+                              aria-label="Delete session"
+                              className="p-2 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-rose-500 text-white transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                           <button
-                            onClick={() => { deleteSession(selectedSession.id); setSelectedSessionId(null); }}
-                            className="p-1.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-rose-500 text-white transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => setSelectedSessionId(null)}
+                            onClick={() => { setSelectedSessionId(null); setPendingDelete(false); }}
+                            aria-label="Close session details"
                             className="p-1.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-white dark:bg-slate-900 dark:bg-slate-900/30 text-white transition-colors"
                           >
                             <X size={14} />
@@ -1313,12 +1358,18 @@ const ScheduleCalendar = () => {
                             <Zap size={12} className="text-amber-500" /> Smart Suggestions
                           </h5>
                           <div className="space-y-2">
-                            {[1, 2, 3].map(offset => {
-                              const newHour = selectedSession.startHour + offset;
-                              if (newHour + selectedSession.span > 17) return null;
-                              return (
+                            {(() => {
+                              const suggestions = [1, 2, 3]
+                                .map(offset => selectedSession.startHour + offset)
+                                .filter(newHour => newHour + selectedSession.span <= 17 && !slotHasConflict(newHour));
+                              if (suggestions.length === 0) {
+                                return (
+                                  <p className="text-xs text-slate-500 font-medium">No suggested slots left today (last start 17:00) — drag the session to another room or day.</p>
+                                );
+                              }
+                              return suggestions.map(newHour => (
                                 <motion.button
-                                  key={offset}
+                                  key={newHour}
                                   whileHover={{ scale: 1.01 }}
                                   onClick={() => handleReschedule(newHour)}
                                   className="w-full text-left p-3.5 rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 hover:border-emerald-400 hover:shadow-sm transition-all group"
@@ -1333,10 +1384,10 @@ const ScheduleCalendar = () => {
                                       Move
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">{selectedSession.room} · confirmed available</p>
+                                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">{selectedSession.room} · no conflict at this time</p>
                                 </motion.button>
-                              );
-                            })}
+                              ));
+                            })()}
                           </div>
                         </div>
 
@@ -1369,6 +1420,7 @@ const ScheduleCalendar = () => {
         rooms={rooms}
         sessions={filteredSessions}
         staffAvailability={staffAvailability}
+        onOpenAvailability={() => setIsAvailabilityModalOpen(true)}
       />
 
       <ManageAvailabilityModal

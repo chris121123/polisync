@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, Navigate } from 'react-router-dom';
 import { ArrowLeft, User, Users, Mail, Phone, Calendar, FileText, CheckCircle2, Clock, Stethoscope, BookOpen, Activity, Download, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
@@ -9,9 +9,17 @@ import { supabase } from '../lib/supabase';
 const ProfilePage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { staff, students, sessions, appRole } = useGlobalState();
+  const { staff, students, sessions, appRole, parentChildren, fetchParentChildren } = useGlobalState();
+  const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
   const [studentDocs, setStudentDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [linksReady, setLinksReady] = useState(false);
+
+  useEffect(() => {
+    if (appRole === 'parent') {
+      fetchParentChildren().then(() => setLinksReady(true)).catch(() => setLinksReady(true));
+    }
+  }, [appRole, fetchParentChildren]);
   
   const type = searchParams.get('type') || 'student';
 
@@ -34,15 +42,31 @@ const ProfilePage = () => {
     ? staff.find(s => String(s.id) === String(id)) 
     : students.find(s => String(s.id) === String(id));
 
+  // D1: parents are limited to their own linked children.
+  // Fail closed: render nothing but a loader until links are loaded, so an
+  // unlinked profile (incl. diagnosis) is never painted transiently.
+  if (appRole === 'parent' && !linksReady) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[60vh]" role="status" aria-label="Loading profile">
+        <Loader2 className="animate-spin text-indigo-500" aria-hidden="true" />
+      </div>
+    );
+  }
+  if (appRole === 'parent' && type === 'staff') return <Navigate to="/dashboard" replace />;
+  if (appRole === 'parent' && type === 'student' && linksReady) {
+    const linked = (parentChildren || []).some(c => String(c.id) === String(id));
+    if (!linked) return <Navigate to="/dashboard" replace />;
+  }
+
   if (!profile) return (
     <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-300 mb-4">
+      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-4">
         <User size={32} />
       </div>
       <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">Profile Not Found</h2>
       <p className="text-sm text-slate-500 mb-6">The requested profile does not exist or has been removed.</p>
-      <Link to="/directory" className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
-        Return to Directory
+      <Link to={isAdminLevel ? '/directory' : '/dashboard'} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors">
+        {isAdminLevel ? 'Return to Directory' : 'Back to Dashboard'}
       </Link>
     </div>
   );
@@ -75,8 +99,8 @@ const ProfilePage = () => {
 
   return (
     <div className="p-8 max-w-5xl mx-auto w-full">
-      <Link to="/directory" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 dark:text-indigo-400 transition-colors mb-6">
-        <ArrowLeft size={16} /> Back to Directory
+      <Link to={isAdminLevel ? '/directory' : '/dashboard'} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 dark:text-indigo-400 transition-colors mb-6">
+        <ArrowLeft size={16} /> {isAdminLevel ? 'Back to Directory' : 'Back to Dashboard'}
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -231,22 +255,6 @@ const ProfilePage = () => {
             </div>
           </motion.div>
           
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
-          >
-             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-               <FileText size={18} className="text-indigo-500" />
-               Case Notes
-             </h2>
-             <textarea className="w-full min-h-[120px] rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 text-sm font-medium resize-none focus:ring-2 focus:ring-indigo-500 outline-none border" placeholder="Enter session notes, observations, or progress updates..."></textarea>
-             <div className="mt-3 flex justify-end">
-               <button className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition-colors">Save Note</button>
-             </div>
-          </motion.div>
-
           {/* ── Student Documents (visible to Admin/Teachers) ─── */}
           {type === 'student' && ['admin', 'superadmin', 'teacher', 'therapist'].includes(appRole) && (
             <motion.div
@@ -284,7 +292,7 @@ const ProfilePage = () => {
                 </div>
               ) : (
                 <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-                  <FileText size={28} className="mx-auto text-slate-300 mb-2" />
+                  <FileText size={28} className="mx-auto text-slate-400 mb-2" />
                   <p className="text-sm font-medium text-slate-400">No documents submitted yet.</p>
                 </div>
               )}

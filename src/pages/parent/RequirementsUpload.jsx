@@ -4,7 +4,7 @@ import { Upload, FileText, Loader2, X, Check } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 
 const RequirementsUpload = ({ studentId }) => {
-  const { user } = useGlobalState();
+  const { user, notify } = useGlobalState();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -14,23 +14,41 @@ const RequirementsUpload = ({ studentId }) => {
 
   useEffect(() => {
     if (!studentId) return;
+    // Reset spinner on child switch (deferred: no sync setState in effect).
+    queueMicrotask(() => setLoading(true));
     let cancelled = false;
     supabase
       .from('student_documents')
       .select('*')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!cancelled) {
-          setDocuments(data || []);
-          setLoading(false);
-        }
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) notify('Could not load documents', 'error');
+        setDocuments(data || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        notify('Could not load documents', 'error');
+        setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [studentId, refreshKey]);
+  }, [studentId, refreshKey, notify]);
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    const picked = Array.from(e.target.files);
+    const valid = [];
+    picked.forEach(file => {
+      if (file.size > MAX_FILE_SIZE) {
+        notify(`"${file.name}" exceeds the 10 MB limit`, 'error');
+      } else {
+        valid.push(file);
+      }
+    });
+    setFiles(valid);
   };
 
   const handleUpload = async () => {
@@ -50,7 +68,7 @@ const RequirementsUpload = ({ studentId }) => {
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error('Upload error:', uploadError.message);
+        notify(`Upload failed for "${file.name}": ${uploadError.message}`, 'error');
         continue;
       }
 
@@ -70,7 +88,11 @@ const RequirementsUpload = ({ studentId }) => {
           document_type: 'General'
         }]);
 
-      if (!dbError) successCount++;
+      if (dbError) {
+        notify(`Could not save "${file.name}": ${dbError.message}`, 'error');
+      } else {
+        successCount++;
+      }
     }
 
     setUploading(false);
@@ -87,11 +109,12 @@ const RequirementsUpload = ({ studentId }) => {
       
       <div className="mb-6">
         <label className="block w-full border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors">
-          <input type="file" multiple className="hidden" onChange={handleFileChange} />
-          <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleFileChange} />
+          <Upload className="mx-auto h-8 w-8 text-slate-500 mb-2" />
           <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Click to browse or drag and drop files here
           </span>
+          <span className="block text-xs text-slate-500 mt-1">Max 10 MB per file</span>
         </label>
         
         {files.length > 0 && (
@@ -102,7 +125,7 @@ const RequirementsUpload = ({ studentId }) => {
                   <FileText size={16} className="text-slate-500 shrink-0" />
                   <span className="text-sm text-slate-700 dark:text-slate-300 truncate">{file.name}</span>
                 </div>
-                <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="text-slate-400 hover:text-red-500">
+                <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} aria-label={`Remove ${file.name}`} className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-500 hover:text-red-500">
                   <X size={16} />
                 </button>
               </div>
@@ -111,7 +134,7 @@ const RequirementsUpload = ({ studentId }) => {
             <button 
               onClick={handleUpload} 
               disabled={uploading}
-              className="w-full mt-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+              className="w-full mt-2 py-2 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
             >
               {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
               {uploading ? 'Uploading...' : 'Upload Files'}

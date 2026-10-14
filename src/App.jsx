@@ -50,10 +50,10 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin/users" element={<SuperAdminRoute><UserManagement /></SuperAdminRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
-          <Route path="schedule" element={<ScheduleCalendar />} />
-          <Route path="directory" element={<Directory />} />
+          <Route path="schedule" element={<AdminRoute><ScheduleCalendar /></AdminRoute>} />
+          <Route path="directory" element={<AdminRoute><Directory /></AdminRoute>} />
           <Route path="profile/:id" element={<ProfilePage />} />
-          <Route path="rooms" element={<Rooms />} />
+          <Route path="rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  DoorOpen, Users, AlertTriangle, Plus, LayoutGrid, List, X, 
-  MapPin, CheckCircle2, Clock, Info, ArrowUpRight, Filter, AlertCircle
+  DoorOpen, Users, AlertTriangle, Plus, X, 
+  MapPin, Clock, Info, ArrowUpRight, Filter, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,6 @@ import { useGlobalState } from '../context/GlobalStateContext';
 
 const Rooms = () => {
   const { rooms, sessions, staff, students, addRoom } = useGlobalState();
-  const [viewMode, setViewMode] = useState('grid');
   const [filterType, setFilterType] = useState('All');
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -123,26 +122,6 @@ const Rooms = () => {
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="flex bg-white dark:bg-slate-900 dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <button 
-                onClick={() => setViewMode('grid')} 
-                className={clsx(
-                  "p-2 rounded-lg transition-all", 
-                  viewMode === 'grid' ? "bg-slate-900 text-white shadow-md shadow-slate-200" : "text-slate-400 hover:text-slate-600 dark:text-slate-300"
-                )}
-              >
-                <LayoutGrid size={18} />
-              </button>
-              <button 
-                onClick={() => setViewMode('list')} 
-                className={clsx(
-                  "p-2 rounded-lg transition-all", 
-                  viewMode === 'list' ? "bg-slate-900 text-white shadow-md shadow-slate-200" : "text-slate-400 hover:text-slate-600 dark:text-slate-300"
-                )}
-              >
-                <List size={18} />
-              </button>
-            </div>
             <button 
               onClick={() => { setIsAddModalOpen(true); setFormErrors({}); }}
               className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
@@ -180,11 +159,10 @@ const Rooms = () => {
         </div>
 
         {/* Grid View */}
-        {viewMode === 'grid' ? (
-          <motion.div 
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          >
+        <motion.div 
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
             {filteredRooms.map((room, i) => {
               const cfg = getStatusConfig(room.status);
               const isSelected = selectedRoomId === room.id;
@@ -271,20 +249,7 @@ const Rooms = () => {
                 </motion.div>
               );
             })}
-          </motion.div>
-        ) : (
-          /* List View fallback */
-          <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 border-dashed">
-             <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-300 mb-4">
-               <LayoutGrid size={32} />
-             </div>
-             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">List view is in development</h3>
-             <p className="text-slate-500 text-sm mt-1 mb-6">Our team is crafting a dense, data-rich list view for venue management.</p>
-             <button onClick={() => setViewMode('grid')} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold shadow-lg shadow-slate-200">
-               Return to Grid View
-             </button>
-          </div>
-        )}
+        </motion.div>
       </div>
 
       {/* Detail Sliding Panel */}
@@ -308,7 +273,7 @@ const Rooms = () => {
               {/* Panel Header */}
               <div className={clsx("p-8 relative overflow-hidden", getStatusConfig(selectedRoom.status).bg)}>
                 <div className="absolute top-0 right-0 p-4">
-                  <button onClick={() => setSelectedRoomId(null)} className="p-2.5 bg-white dark:bg-slate-900 dark:bg-slate-900/50 hover:bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-2xl text-slate-500 transition-all shadow-sm">
+                  <button onClick={() => setSelectedRoomId(null)} aria-label="Close room details" className="p-2.5 bg-white dark:bg-slate-900 dark:bg-slate-900/50 hover:bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-2xl text-slate-500 transition-all shadow-sm">
                     <X size={20} />
                   </button>
                 </div>
@@ -405,42 +370,6 @@ const Rooms = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Amenities Section */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Venue Resources
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { name: 'Sensory Lighting', active: true },
-                      { name: 'Sound Isolation', active: true },
-                      { name: 'Safety Flooring', active: true },
-                      { name: 'Standard Desk', active: false },
-                      { name: 'Weighted Gear', active: true },
-                      { name: 'Observation Cam', active: false },
-                    ].map(res => (
-                      <div key={res.name} className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:bg-slate-900 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl transition-all">
-                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">{res.name}</span>
-                        {res.active ? (
-                          <CheckCircle2 size={12} className="text-emerald-500" />
-                        ) : (
-                          <div className="w-2 h-2 rounded-full border border-slate-300" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Action Bar */}
-              <div className="p-8 pt-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 dark:bg-slate-900">
-                 <button className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-indigo-600 hover:shadow-indigo-200 transition-all active:scale-98 flex items-center justify-center gap-3 group">
-                    <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                    Generate Utilization Report
-                 </button>
               </div>
             </motion.div>
           </>

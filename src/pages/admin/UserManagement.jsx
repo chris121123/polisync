@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Star, User, UserPlus, Shield, ShieldAlert, X, Mail, Lock, Briefcase, Phone, Building, Eye, EyeOff, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, MoreVertical, Trash2 } from 'lucide-react';
+import { FileText, Star, User, UserPlus, Shield, ShieldAlert, X, Mail, Lock, Briefcase, Phone, Building, Eye, EyeOff, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, MoreVertical, Trash2, Search, Activity, Clock } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
+import { auditLine } from '../../lib/auditLog';
 import clsx from 'clsx';
 
 const UserManagement = () => {
   const { staff, updateUserRole, adminCreateUser, adminDeleteUser, toggleUserActive, user } = useGlobalState();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('users');
   const [showRoleModal, setShowRoleModal] = useState(null);
   const [selectedRole, setSelectedRole] = useState('teacher');
   const [sessionNotes, setSessionNotes] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [filterRole, setFilterRole] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // ── Delete User Modal State ──
@@ -43,7 +50,35 @@ const UserManagement = () => {
     if (data) setSessionNotes(data);
   }, []);
 
-  React.useEffect(() => { fetchSessionNotes(); }, [fetchSessionNotes]);
+  const fetchAuditLogs = React.useCallback(async () => {
+    setAuditLoading(true);
+    try {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      if (error) throw error;
+      if (data) setAuditLogs(data);
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
+
+  // Only fetch on mount if users tab is default; other tabs load lazily
+  React.useEffect(() => {
+    if (activeTab === 'reports' && sessionNotes.length === 0) fetchSessionNotes();
+    if (activeTab === 'activity' && auditLogs.length === 0) fetchAuditLogs();
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Open create modal once when navigated from dashboard quick action
+  React.useEffect(() => {
+    if (location.state?.openCreate) {
+      setShowCreateModal(true);
+      setCreateError('');
+      setCreateSuccess('');
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     let timer;
@@ -105,10 +140,7 @@ const UserManagement = () => {
     try {
       await adminDeleteUser(deleteModalData.id);
       setDeleteModalData(null);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user: ' + error.message);
-    }
+    } catch { /* provider already toasts the error; keep modal open */ }
   };
 
   const validateField = (field) => {
@@ -185,9 +217,12 @@ const UserManagement = () => {
     await toggleUserActive(userId, !currentActive);
   };
 
-  const filteredStaff = filterRole === 'all'
-    ? staff
-    : staff.filter(s => s.app_role === filterRole);
+  const filteredStaff = (filterRole === 'all' ? staff : staff.filter(s => s.app_role === filterRole))
+    .filter(s => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (s.name && s.name.toLowerCase().includes(q)) || (s.email && s.email.toLowerCase().includes(q));
+    });
 
   const roleColors = {
     superadmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
@@ -216,17 +251,17 @@ const UserManagement = () => {
       </div>
 
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
-        {['users', 'reports', 'activity'].map(tab => (
+        {[{ id: 'users', label: 'Users' }, { id: 'reports', label: 'Session Notes' }, { id: 'activity', label: 'Activity' }].map(tab => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-colors capitalize ${
-              activeTab === tab
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-colors ${
+              activeTab === tab.id
                 ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600'
                 : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -234,7 +269,7 @@ const UserManagement = () => {
       {activeTab === 'users' && (
         <>
           <div className="flex gap-2 flex-wrap">
-            {['all', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+            {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
               <button
                 key={role}
                 onClick={() => setFilterRole(role)}
@@ -244,14 +279,26 @@ const UserManagement = () => {
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
+                {role === 'superadmin' ? 'Super Admin' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
               </button>
             ))}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+          {/* Search input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full sm:w-72 pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-slate-200"
+            />
+          </div>
+
+          <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
             <div className="relative">
-              <table className="w-full">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
                     <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider rounded-tl-2xl">User</th>
@@ -301,6 +348,7 @@ const UserManagement = () => {
                         <div className="relative flex justify-end">
                           <button
                             onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                            aria-label={`Actions for ${member.name}`}
                             className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
                           >
                             <MoreVertical size={18} />
@@ -415,7 +463,50 @@ const UserManagement = () => {
           </div>
         </div>
       )}
-
+      {activeTab === 'activity' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200">System Activity Log</h3>
+            <button
+              onClick={fetchAuditLogs}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+            >Refresh</button>
+          </div>
+          <div className="divide-y divide-slate-50 dark:divide-slate-800">
+            {auditLoading && (
+              <div className="p-12 text-center">
+                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+            )}
+            {!auditLoading && auditLogs.map(log => {
+              const { action, actor, target } = auditLine(log, staff);
+              return (
+                <div key={log.id} className="px-6 py-4 flex items-start gap-4">
+                  <div className="mt-0.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
+                    <Activity size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      <span>{action}</span>
+                      {target && <span className="font-normal text-slate-500"> → {target}</span>}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {actor}
+                      {' · '}{new Date(log.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            {!auditLoading && auditLogs.length === 0 && (
+              <div className="p-12 text-center">
+                <Clock size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-500 font-medium">No activity logs found</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {/* ── Change Role Modal ── */}
       <AnimatePresence>
         {showRoleModal && (

@@ -3,42 +3,60 @@ import { motion } from 'framer-motion';
 import { Clock, Calendar, Users, FileText, ChevronRight, Star, Activity, BookOpen } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { useNavigate } from 'react-router-dom';
+import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 
 import { StatCard } from '../admin/AdminDashboard';
 
-const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
 const TherapistDashboard = () => {
-  const { user, sessions, students, fetchMyAssignments, myAssignments } = useGlobalState();
+  const { user, sessions, students, fetchMyAssignments, myAssignments, addSessionNote } = useGlobalState();
   const navigate = useNavigate();
-  const [selectedDay, setSelectedDay] = useState(new Date().getDay());
+  // Weekend defaults to Monday: tabs only cover Mon–Fri.
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const d = new Date().getDay();
+    return d === 0 || d === 6 ? 1 : d;
+  });
   const [selectedSession, setSelectedSession] = useState(null);
   const [noteContent, setNoteContent] = useState('');
   const [noteRating, setNoteRating] = useState(3);
+  const [noteStudentId, setNoteStudentId] = useState('');
 
   useEffect(() => {
     fetchMyAssignments();
   }, [fetchMyAssignments]);
 
   const mySessions = sessions.filter(s => String(s.therapistId) === String(user?.id));
-  const todaySessions = mySessions.filter(s => (s.dayOfWeek ?? 0) === (selectedDay === 0 ? 0 : selectedDay - 1));
-
-  const formatTime = (hour) => {
-    const h = hour > 12 ? hour - 12 : hour;
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    return `${h}:00 ${ampm}`;
-  };
+  const selectedTab = selectedDay - 1;
+  const todaySessions = mySessions.filter(s => sessionDayIndex(s) === selectedTab);
 
   const getStudent = (id) => students.find(s => s.id === id || s.id === Number(id));
 
   const totalHoursThisWeek = mySessions.reduce((sum, s) => sum + s.span, 0);
   const uniqueStudents = [...new Set(mySessions.flatMap(s => s.studentIds || []))].length;
 
-  const handleAddNote = () => {
-    if (!noteContent.trim()) return;
+  const openNoteModal = (session) => {
+    setSelectedSession(session);
+    setNoteStudentId(String(session.studentIds?.[0] ?? ''));
+    setNoteContent('');
+    setNoteRating(3);
+  };
+
+  const closeNoteModal = () => {
     setSelectedSession(null);
     setNoteContent('');
     setNoteRating(3);
+    setNoteStudentId('');
+  };
+
+  const handleAddNote = async () => {
+    if (!noteContent.trim() || !selectedSession) return;
+    const res = await addSessionNote({
+      sessionId: selectedSession.id,
+      studentId: noteStudentId || selectedSession.studentIds?.[0],
+      noteType: 'general',
+      content: noteContent.trim(),
+      rating: noteRating,
+    });
+    if (res) closeNoteModal();
   };
 
   return (
@@ -100,7 +118,9 @@ const TherapistDashboard = () => {
                   <button
                     key={day}
                     onClick={() => setSelectedDay(idx + 1)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    aria-pressed={selectedDay === idx + 1}
+                    aria-label={day}
+                    className={`px-3 py-1.5 min-h-[40px] min-w-[40px] rounded-lg text-xs font-bold transition-all ${
                       selectedDay === idx + 1
                         ? 'bg-teal-600 text-white'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -146,8 +166,9 @@ const TherapistDashboard = () => {
                       )}
                     </div>
                     <button
-                      onClick={() => setSelectedSession(session)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors shrink-0"
+                      onClick={() => openNoteModal(session)}
+                      aria-label={`Add note for ${session.title}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] text-xs font-bold text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors shrink-0"
                     >
                       <FileText size={14} />
                       Add Note
@@ -156,8 +177,8 @@ const TherapistDashboard = () => {
                 </div>
               )) : (
                 <div className="p-12 text-center">
-                  <Calendar size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-500 font-medium">No sessions on {dayNames[selectedDay - 1]}</p>
+                  <Calendar size={32} className="text-slate-400 mx-auto mb-3" />
+                  <p className="text-slate-500 font-medium">No sessions on {dayNames[selectedDay - 1] ?? dayNames[0]}</p>
                 </div>
               )}
             </div>
@@ -177,7 +198,7 @@ const TherapistDashboard = () => {
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{a.programs?.name}</span>
                 </div>
               )) : (
-                <p className="text-sm text-slate-400 text-center py-4">No program assignments</p>
+                <p className="text-sm text-slate-500 text-center py-4">No program assignments</p>
               )}
             </div>
           </div>
@@ -208,7 +229,7 @@ const TherapistDashboard = () => {
       {selectedSession && (
         <div 
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-          onClick={() => { setSelectedSession(null); setNoteContent(''); setNoteRating(3); }}
+          onClick={closeNoteModal}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -217,16 +238,33 @@ const TherapistDashboard = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">Add Session Note</h3>
-            <p className="text-sm text-slate-500 mb-4">{selectedSession.title} · {dayNames[selectedSession.dayOfWeek ?? 0]}</p>
+            <p className="text-sm text-slate-500 mb-4">{selectedSession.title} · {sessionDayName(selectedSession)}</p>
 
             <div className="mb-4">
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Session Rating</label>
-              <div className="flex gap-2">
+              <label htmlFor="note-student" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Student</label>
+              <select
+                id="note-student"
+                value={noteStudentId}
+                onChange={(e) => setNoteStudentId(e.target.value)}
+                className="w-full p-3 min-h-[40px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+              >
+                {(selectedSession.studentIds || []).map(sid => {
+                  const student = getStudent(sid);
+                  return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
+                })}
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <span id="note-rating-label" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Session Rating</span>
+              <div className="flex gap-2" role="group" aria-labelledby="note-rating-label">
                 {[1, 2, 3, 4, 5].map(rating => (
                   <button
                     key={rating}
                     onClick={() => setNoteRating(rating)}
-                    className={`p-2 rounded-lg transition-colors ${noteRating >= rating ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}
+                    aria-label={`Rate ${rating} out of 5`}
+                    aria-pressed={noteRating === rating}
+                    className={`p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg transition-colors ${noteRating >= rating ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}
                   >
                     <Star size={24} fill={noteRating >= rating ? 'currentColor' : 'none'} />
                   </button>
@@ -235,13 +273,14 @@ const TherapistDashboard = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Notes</label>
+              <label htmlFor="note-content" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Notes</label>
               <textarea
+                id="note-content"
                 value={noteContent}
                 onChange={e => setNoteContent(e.target.value)}
                 placeholder="Session observations, student progress, recommendations..."
                 rows={4}
-                className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
               />
             </div>
 
@@ -249,13 +288,13 @@ const TherapistDashboard = () => {
               <button
                 onClick={handleAddNote}
                 disabled={!noteContent.trim()}
-                className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-teal-600 disabled:cursor-default"
+                className="flex-1 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-teal-600 disabled:cursor-default"
               >
                 Save Note
               </button>
               <button
-                onClick={() => { setSelectedSession(null); setNoteContent(''); setNoteRating(3); }}
-                className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                onClick={closeNoteModal}
+                className="px-4 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>

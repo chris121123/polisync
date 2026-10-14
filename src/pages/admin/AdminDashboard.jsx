@@ -1,7 +1,10 @@
-import React from 'react';
-import { Users, UserCircle, DoorOpen, TrendingUp, AlertCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, UserCircle, DoorOpen, TrendingUp, AlertCircle, Clock, UserPlus, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
+import { supabase } from '../../lib/supabase';
+import { auditLine } from '../../lib/auditLog';
 
 export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "indigo" }) => {
   const colorMap = {
@@ -40,51 +43,134 @@ export const StatCard = ({ title, value, icon: Icon, trend, subtext, color = "in
   );
 };
 
+const rolePillColors = {
+  superadmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  admin: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  therapist: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  parent: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+  teacher: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+};
+
 const AdminDashboard = () => {
-  const { staff, students, rooms, sessions, conflicts } = useGlobalState();
+  const { staff, students, rooms, sessions, conflicts, appRole } = useGlobalState();
+  const navigate = useNavigate();
+  const [activity, setActivity] = useState([]);
+
+  // ponytail: audit_logs select needs 20261014000001_superadmin_audit_read.sql (superadmin read) applied
+  useEffect(() => {
+    if (appRole !== 'superadmin' || !supabase) return;
+    const fetchActivity = async () => {
+      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(5);
+      if (error) console.error('Recent activity fetch failed:', error);
+      if (data) setActivity(data);
+    };
+    fetchActivity();
+  }, [appRole]);
   
   // Calculate rooms in use by counting unique rooms in sessions
   const roomsInUseCount = new Set(sessions.map(s => s.room)).size;
+  const activeStaff = staff.filter(s => s.is_active !== false).length;
+  const enrolledStudents = students.length;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 md:space-y-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard Overview</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
+          {appRole === 'superadmin' ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+        </h1>
         <p className="text-sm md:text-base text-slate-500 font-medium">Here's what's happening at the center today.</p>
       </div>
+
+      {/* Superadmin Quick Actions */}
+      {appRole === 'superadmin' && (
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-bold transition-colors shadow-lg shadow-violet-200 dark:shadow-none"
+          >
+            <UserPlus size={16} />
+            Create User
+          </button>
+          <button
+            onClick={() => navigate('/admin/users')}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <ShieldAlert size={16} />
+            User Management
+          </button>
+        </div>
+      )}
+
+      {/* Accounts by role (superadmin only) */}
+      {appRole === 'superadmin' && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Accounts by role</p>
+          <div className="flex flex-wrap gap-2">
+            {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+              <span key={role} className={`text-xs font-bold px-3 py-1 rounded-full capitalize ${rolePillColors[role]}`}>
+                {role} ({staff.filter(s => s.app_role === role).length})
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total Students" 
           value={students.length} 
-          icon={Users} 
-          trend={12} 
-          subtext="Enrolled capacity"
+          icon={Users}
+          subtext={`${enrolledStudents} currently enrolled`}
           color="indigo" 
         />
         <StatCard 
           title="Current Faculty" 
           value={staff.length} 
           icon={UserCircle} 
-          subtext="Available on roster"
+          subtext={`${activeStaff} active accounts`}
           color="emerald" 
         />
         <StatCard 
           title="Rooms in Activity" 
           value={`${roomsInUseCount}/${rooms.length}`} 
           icon={DoorOpen} 
-          subtext={`${Math.round((roomsInUseCount / rooms.length) * 100)}% occupancy`}
+          subtext={`${Math.round((roomsInUseCount / (rooms.length || 1)) * 100)}% occupancy`}
           color="amber" 
         />
         <StatCard 
           title="Active Sessions" 
           value={sessions.length} 
-          icon={TrendingUp} 
-          trend={-2} 
-          subtext="Sessions scheduled"
+          icon={TrendingUp}
+          subtext="Sessions scheduled this week"
           color="rose" 
         />
       </div>
+
+      {/* Recent Activity (superadmin only, hidden until audit rows exist) */}
+      {appRole === 'superadmin' && activity.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">Recent Activity</h2>
+          <div className="space-y-3">
+            {activity.map(log => {
+              const { action, actor, target } = auditLine(log, staff);
+              return (
+                <div key={log.id} className="flex items-start gap-3">
+                  <div className="mt-0.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
+                    <Clock size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {action}
+                      {target && <span className="font-normal text-slate-500"> → {target}</span>}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">{actor} · {new Date(log.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -151,11 +237,8 @@ const AdminDashboard = () => {
             )}
           </div>
           
-          <button className="mt-4 w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            Analyze Roster
-          </button>
         </div>
-        
+
       </div>
     </div>
   );

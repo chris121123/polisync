@@ -3,18 +3,27 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, BookOpen, Bell, ChevronRight, User } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import RequirementsUpload from './RequirementsUpload';
-
-const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 
 const ParentDashboard = () => {
-  const { user, sessions, programs, parentChildren, fetchParentChildren, notifications } = useGlobalState();
+  const { user, sessions, programs, studentPrograms, parentChildren, fetchParentChildren, notifications } = useGlobalState();
   const [selectedChild, setSelectedChild] = useState(null);
 
   useEffect(() => {
     fetchParentChildren();
   }, [fetchParentChildren]);
 
-  const activeChild = selectedChild || parentChildren[0] || null;
+  const activeChild = parentChildren.find(c => String(c.id) === String(selectedChild)) || parentChildren[0] || null;
+
+  const childPrograms = useMemo(() => {
+    if (!activeChild) return [];
+    const ids = new Set(
+      studentPrograms
+        .filter(sp => String(sp.student_id) === String(activeChild.id))
+        .map(sp => String(sp.program_id))
+    );
+    return programs.filter(p => ids.has(String(p.id)));
+  }, [activeChild, studentPrograms, programs]);
 
   const weekSchedule = useMemo(() => {
     if (!activeChild) return {};
@@ -23,19 +32,20 @@ const ParentDashboard = () => {
     sessions
       .filter(s => s.studentIds?.includes(activeChild.id))
       .forEach(s => {
-        const day = dayNames[s.dayOfWeek ?? 0];
+        const day = sessionDayName(s);
         if (grouped[day]) grouped[day].push(s);
       });
     return grouped;
   }, [activeChild, sessions]);
 
-  const _unreadCount = notifications.filter(n => !n.is_read).length;
+  const upcomingSessions = useMemo(() => {
+    if (!activeChild) return [];
+    return sessions
+      .filter(s => s.studentIds?.includes(activeChild.id))
+      .sort((a, b) => sessionDayIndex(a) - sessionDayIndex(b) || a.startHour - b.startHour);
+  }, [activeChild, sessions]);
 
-  const formatTime = (hour) => {
-    const h = hour > 12 ? hour - 12 : hour;
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    return `${h}:00 ${ampm}`;
-  };
+  const _unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
@@ -53,9 +63,10 @@ const ParentDashboard = () => {
           {parentChildren.map(child => (
             <button
               key={child.id}
-              onClick={() => setSelectedChild(child)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border-2 ${
-                (selectedChild === child.id || (!selectedChild && child === parentChildren[0]) || (!selectedChild && child === parentChildren[0]))
+              onClick={() => setSelectedChild(child.id)}
+              aria-pressed={activeChild && String(activeChild.id) === String(child.id)}
+              className={`flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold transition-all border-2 ${
+                (activeChild && String(activeChild.id) === String(child.id))
                   ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                   : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300'
               }`}
@@ -102,11 +113,11 @@ const ParentDashboard = () => {
                           {formatTime(session.startHour)} ({session.span}h)
                         </div>
                         {session.room && (
-                          <p className="text-xs text-slate-400 mt-0.5">{session.room}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{session.room}</p>
                         )}
                       </div>
                     )) : (
-                      <p className="text-xs text-slate-400 text-center py-4">No sessions</p>
+                      <p className="text-xs text-slate-500 text-center py-4">No sessions</p>
                     )}
                   </div>
                 </div>
@@ -121,13 +132,16 @@ const ParentDashboard = () => {
                 Programs Enrolled
               </h3>
               <div className="space-y-3">
-                {programs.slice(0, 3).map(p => (
+                {childPrograms.map(p => (
                   <div key={p.id} className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color || '#6366f1' }} />
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{p.name}</span>
-                    <span className="ml-auto text-xs text-slate-400">{p.default_duration_hours}h / session</span>
+                    <span className="ml-auto text-xs text-slate-500">{p.default_duration_hours}h / session</span>
                   </div>
                 ))}
+                {childPrograms.length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-4">No programs enrolled yet.</p>
+                )}
               </div>
             </div>
 
@@ -137,23 +151,20 @@ const ParentDashboard = () => {
                 Upcoming Sessions
               </h3>
               <div className="space-y-3">
-                {sessions
-                  .filter(s => s.studentIds?.includes(selectedChild.id))
-                  .slice(0, 3)
-                  .map(s => (
+                {upcomingSessions.slice(0, 3).map(s => (
                     <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                       <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                         <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{s.title}</p>
-                        <p className="text-xs text-slate-500">{dayNames[s.dayOfWeek ?? 0]} · {formatTime(s.startHour)}</p>
+                        <p className="text-xs text-slate-500">{sessionDayName(s)} · {formatTime(s.startHour)}</p>
                       </div>
-                      <ChevronRight size={16} className="text-slate-400" />
+                      <ChevronRight size={16} className="text-slate-500" />
                     </div>
                   ))}
-                {sessions.filter(s => s.studentIds?.includes(selectedChild.id)).length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-4">No upcoming sessions scheduled.</p>
+                {upcomingSessions.length === 0 && (
+                  <p className="text-sm text-slate-500 text-center py-4">No upcoming sessions for {activeChild.name} yet.</p>
                 )}
               </div>
             </div>

@@ -11,15 +11,18 @@ import { useGlobalState } from '../context/GlobalStateContext';
 const Layout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const { user, appRole, logout, notifications } = useGlobalState();
   const navigate = useNavigate();
   const bellRef = useRef(null);
 
-  // Auto-collapse sidebar on smaller screens
+  // Auto-collapse sidebar on smaller screens and track isMobile
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
         setIsSidebarOpen(false);
       } else {
         setIsSidebarOpen(true);
@@ -37,7 +40,7 @@ const Layout = () => {
 
   const handleNavClick = () => {
     // Close sidebar on tablet when clicking a nav link
-    if (window.innerWidth < 1024) {
+    if (isMobile) {
       setIsSidebarOpen(false);
     }
   };
@@ -64,12 +67,12 @@ const Layout = () => {
       isAdmin: appRole === 'admin',
       isSuperAdmin: appRole === 'superadmin'
     },
-    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'User Management' }] : []),
-    ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes' }] : []),
-    ...(isAdminLevel ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule' }] : []),
-    ...(isAdminLevel ? [{ to: '/directory', icon: Users, label: 'Directory' }] : []),
-    ...(isAdminLevel ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms' }] : []),
-    { to: '/settings', icon: SettingsIcon, label: 'Settings' },
+    ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes', section: 'Operations' }] : []),
+    ...(isAdminLevel ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule', section: 'Operations' }] : []),
+    ...(isAdminLevel ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
+    ...(isAdminLevel ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
+    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'User Management', section: 'System' }] : []),
+    { to: '/settings', icon: SettingsIcon, label: 'Settings', section: 'System' },
   ];
 
   return (
@@ -82,6 +85,7 @@ const Layout = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle sidebar"
               className="p-2 rounded-lg hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-200 transition-colors"
             >
               <Menu size={20} />
@@ -142,7 +146,7 @@ const Layout = () => {
         
         {/* Mobile/Tablet overlay */}
         <AnimatePresence>
-          {isSidebarOpen && window.innerWidth < 1024 && (
+          {isSidebarOpen && isMobile && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -163,32 +167,36 @@ const Layout = () => {
         )}>
           {/* Navigation Section */}
           <nav className={clsx("flex-1 p-4 pt-6 space-y-1 overflow-y-auto", !isSidebarOpen && "px-2 pt-4")}>
-            {navLinks.map(link => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={handleNavClick}
-                title={!isSidebarOpen ? link.label : ""}
-                className={({ isActive }) =>
-                  clsx(
-                    "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
-                    isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
-                    link.isAdmin && "mb-2",
-                    getNavStyle(link, isActive)
-                  )
-                }
-              >
-                <link.icon size={20} />
-                {isSidebarOpen && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="whitespace-nowrap"
-                  >
-                    {link.label}
-                  </motion.span>
+            {navLinks.map((link, i) => (
+              <React.Fragment key={link.to}>
+                {isSidebarOpen && link.section && navLinks[i - 1]?.section !== link.section && (
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-4 pb-1">{link.section}</p>
                 )}
-              </NavLink>
+                <NavLink
+                  to={link.to}
+                  onClick={handleNavClick}
+                  title={!isSidebarOpen ? link.label : ""}
+                  className={({ isActive }) =>
+                    clsx(
+                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
+                      isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
+                      link.isAdmin && "mb-2",
+                      getNavStyle(link, isActive)
+                    )
+                  }
+                >
+                  <link.icon size={20} />
+                  {isSidebarOpen && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="whitespace-nowrap"
+                    >
+                      {link.label}
+                    </motion.span>
+                  )}
+                </NavLink>
+              </React.Fragment>
             ))}
           </nav>
 
@@ -244,7 +252,7 @@ const Layout = () => {
         </main>
       </div>
       {/* Global Search Modal */}
-      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <GlobalSearch isOpen={isSearchOpen} onToggle={() => setIsSearchOpen(prev => !prev)} onClose={() => setIsSearchOpen(false)} />
       
       {/* Forced Password Change Modal */}
       <ForceChangePasswordModal />
