@@ -710,7 +710,7 @@ const ScheduleCalendar = () => {
   const handleAutoSchedule = async () => {
     setIsAutoScheduling(true);
     const dayOfWeek = selectedDate.getDay() === 0 ? 4 : selectedDate.getDay() - 1;
-    const result = await smartSchedule({ dayOfWeek });
+    const result = await smartSchedule({ dayOfWeek, sessionDate: selectedDateISO });
     if (!result.success) {
       notify(result.error || 'Auto-scheduler failed to run', 'error');
     } else if (!result.scheduled || result.scheduled.length === 0) {

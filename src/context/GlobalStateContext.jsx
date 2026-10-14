@@ -181,7 +181,11 @@ export const GlobalStateProvider = ({ children }) => {
               room: payload.new.room,
               startHour: payload.new.start_hour,
               span: payload.new.span,
-              type: payload.new.type
+              type: payload.new.type,
+              programId: payload.new.program_id,
+              dayOfWeek: payload.new.day_of_week,
+              sessionDate: payload.new.session_date || null,
+              isConfirmed: payload.new.is_confirmed
             }];
           });
         } else if (payload.eventType === 'UPDATE') {
@@ -193,7 +197,11 @@ export const GlobalStateProvider = ({ children }) => {
             room: payload.new.room,
             startHour: payload.new.start_hour,
             span: payload.new.span,
-            type: payload.new.type
+            type: payload.new.type,
+            programId: payload.new.program_id,
+            dayOfWeek: payload.new.day_of_week,
+            sessionDate: payload.new.session_date || null,
+            isConfirmed: payload.new.is_confirmed
           } : s));
         } else if (payload.eventType === 'DELETE') {
           setSessions(prev => prev.filter(s => s.id !== payload.old.id));
@@ -1086,7 +1094,7 @@ export const GlobalStateProvider = ({ children }) => {
    * backtracking + scoring, with a local fallback for offline/preview.
    */
   const smartSchedule = async (options = {}) => {
-    const { dryRun = false, dayOfWeek, config: userConfig } = options;
+    const { dryRun = false, dayOfWeek, sessionDate, config: userConfig } = options;
 
     // Try Edge Function first (full backtracking + multi-attempt)
     if (supabase) {
@@ -1099,6 +1107,23 @@ export const GlobalStateProvider = ({ children }) => {
             setStudentPrograms(prev =>
               prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
             );
+            const { data: refreshedSessions } = await supabase.from('sessions').select('*');
+            if (refreshedSessions) {
+              setSessions(refreshedSessions.map(s => ({
+                id: s.id,
+                title: s.title,
+                therapistId: s.therapist_id,
+                studentIds: s.student_ids || [],
+                room: s.room,
+                startHour: s.start_hour,
+                span: s.span,
+                type: s.type,
+                programId: s.program_id,
+                dayOfWeek: s.day_of_week,
+                sessionDate: s.session_date || null,
+                isConfirmed: s.is_confirmed
+              })));
+            }
             notify(`Smart scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
           }
           return result;
@@ -1124,6 +1149,7 @@ export const GlobalStateProvider = ({ children }) => {
 
       // Persist locally-computed schedule if not dry run
       if (!dryRun && supabase && result.scheduled?.length > 0) {
+        const newlyCreated = [];
         for (const a of result.scheduled) {
           const { data, error } = await supabase.from('sessions').insert({
             title: `Auto: ${a.programName}`,
@@ -1135,14 +1161,36 @@ export const GlobalStateProvider = ({ children }) => {
             type: a.type,
             program_id: a.programId,
             day_of_week: dayOfWeek ?? 0,
+            session_date: sessionDate || null,
             is_confirmed: false,
           }).select().single();
 
           if (!error && data) {
+            newlyCreated.push({
+              id: data.id,
+              title: data.title,
+              therapistId: data.therapist_id,
+              studentIds: data.student_ids || [],
+              room: data.room,
+              startHour: data.start_hour,
+              span: data.span,
+              type: data.type,
+              programId: data.program_id,
+              dayOfWeek: data.day_of_week,
+              sessionDate: data.session_date || null,
+              isConfirmed: data.is_confirmed,
+            });
             await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', a.studentProgramId);
           }
         }
-        // Refresh state
+        // Refresh state optimistically
+        if (newlyCreated.length > 0) {
+          setSessions(prev => {
+            const existingIds = new Set(prev.map(s => s.id));
+            const toAdd = newlyCreated.filter(s => !existingIds.has(s.id));
+            return [...prev, ...toAdd];
+          });
+        }
         const scheduledIds = result.scheduled.map(a => a.studentProgramId);
         setStudentPrograms(prev =>
           prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
