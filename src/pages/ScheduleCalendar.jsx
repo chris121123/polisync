@@ -460,6 +460,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                 <input
                   type="date"
                   value={formData.sessionDate}
+                  min={getLocalToday()}
                   onChange={e => {
                     setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
                   }}
@@ -482,6 +483,9 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Provider / Therapist *</label>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mb-2 -mt-1">
+                  The staff member (therapist or teacher) responsible for conducting this session.
+                </p>
                 <select
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-semibold"
                   value={formData.therapistId}
@@ -508,7 +512,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   }}
                   value=""
                 >
-                  <option value="">Select students…</option>
+                  <option value="" disabled hidden>— Add a student —</option>
                   {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <div className="flex flex-wrap gap-2 mt-2">

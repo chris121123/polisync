@@ -33,6 +33,23 @@ const Layout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Global Ctrl+K shortcut — must live in Layout so it always fires,
+  // regardless of whether the search modal is open or closed.
+  useEffect(() => {
+    const handleSearchShortcut = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSearchOpen(prev => !prev);
+      }
+      if (e.key === 'Escape') {
+        setIsSearchOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleSearchShortcut, true); // capture phase
+    return () => window.removeEventListener('keydown', handleSearchShortcut, true);
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -80,13 +97,13 @@ const Layout = () => {
       
       {/* ── Top Header ────────────────────────────────────────────────── */}
       <header className="h-16 flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm transition-colors">
-        <div className="flex gap-6 items-center flex-1">
+        <div className="flex gap-2 sm:gap-6 items-center flex-1 min-w-0">
           {/* Toggle & Logo Group */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle sidebar"
-              className="p-2 rounded-lg hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-200 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-200 transition-colors touch-manipulation"
             >
               <Menu size={20} />
             </button>
@@ -105,21 +122,22 @@ const Layout = () => {
           {/* AI Search Bar */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 px-4 py-2 rounded-xl transition-all w-full max-w-sm border border-slate-200 dark:border-slate-700"
+            className="flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 px-3 sm:px-4 py-2 rounded-xl transition-all w-full max-w-[200px] sm:max-w-sm border border-slate-200 dark:border-slate-700 touch-manipulation min-w-0"
           >
-            <Search size={16} />
-            <span className="text-sm font-medium truncate">Search schedules, students...</span>
-            <div className="ml-auto hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-sm">
+            <Search size={16} className="shrink-0" />
+            <span className="text-sm font-medium truncate hidden xs:block">Search...</span>
+            <span className="text-sm font-medium truncate hidden sm:block">Search schedules, students...</span>
+            <div className="ml-auto hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-sm shrink-0">
               <Command size={10} />K
             </div>
           </button>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1 md:gap-4 shrink-0">
           <div className="relative" ref={bellRef}>
             <button
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+              className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group touch-manipulation"
               title="Notifications"
             >
               <Bell size={20} className="text-slate-400 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
@@ -178,7 +196,7 @@ const Layout = () => {
                   title={!isSidebarOpen ? link.label : ""}
                   className={({ isActive }) =>
                     clsx(
-                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
+                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 touch-manipulation",
                       isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
                       link.isAdmin && "mb-2",
                       getNavStyle(link, isActive)
