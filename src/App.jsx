@@ -13,7 +13,7 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SessionNotes from './pages/therapist/SessionNotes';
-import { ProtectedRoute, AdminRoute, SuperAdminRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
+import { ProtectedRoute, AdminRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
@@ -50,10 +50,10 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin/users" element={<SuperAdminRoute><UserManagement /></SuperAdminRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
-          <Route path="schedule" element={<AdminRoute><ScheduleCalendar /></AdminRoute>} />
-          <Route path="directory" element={<AdminRoute><Directory /></AdminRoute>} />
+          <Route path="schedule" element={<RoleRoute allowedRoles={['admin']}><ScheduleCalendar /></RoleRoute>} />
+          <Route path="directory" element={<RoleRoute allowedRoles={['admin']}><Directory /></RoleRoute>} />
           <Route path="profile/:id" element={<ProfilePage />} />
-          <Route path="rooms" element={<AdminRoute><Rooms /></AdminRoute>} />
+          <Route path="rooms" element={<RoleRoute allowedRoles={['admin']}><Rooms /></RoleRoute>} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

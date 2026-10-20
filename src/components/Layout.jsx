@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, BookUser, GraduationCap, ClipboardCheck, FileText, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -65,56 +65,49 @@ const Layout = () => {
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
 
   const getNavStyle = (link, isActive) => {
-    if (!isActive) return 'text-slate-600 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100';
-    if (link.isSuperAdmin) return 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 border-2 border-violet-100 dark:border-violet-900/50 font-bold';
-    if (link.isAdmin) return 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-2 border-amber-100 dark:border-amber-900/50 font-bold';
-    if (link.isParent) return 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 border-2 border-pink-100 dark:border-pink-900/50 font-bold';
-    if (link.isTeacher) return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-2 border-indigo-100 dark:border-indigo-900/50 font-bold';
-    if (link.isTherapist) return 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 border-2 border-teal-100 dark:border-teal-900/50 font-bold';
-    return 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 font-bold border-2 border-indigo-100 dark:border-indigo-900/50 shadow-sm';
+    if (!isActive) return 'text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
+    return 'bg-ps-accent-soft text-ps-ink-1 font-medium';
   };
 
   const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
 
   const navLinks = [
-    { 
-      to: '/dashboard', 
-      icon: isAdminLevel ? ShieldAlert : LayoutDashboard, 
-      label: appRole === 'superadmin' ? 'Super Admin Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'), 
-      isAdmin: appRole === 'admin',
-      isSuperAdmin: appRole === 'superadmin'
+    {
+      to: '/dashboard',
+      icon: isAdminLevel ? ShieldAlert : LayoutDashboard,
+      label: appRole === 'superadmin' ? 'Super Admin Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'),
     },
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes', section: 'Operations' }] : []),
-    ...(isAdminLevel ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule', section: 'Operations' }] : []),
-    ...(isAdminLevel ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
-    ...(isAdminLevel ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
-    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'User Management', section: 'System' }] : []),
+    ...(appRole === 'admin' ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule', section: 'Operations' }] : []),
+    ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
+    ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
+    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'System Console', section: 'System' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings', section: 'System' },
   ];
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-200 overflow-hidden transition-colors duration-300">
+    <div className="flex flex-col h-screen w-full bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors duration-300">
       
       {/* ── Top Header ────────────────────────────────────────────────── */}
-      <header className="h-16 flex-shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm transition-colors">
+      <header className="h-16 flex-shrink-0 bg-ps-surface border-b border-ps-border flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm transition-colors">
         <div className="flex gap-2 sm:gap-6 items-center flex-1 min-w-0">
           {/* Toggle & Logo Group */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle sidebar"
-              className="p-2 rounded-lg hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-200 transition-colors touch-manipulation"
+              className="p-2 rounded-lg hover:bg-ps-bg text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               <Menu size={20} />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-200">
+              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
                 <Stethoscope size={18} />
               </div>
               <div className="hidden sm:block">
-                <h1 className="font-bold text-base text-slate-900 dark:text-white leading-tight">PoliSync</h1>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Special Ed Center</p>
+                <h1 className="font-bold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
+                <p className="text-xs font-medium text-ps-ink-2">Special Ed Center</p>
               </div>
             </div>
           </div>
@@ -122,12 +115,12 @@ const Layout = () => {
           {/* AI Search Bar */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 px-3 sm:px-4 py-2 rounded-xl transition-all w-full max-w-[200px] sm:max-w-sm border border-slate-200 dark:border-slate-700 touch-manipulation min-w-0"
+            className="flex items-center gap-2 text-ps-ink-2 bg-ps-bg hover:bg-ps-border/40 px-3 sm:px-4 py-2 rounded-xl transition-all w-full max-w-[200px] sm:max-w-sm border border-ps-border touch-manipulation min-w-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <Search size={16} className="shrink-0" />
             <span className="text-sm font-medium truncate hidden xs:block">Search...</span>
             <span className="text-sm font-medium truncate hidden sm:block">Search schedules, students...</span>
-            <div className="ml-auto hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded shadow-sm shrink-0">
+            <div className="ml-auto hidden sm:flex items-center gap-1 text-xs font-medium text-ps-ink-2 bg-ps-surface border border-ps-border px-1.5 py-0.5 rounded shadow-sm shrink-0">
               <Command size={10} />K
             </div>
           </button>
@@ -137,12 +130,12 @@ const Layout = () => {
           <div className="relative" ref={bellRef}>
             <button
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="relative p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group touch-manipulation"
+              className="relative p-2 rounded-xl hover:bg-ps-bg transition-colors group touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
               title="Notifications"
             >
-              <Bell size={20} className="text-slate-400 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+              <Bell size={20} className="text-ps-ink-2 group-hover:text-ps-ink-1 transition-colors" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                <span className="absolute top-1 right-1 w-4 h-4 bg-ps-ink-1 text-ps-surface text-xs font-semibold rounded-full flex items-center justify-center ring-2 ring-ps-surface">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -153,7 +146,7 @@ const Layout = () => {
               anchorRef={bellRef}
             />
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-200 font-bold uppercase tracking-wider">
+          <div className="text-xs font-medium text-ps-ink-2">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </div>
         </div>
@@ -170,14 +163,14 @@ const Layout = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-slate-900/20 dark:bg-slate-950/40 backdrop-blur-[2px] z-20 lg:hidden"
+              className="fixed inset-0 bg-ps-ink-1/20 backdrop-blur-[2px] z-20 lg:hidden"
             />
           )}
         </AnimatePresence>
 
         {/* Sidebar */}
         <aside className={clsx(
-          "bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col flex-shrink-0 z-30 transition-all duration-300",
+          "bg-ps-surface border-r border-ps-border flex flex-col flex-shrink-0 z-30 transition-all duration-300",
           "fixed lg:relative inset-y-0 left-0 h-full",
           isSidebarOpen 
             ? "w-64 translate-x-0" 
@@ -188,7 +181,7 @@ const Layout = () => {
             {navLinks.map((link, i) => (
               <React.Fragment key={link.to}>
                 {isSidebarOpen && link.section && navLinks[i - 1]?.section !== link.section && (
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 pt-4 pb-1">{link.section}</p>
+                  <p className="text-xs font-medium text-ps-ink-2 px-3 pt-4 pb-1">{link.section}</p>
                 )}
                 <NavLink
                   to={link.to}
@@ -196,22 +189,15 @@ const Layout = () => {
                   title={!isSidebarOpen ? link.label : ""}
                   className={({ isActive }) =>
                     clsx(
-                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 touch-manipulation",
+                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent",
                       isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
-                      link.isAdmin && "mb-2",
                       getNavStyle(link, isActive)
                     )
                   }
                 >
                   <link.icon size={20} />
                   {isSidebarOpen && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="whitespace-nowrap"
-                    >
-                      {link.label}
-                    </motion.span>
+                    <span className="whitespace-nowrap">{link.label}</span>
                   )}
                 </NavLink>
               </React.Fragment>
@@ -219,40 +205,37 @@ const Layout = () => {
           </nav>
 
           {/* User Profile Section */}
-          <div className={clsx("p-4 border-t border-slate-100 dark:border-slate-800", !isSidebarOpen && "p-2")}>
+          <div className={clsx("p-4 border-t border-ps-border", !isSidebarOpen && "p-2")}>
             <div className={clsx(
-              "flex items-center bg-slate-50 dark:bg-slate-800/50 rounded-xl relative group transition-all",
+              "flex items-center bg-ps-bg rounded-xl relative group transition-all",
               isSidebarOpen ? "gap-3 p-3" : "p-2 justify-center"
             )}>
-              <div className="w-9 h-9 rounded-full bg-indigo-200 dark:bg-indigo-900/50 border-2 border-white dark:border-slate-700 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-bold shrink-0 shadow-sm">
                 {user?.name?.charAt(0) || 'U'}
               </div>
               {isSidebarOpen && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex-1 min-w-0"
-                >
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-200 truncate capitalize">{appRole || 'Loading...'}</p>
-                </motion.div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ps-ink-1 truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-ps-ink-2 truncate capitalize">{appRole || 'Loading...'}</p>
+                </div>
               )}
               
               {isSidebarOpen ? (
                 <div className="flex gap-1">
-                  <button 
+                  <button
                     onClick={handleLogout}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-surface rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
                     title="Logout"
+                    aria-label="Logout"
                   >
                     <LogOut size={16} />
                   </button>
                 </div>
               ) : (
-                <div className="absolute left-full ml-4 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50 flex flex-col gap-2">
+                <div className="absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all z-50 flex flex-col gap-2">
                     <button 
                       onClick={handleLogout}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
+                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg focus-visible:outline-2 focus-visible:outline-ps-accent"
                     >
                       <LogOut size={14} /> Logout
                     </button>
@@ -263,8 +246,8 @@ const Layout = () => {
         </aside>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 min-h-0 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50 transition-colors">
-          <React.Suspense fallback={<div className="p-8 font-bold text-slate-400">Loading center data...</div>}>
+        <main className="flex-1 min-h-0 overflow-y-auto bg-ps-bg transition-colors">
+          <React.Suspense fallback={<div className="p-8 font-bold text-ps-ink-2">Loading center data...</div>}>
             <Outlet />
           </React.Suspense>
         </main>

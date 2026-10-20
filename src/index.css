@@ -1,68 +1,143 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
+
 @theme {
-  --color-rehab-light: #e0f2fe;
+  /* Color Palette Tokens */
+  --color-ps-surface: #ffffff;
+  --color-ps-bg: #f4f5f8;
+  --color-ps-border: #e5e7ef;
+  --color-ps-ink-1: #0d0f1a;
+  --color-ps-ink-2: #5a6075;
+  --color-ps-accent: #4f46e5;
+  --color-ps-accent-soft: #eef2ff;
+  --color-ps-success: #059669;
+  --color-ps-warn: #d97706;
+  --color-ps-danger: #dc2626;
+
+  /* Preserve legacy colors for compatibility but update to match feel */
   --color-rehab: #0ea5e9;
-  --color-rehab-dark: #0284c7;
-
-  --color-sped-light: #f3e8ff;
   --color-sped: #a855f7;
-  --color-sped-dark: #7e22ce;
-
-  --color-playschool-light: #fef08a;
   --color-playschool: #eab308;
-  --color-playschool-dark: #ca8a04;
-
-  --color-admin-light: #f1f5f9;
-  --color-admin: #64748b;
-  --color-admin-dark: #475569;
-
-  --color-staff-light: #dcfce7;
   --color-staff: #22c55e;
-  --color-staff-dark: #16a34a;
+  
+  /* Fonts */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'DM Sans', sans-serif;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Radius */
+  --radius-2xl: 16px;
+  --radius-xl: 12px;
+
+  /* Transitions */
+  --transition-timing-standard: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+:root {
+  --ps-surface: #ffffff;
+  --ps-bg: #f4f5f8;
+  --ps-border: #e5e7ef;
+  --ps-ink-1: #0d0f1a;
+  --ps-ink-2: #5a6075;
+  --ps-accent: #4f46e5;
+  --ps-accent-soft: #eef2ff;
+}
+
+.dark {
+  --ps-surface: #0f1117;
+  --ps-bg: #080b10;
+  --ps-border: #1e2330;
+  --ps-ink-1: #f0f2fa;
+  --ps-ink-2: #8590ab;
+  --ps-accent: #6366f1;
+  --ps-accent-soft: #1e1f4a;
+  --color-ps-surface: #0f1117;
+  --color-ps-bg: #080b10;
+  --color-ps-border: #1e2330;
+  --color-ps-ink-1: #f0f2fa;
+  --color-ps-ink-2: #8590ab;
+  --color-ps-accent: #6366f1;
+  --color-ps-accent-soft: #1e1f4a;
+  --color-ps-success: #10b981;
+  --color-ps-warn: #f59e0b;
+  --color-ps-danger: #ef4444;
+}
+
+/* Base styles */
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--ps-bg);
+  color: var(--ps-ink-1);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.dark body {
-  background-color: #020617;
-  color: #f1f5f9;
+/* Typography Utilities */
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
-/* ── Global Interactive Micro-Animations ── */
-/* Ensures all clickable elements across the system feel alive and responsive */
-button, 
-a, 
-[role="button"],
-select {
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+/* Role Accents */
+.role-superadmin { @apply text-violet-600 dark:text-violet-400; }
+.role-admin      { @apply text-amber-600 dark:text-amber-400; }
+.role-teacher    { @apply text-indigo-600 dark:text-indigo-400; }
+.role-therapist  { @apply text-teal-600 dark:text-teal-400; }
+.role-parent     { @apply text-pink-600 dark:text-pink-400; }
+
+.bg-role-superadmin { @apply bg-violet-600; }
+.bg-role-admin      { @apply bg-amber-600; }
+.bg-role-teacher    { @apply bg-indigo-600; }
+.bg-role-therapist  { @apply bg-teal-600; }
+.bg-role-parent     { @apply bg-pink-600; }
+
+/* Interactive Micro-Animations */
+button, a, [role="button"] {
+  transition: var(--transition-timing-standard);
 }
 
-button:active:not(:disabled), 
-a:active, 
-[role="button"]:active {
-  transform: scale(0.96);
+button:active:not(:disabled), a:active, [role="button"]:active {
+  transform: scale(0.97);
 }
 
-/* Gentle brightness adjustment for hover */
-button:hover:not(:disabled), 
-a:hover, 
-[role="button"]:hover {
-  filter: brightness(0.95);
+/* Global Page Entry Animation */
+.animate-page-entry {
+  animation: pageFadeIn 300ms ease-out forwards;
 }
 
-.dark button:hover:not(:disabled), 
-.dark a:hover, 
-.dark [role="button"]:hover {
-  filter: brightness(1.15);
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Focus visible for interactive elements */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-ps-accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Utility for dynamic accent tints */
+.bg-ps-accent-soft {
+  background-color: var(--ps-accent-soft);
+}
+
+.border-ps-border {
+  border-color: var(--ps-border);
+}
+
+.bg-ps-surface {
+  background-color: var(--ps-surface);
 }

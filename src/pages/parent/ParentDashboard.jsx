@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, BookOpen, Bell, ChevronRight, User } from 'lucide-react';
+import { Calendar, Clock, BookOpen, ChevronRight, User, ShieldCheck, MapPin, Sparkles, PlusCircle, CheckCircle2 } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import RequirementsUpload from './RequirementsUpload';
+import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 
 const ParentDashboard = () => {
-  const { user, sessions, programs, studentPrograms, parentChildren, fetchParentChildren, notifications } = useGlobalState();
+  const { user, sessions, programs, studentPrograms, parentChildren, fetchParentChildren } = useGlobalState();
   const [selectedChild, setSelectedChild] = useState(null);
 
   useEffect(() => {
@@ -45,79 +46,120 @@ const ParentDashboard = () => {
       .sort((a, b) => sessionDayIndex(a) - sessionDayIndex(b) || a.startHour - b.startHour);
   }, [activeChild, sessions]);
 
-  const _unreadCount = notifications.filter(n => !n.is_read).length;
-
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Welcome, {user?.name?.split(' ')[0]}
+    <div className="space-y-8 animate-page-entry">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-display font-bold text-ps-ink-1">
+            Hello, {user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-slate-500 font-medium mt-1">Your child's schedule at a glance</p>
+          <p className="text-ps-ink-2 font-medium">Tracking your child's developmental progress and schedule.</p>
         </div>
       </div>
 
+      {/* Child Selector (Pills) */}
       {parentChildren.length > 1 && (
-        <div className="flex gap-3 flex-wrap">
-          {parentChildren.map(child => (
-            <button
-              key={child.id}
-              onClick={() => setSelectedChild(child.id)}
-              aria-pressed={activeChild && String(activeChild.id) === String(child.id)}
-              className={`flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl text-sm font-semibold transition-all border-2 ${
-                (activeChild && String(activeChild.id) === String(child.id))
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:border-slate-300'
-              }`}
-            >
-              <User size={16} />
-              {child.name}
-            </button>
-          ))}
+        <div className="flex gap-2 flex-wrap bg-ps-surface p-1.5 rounded-2xl border border-ps-border w-fit">
+          {parentChildren.map(child => {
+            const isActive = activeChild && String(activeChild.id) === String(child.id);
+            return (
+              <button
+                key={child.id}
+                onClick={() => setSelectedChild(child.id)}
+                className={clsx(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                  isActive 
+                    ? "bg-ps-accent text-white shadow-lg shadow-ps-accent/20" 
+                    : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
+                )}
+              >
+                <div className={clsx("w-2 h-2 rounded-full", isActive ? "bg-white" : "bg-ps-accent")} />
+                {child.name}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {activeChild && (
+      {activeChild ? (
         <>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-lg">
+          {/* Child Profile Hero Card */}
+          <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-500/20">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full -ml-20 -mb-20 blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
+              <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl font-display font-bold ring-4 ring-white/30 shadow-2xl shrink-0">
                 {activeChild.name.charAt(0)}
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{activeChild.name}</h2>
-                <p className="text-sm text-slate-500">
-                  {activeChild.diagnosis || 'Enrolled student'}
-                  {activeChild.start_date && ` · Started ${new Date(activeChild.start_date).toLocaleDateString()}`}
-                </p>
+              <div className="flex-1 space-y-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-display font-bold">{activeChild.name}</h2>
+                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider border border-white/20">
+                      Enrolled
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-indigo-100 text-sm font-medium">
+                    <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-indigo-200" /> {activeChild.diagnosis || 'Standard Enrollment'}</span>
+                    {activeChild.start_date && (
+                      <span className="flex items-center gap-1.5 opacity-80"><Calendar size={14} /> Since {new Date(activeChild.start_date).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 flex-wrap">
+                  <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                    <BookOpen size={14} className="text-indigo-200" />
+                    <span className="text-xs font-bold">{childPrograms.length} Programs Enrolled</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                    <Clock size={14} className="text-indigo-200" />
+                    <span className="text-xs font-bold">{upcomingSessions.length} Sessions this week</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">This Week's Schedule</h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {dayNames.map(day => (
-                <div key={day} className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 min-h-[200px]">
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className={`w-2 h-2 rounded-full ${weekSchedule[day]?.length > 0 ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">{day}</h3>
+          {/* Weekly Schedule Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-display font-bold text-ps-ink-1">Weekly Schedule</h2>
+              <div className="flex items-center gap-2 text-xs font-bold text-ps-ink-2">
+                <div className="w-2 h-2 rounded-full bg-ps-accent" /> Active session day
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {dayNames.map((day) => (
+                <div key={day} className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between px-3 pb-1">
+                    <span className="text-xs font-bold text-ps-ink-2 uppercase tracking-widest">{day.slice(0, 3)}</span>
+                    {weekSchedule[day]?.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-ps-accent" />}
                   </div>
-                  <div className="space-y-2">
+                  <div className={clsx(
+                    "rounded-2xl p-3 space-y-3 min-h-[220px] transition-colors",
+                    weekSchedule[day]?.length > 0 ? "bg-ps-surface border border-ps-border shadow-sm" : "bg-ps-bg/20 border-2 border-dashed border-ps-border"
+                  )}>
                     {weekSchedule[day]?.length > 0 ? weekSchedule[day].map((session, idx) => (
-                      <div key={idx} className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800">
-                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300 leading-tight">{session.title}</p>
-                        <div className="flex items-center gap-1 mt-1.5 text-xs text-slate-500">
-                          <Clock size={10} />
-                          {formatTime(session.startHour)} ({session.span}h)
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-3 rounded-xl bg-ps-accent-soft border border-ps-accent/10 space-y-2 group hover:bg-white dark:hover:bg-ps-surface transition-colors hover:shadow-md cursor-default"
+                      >
+                        <p className="text-[11px] font-bold text-ps-accent leading-tight truncate">{session.title}</p>
+                        <div className="flex flex-col gap-1 text-[10px] text-ps-ink-2 font-medium">
+                          <span className="flex items-center gap-1"><Clock size={10} /> {formatTime(session.startHour)}</span>
+                          {session.room && <span className="flex items-center gap-1"><MapPin size={10} /> {session.room}</span>}
                         </div>
-                        {session.room && (
-                          <p className="text-xs text-slate-500 mt-0.5">{session.room}</p>
-                        )}
-                      </div>
+                      </motion.div>
                     )) : (
-                      <p className="text-xs text-slate-500 text-center py-4">No sessions</p>
+                      <div className="h-full flex flex-col items-center justify-center opacity-20 py-8">
+                        <Sparkles size={20} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -125,68 +167,85 @@ const ParentDashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <BookOpen size={16} className="text-indigo-500" />
-                Programs Enrolled
-              </h3>
-              <div className="space-y-3">
-                {childPrograms.map(p => (
-                  <div key={p.id} className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color || '#6366f1' }} />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{p.name}</span>
-                    <span className="ml-auto text-xs text-slate-500">{p.default_duration_hours}h / session</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Upcoming Timeline */}
+            <div className="bg-ps-surface rounded-3xl p-8 shadow-sm border border-ps-border space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 rounded-xl">
+                  <Calendar size={20} />
+                </div>
+                <h3 className="text-lg font-display font-bold text-ps-ink-1">Upcoming Sessions</h3>
+              </div>
+              
+              <div className="space-y-0 relative before:absolute before:left-5 before:top-2 before:bottom-2 before:w-px before:bg-ps-border">
+                {upcomingSessions.length > 0 ? upcomingSessions.slice(0, 4).map((s, i) => (
+                  <div key={i} className="relative pl-12 pb-8 last:pb-0 group">
+                    <div className="absolute left-3.5 top-1.5 w-3 h-3 rounded-full bg-ps-surface border-2 border-indigo-500 z-10 group-hover:scale-125 transition-transform" />
+                    <div className="flex items-center justify-between bg-ps-bg/30 group-hover:bg-ps-bg p-4 rounded-2xl border border-transparent group-hover:border-ps-border transition-all">
+                      <div>
+                        <p className="text-sm font-bold text-ps-ink-1 leading-none mb-1">{s.title}</p>
+                        <p className="text-xs text-ps-ink-2 font-medium">
+                          {sessionDayName(s)} • {formatTime(s.startHour)}
+                        </p>
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-ps-surface flex items-center justify-center text-ps-ink-2 group-hover:text-ps-accent transition-colors">
+                        <ChevronRight size={16} />
+                      </div>
+                    </div>
                   </div>
-                ))}
-                {childPrograms.length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">No programs enrolled yet.</p>
+                )) : (
+                  <p className="text-sm text-ps-ink-2 py-4 italic">No upcoming sessions found.</p>
                 )}
               </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-              <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <Calendar size={16} className="text-indigo-500" />
-                Upcoming Sessions
-              </h3>
-              <div className="space-y-3">
-                {upcomingSessions.slice(0, 3).map(s => (
-                    <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                        <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
+            {/* Programs & Requirements */}
+            <div className="space-y-6">
+              <div className="bg-ps-surface rounded-3xl p-8 shadow-sm border border-ps-border">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <h3 className="text-lg font-display font-bold text-ps-ink-1">Specialized Care</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  {childPrograms.length > 0 ? childPrograms.map(p => (
+                    <div key={p.id} className="p-4 rounded-2xl border-l-4 border-l-ps-accent bg-ps-bg/30 flex items-center justify-between group hover:bg-ps-bg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color || '#6366f1' }} />
+                        <span className="text-sm font-bold text-ps-ink-1">{p.name}</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{s.title}</p>
-                        <p className="text-xs text-slate-500">{sessionDayName(s)} · {formatTime(s.startHour)}</p>
-                      </div>
-                      <ChevronRight size={16} className="text-slate-500" />
+                      <span className="text-[10px] font-bold text-ps-ink-2 uppercase tracking-tighter bg-ps-surface px-2 py-1 rounded-lg border border-ps-border">
+                        {p.default_duration_hours}h / week
+                      </span>
                     </div>
-                  ))}
-                {upcomingSessions.length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">No upcoming sessions for {activeChild.name} yet.</p>
-                )}
+                  )) : (
+                    <p className="text-sm text-ps-ink-2 py-4 italic">No specialized programs enrolled yet.</p>
+                  )}
+                </div>
               </div>
+
+              <RequirementsUpload studentId={activeChild.id} />
             </div>
           </div>
         </>
-      )}
-
-      {activeChild && (
-        <div className="mt-6">
-          <RequirementsUpload studentId={activeChild.id} />
-        </div>
-      )}
-
-      {!activeChild && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-full flex items-center justify-center mb-6">
-            <User size={40} />
+      ) : (
+        /* No children state */
+        <div className="bg-ps-surface rounded-[40px] p-16 shadow-sm border border-ps-border flex flex-col items-center justify-center text-center space-y-6">
+          <div className="w-24 h-24 bg-ps-bg text-ps-ink-2/20 rounded-full flex items-center justify-center relative">
+            <User size={48} />
+            <PlusCircle size={24} className="absolute bottom-1 right-1 text-ps-accent bg-ps-surface rounded-full" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">No Children Assigned</h2>
-          <p className="text-slate-500 max-w-md">
-            Your account is currently not linked to any enrolled students. Please contact the administration to have your child linked to your account.
-          </p>
+          <div className="max-w-md space-y-2">
+            <h2 className="text-2xl font-display font-bold text-ps-ink-1">Waiting to connect</h2>
+            <p className="text-ps-ink-2 font-medium">
+              Your account isn't linked to any students yet. This usually happens while our administration processes your registration.
+            </p>
+          </div>
+          <button className="px-6 py-3 bg-ps-accent text-white font-bold rounded-2xl shadow-lg shadow-ps-accent/20 hover:scale-[1.02] active:scale-95 transition-all">
+            Contact Support
+          </button>
         </div>
       )}
     </div>

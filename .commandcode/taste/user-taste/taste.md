@@ -1,0 +1,20 @@
+# User Taste
+- **Plan-first, then implement.** Requires a written plan reviewed before any code is written. Wants explicit "plan only — no code" phases. Confidence: 0.95
+- **Verification-driven delivery.** Every change must pass `npm run lint` + `npm run build` green; manual keyboard-only and dark-mode passes required before claiming done. Confidence: 0.9
+- **Explicit NOT-doing / anti-goals.** Wants a clearly enumerated list of what is out of scope, what will not be built, and what patterns are rejected. Confidence: 0.9
+- **Small-diff preference.** Favors the smallest change that produces a coherent result; avoids renaming routes, breaking bookmarks, or large refactorings when a smaller one suffices. Confidence: 0.9
+- **Quiet, dense, operational aesthetic.** Admires Linear/Stripe admin consoles, not landing pages. Density and scanability beat whitespace. Confidence: 0.95
+- **Color discipline.** Neutral surfaces; one accent for interactive elements; color used only for real state (success, warning, danger); motion only for state change. Confidence: 0.95
+- **Strict token-based styling.** Uses a custom `ps-*` token system (`ps-surface`, `ps-bg`, `ps-border`, `ps-ink-1`, `ps-ink-2`, `ps-accent`, `ps-accent-soft`, `ps-success`, `ps-warn`, `ps-danger`, `font-display`). Raw palette classes (`slate-*`, `indigo-*`, etc.) are forbidden in scope. Confidence: 0.95
+- **No decorative chrome.** Rejects gradients, glows, glassmorphism, dashed-border empty states, decorative icons that add no information, per-row staggering animations, `animate-pulse`, and scale hovers on non-interactive cards. Confidence: 0.95
+- **Typography discipline.** Rejects `font-black`, `tracking-tight`, micro-labels (`text-[9px]` / `uppercase tracking-widest`), and mixed radius/spacing (`rounded-2xl` vs `rounded-3xl`). Prefers a single heading scale and standardized spacing. Confidence: 0.9
+- **Accessibility is mandatory, not optional.** Requires contrast checked in both light and dark themes, `focus-visible` on every control, `prefers-reduced-motion` respected, no hover-only affordances, real heading order, and destructive actions distinctive without relying on color alone. Confidence: 0.95
+- **Dark mode must be verified explicitly.** Will not accept dark-mode checks until known token bugs are fixed. Confidence: 0.9
+- **Reuse existing primitives.** Prefers reusing existing route guards, roles, and patterns over inventing new ones (e.g., reuse `RoleRoute` rather than add a new guard). Confidence: 0.85
+- **No new dependencies.** Hard constraint: no charting library, no component library, no state library. Confidence: 0.95
+- **State stays in existing context.** Call existing actions from `GlobalStateContext`; never mutate state directly. Confidence: 0.9
+- **No dead code.** Rejects dead routes, dead nav entries, and orphaned components after a change. Confidence: 0.85
+- **Preserve automation hooks.** Every existing `id=`, `aria-*`, and `title=` attribute must be preserved because they are test/automation hooks. Confidence: 0.95
+- **Structured decision tables for permissions/capabilities.** Prefers tables mapping `capability | who has it now | who should | route | guard | data source exists? | diff size`. No capability may end up owned by nobody. Confidence: 0.85
+- **Acceptance checklist required.** Wants an explicit checklist covering removed capabilities, preserved access, lint/build status, themes, keyboard pass, and slop removal. Confidence: 0.9
+- **Risks and blast radius section.** Wants out-of-scope pages, role-behavior changes, and file-modification lists called out explicitly. Confidence: 0.85

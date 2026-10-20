@@ -1,6 +1,31 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Star, User, UserPlus, Shield, ShieldAlert, X, Mail, Lock, Briefcase, Phone, Building, Eye, EyeOff, ToggleLeft, ToggleRight, AlertCircle, CheckCircle2, MoreVertical, Trash2, Search, Activity, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  User,
+  UserPlus,
+  Shield,
+  ShieldAlert,
+  X,
+  Mail,
+  Lock,
+  Briefcase,
+  Phone,
+  Building,
+  Eye,
+  EyeOff,
+  ToggleLeft,
+  ToggleRight,
+  AlertCircle,
+  CheckCircle2,
+  MoreVertical,
+  Trash2,
+  Search,
+  Activity,
+  Clock,
+  Sliders,
+  ChevronDown,
+  ChevronRight,
+  Info
+} from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
@@ -8,18 +33,52 @@ import { auditLine } from '../../lib/auditLog';
 import clsx from 'clsx';
 
 const UserManagement = () => {
-  const { staff, updateUserRole, adminCreateUser, adminDeleteUser, toggleUserActive, user } = useGlobalState();
+  const {
+    staff,
+    updateUserRole,
+    adminCreateUser,
+    adminDeleteUser,
+    toggleUserActive,
+    user,
+    schedulingSettings,
+    notify
+  } = useGlobalState();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('users');
   const [showRoleModal, setShowRoleModal] = useState(null);
   const [selectedRole, setSelectedRole] = useState('teacher');
-  const [sessionNotes, setSessionNotes] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [expandedLogIds, setExpandedLogIds] = useState(new Set());
   const [filterRole, setFilterRole] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+
+  // ── Platform Configuration Form State ──
+  const [configForm, setConfigForm] = useState({
+    operating_start_time: '08:00',
+    operating_end_time: '17:00',
+    allow_overbook: false,
+    max_daily_hours_per_student: 4.0,
+    auto_schedule_enabled: false,
+    min_break_minutes: 15,
+  });
+  const [configLoading, setConfigLoading] = useState(false);
+
+  useEffect(() => {
+    if (schedulingSettings) {
+      setConfigForm({
+        operating_start_time: schedulingSettings.operating_start_time || '08:00',
+        operating_end_time: schedulingSettings.operating_end_time || '17:00',
+        allow_overbook: !!schedulingSettings.allow_overbook,
+        max_daily_hours_per_student: schedulingSettings.max_daily_hours_per_student ?? 4.0,
+        auto_schedule_enabled: !!schedulingSettings.auto_schedule_enabled,
+        min_break_minutes: schedulingSettings.min_break_minutes ?? 15,
+      });
+    }
+  }, [schedulingSettings]);
 
   // ── Delete User Modal State ──
   const [deleteModalData, setDeleteModalData] = useState(null);
@@ -36,6 +95,7 @@ const UserManagement = () => {
   // ── Self Role Warning State ──
   const [showSelfRoleWarning, setShowSelfRoleWarning] = useState(false);
   const [selfRoleCountdown, setSelfRoleCountdown] = useState(0);
+
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -45,16 +105,15 @@ const UserManagement = () => {
     phone: '',
   });
 
-  const fetchSessionNotes = React.useCallback(async () => {
-    const { data } = await supabase.from('session_notes').select('*, students(*)').order('created_at', { ascending: false });
-    if (data) setSessionNotes(data);
-  }, []);
-
-  const fetchAuditLogs = React.useCallback(async () => {
+  const fetchAuditLogs = useCallback(async () => {
     setAuditLoading(true);
     try {
       if (!supabase) return;
-      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
       if (error) throw error;
       if (data) setAuditLogs(data);
     } catch (err) {
@@ -64,23 +123,22 @@ const UserManagement = () => {
     }
   }, []);
 
-  // Only fetch on mount if users tab is default; other tabs load lazily
-  React.useEffect(() => {
-    if (activeTab === 'reports' && sessionNotes.length === 0) fetchSessionNotes();
-    if (activeTab === 'activity' && auditLogs.length === 0) fetchAuditLogs();
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (activeTab === 'audit' && auditLogs.length === 0) {
+      fetchAuditLogs();
+    }
+  }, [activeTab, auditLogs.length, fetchAuditLogs]);
 
-  // Open create modal once when navigated from dashboard quick action
-  React.useEffect(() => {
+  useEffect(() => {
     if (location.state?.openCreate) {
       setShowCreateModal(true);
       setCreateError('');
       setCreateSuccess('');
       navigate(location.pathname, { replace: true, state: null });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.state?.openCreate, navigate]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let timer;
     if (deleteModalData && deleteCountdown > 0) {
       timer = setTimeout(() => setDeleteCountdown(prev => prev - 1), 1000);
@@ -88,7 +146,7 @@ const UserManagement = () => {
     return () => clearTimeout(timer);
   }, [deleteModalData, deleteCountdown]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let timer;
     if (showSelfRoleWarning && selfRoleCountdown > 0) {
       timer = setTimeout(() => setSelfRoleCountdown(prev => prev - 1), 1000);
@@ -97,13 +155,11 @@ const UserManagement = () => {
   }, [showSelfRoleWarning, selfRoleCountdown]);
 
   const handleUpdateRole = async (userId) => {
-    // If admin is changing their OWN role to something non-admin, trigger extra warning
-    if (user && user.id === userId && selectedRole !== 'admin') {
+    if (user && user.id === userId && selectedRole !== 'superadmin') {
       setShowSelfRoleWarning(true);
       setSelfRoleCountdown(5);
       return;
     }
-    
     await updateUserRole(userId, selectedRole);
     setShowRoleModal(null);
   };
@@ -118,15 +174,37 @@ const UserManagement = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!newUser.name.trim()) newErrors.name = 'Full name is required';
-    
     if (!newUser.email.trim()) {
       newErrors.email = 'Email address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUser.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
-
+    if (!newUser.password) {
+      newErrors.password = 'Temporary password is required';
+    } else if (newUser.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const validateField = (field) => {
+    const newErrors = { ...errors };
+    if (field === 'name') {
+      if (!newUser.name.trim()) newErrors.name = 'Full name is required';
+      else delete newErrors.name;
+    }
+    if (field === 'email') {
+      if (!newUser.email.trim()) newErrors.email = 'Email address is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUser.email)) newErrors.email = 'Please enter a valid email address';
+      else delete newErrors.email;
+    }
+    if (field === 'password') {
+      if (!newUser.password) newErrors.password = 'Temporary password is required';
+      else if (newUser.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+      else delete newErrors.password;
+    }
+    setErrors(newErrors);
   };
 
   const handleDeleteUser = (member) => {
@@ -140,30 +218,9 @@ const UserManagement = () => {
     try {
       await adminDeleteUser(deleteModalData.id);
       setDeleteModalData(null);
-    } catch { /* provider already toasts the error; keep modal open */ }
-  };
-
-  const validateField = (field) => {
-    const newErrors = { ...errors };
-    
-    if (field === 'name') {
-      if (!newUser.name.trim()) newErrors.name = 'Full name is required';
-      else delete newErrors.name;
+    } catch {
+      // provider notifies error
     }
-    
-    if (field === 'email') {
-      if (!newUser.email.trim()) newErrors.email = 'Email address is required';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUser.email)) newErrors.email = 'Please enter a valid email address';
-      else delete newErrors.email;
-    }
-    
-    if (field === 'password') {
-      if (!newUser.password) newErrors.password = 'Temporary password is required';
-      else if (newUser.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-      else delete newErrors.password;
-    }
-
-    setErrors(newErrors);
   };
 
   const handleCreateUser = async (e) => {
@@ -177,7 +234,6 @@ const UserManagement = () => {
       await adminCreateUser(newUser);
       setCreateSuccess('User created successfully!');
 
-      // Explicitly ask Chrome to save the password
       try {
         if (window.PasswordCredential && navigator.credentials) {
           const cred = new window.PasswordCredential({
@@ -187,11 +243,10 @@ const UserManagement = () => {
           });
           navigator.credentials.store(cred).catch(() => {});
         }
-      } catch (_err) {
+      } catch {
         // Ignore credential api errors
       }
-      
-      // Delay closing modal so user sees success message
+
       setTimeout(() => {
         setShowCreateModal(false);
         setCreateSuccess('');
@@ -217,6 +272,41 @@ const UserManagement = () => {
     await toggleUserActive(userId, !currentActive);
   };
 
+  const handleSaveConfig = async (e) => {
+    e.preventDefault();
+    setConfigLoading(true);
+    try {
+      if (!supabase) throw new Error('Database connection unavailable');
+      const { error } = await supabase
+        .from('scheduling_settings')
+        .update({
+          operating_start_time: configForm.operating_start_time,
+          operating_end_time: configForm.operating_end_time,
+          allow_overbook: configForm.allow_overbook,
+          max_daily_hours_per_student: Number(configForm.max_daily_hours_per_student),
+          auto_schedule_enabled: configForm.auto_schedule_enabled,
+          min_break_minutes: Number(configForm.min_break_minutes),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', schedulingSettings?.id || 1);
+      if (error) throw error;
+      if (notify) notify('Platform configuration updated successfully');
+    } catch (err) {
+      if (notify) notify(err.message || 'Failed to update configuration', 'error');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const toggleExpandLog = (id) => {
+    setExpandedLogIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const filteredStaff = (filterRole === 'all' ? staff : staff.filter(s => s.app_role === filterRole))
     .filter(s => {
       if (!searchQuery) return true;
@@ -224,689 +314,813 @@ const UserManagement = () => {
       return (s.name && s.name.toLowerCase().includes(q)) || (s.email && s.email.toLowerCase().includes(q));
     });
 
-  const roleColors = {
-    superadmin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-    admin: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    therapist: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-    parent: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
-    teacher: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
-  };
+  const tabs = [
+    { id: 'users', label: 'Users' },
+    { id: 'audit', label: 'Audit Trail' },
+    { id: 'config', label: 'Platform Config' }
+  ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">User Management</h2>
-          <p className="text-slate-500 font-medium mt-1">Create accounts, manage roles and permissions</p>
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1">System Console</h1>
+          <p className="text-sm text-ps-ink-2 mt-1">Identity, audit trail, and platform configuration</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none"
+            className="flex items-center gap-2 px-4 py-2 bg-ps-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
-            <UserPlus size={18} />
+            <UserPlus size={16} />
             Create User
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
-        {[{ id: 'users', label: 'Users' }, { id: 'reports', label: 'Session Notes' }, { id: 'activity', label: 'Activity' }].map(tab => (
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b border-ps-border pb-2">
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-colors ${
+            className={clsx(
+              "px-4 py-2 rounded-t-lg text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent",
               activeTab === tab.id
-                ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600'
-                : 'text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
+                ? "bg-ps-surface text-ps-accent border-b-2 border-ps-accent"
+                : "text-ps-ink-2 hover:text-ps-ink-1"
+            )}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
+      {/* ── 1. USERS TAB ── */}
       {activeTab === 'users' && (
-        <>
-          <div className="flex gap-2 flex-wrap">
-            {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
-              <button
-                key={role}
-                onClick={() => setFilterRole(role)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
-                  filterRole === role
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {role === 'superadmin' ? 'Super Admin' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
-              </button>
-            ))}
-          </div>
+        <div className="space-y-4">
+          {/* Role Filters + Search */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex gap-2 flex-wrap">
+              {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+                <button
+                  key={role}
+                  onClick={() => setFilterRole(role)}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize focus-visible:outline-2 focus-visible:outline-ps-accent",
+                    filterRole === role
+                      ? "bg-ps-accent text-white"
+                      : "bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
+                  )}
+                >
+                  {role === 'superadmin' ? 'Super Admin' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
+                </button>
+              ))}
+            </div>
 
-          {/* Search input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by name or email..."
-              className="w-full sm:w-72 pl-9 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-slate-200"
-            />
-          </div>
-
-          <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
             <div className="relative">
-              <table className="w-full min-w-[640px]">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider rounded-tl-2xl">User</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">App Role</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Department</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Email</th>
-                    <th className="text-left px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                    <th className="text-right px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider rounded-tr-2xl">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {filteredStaff.map(member => (
-                    <tr key={member.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                      <td className="px-6 py-4 group-last:rounded-bl-2xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-sm">
-                            {member.name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{member.name}</p>
-                            <p className="text-xs text-slate-400">{member.role}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${roleColors[member.app_role] || roleColors.teacher}`}>
-                          {member.app_role || 'teacher'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-slate-600 dark:text-slate-300">{member.department || 'General'}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-slate-500">{member.email}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={clsx(
-                          "text-xs font-bold px-2 py-0.5 rounded-full",
-                          member.is_active === false
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        )}>
-                          {member.is_active === false ? 'Inactive' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right group-last:rounded-br-2xl">
-                        <div className="relative flex justify-end">
-                          <button
-                            onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
-                            aria-label={`Actions for ${member.name}`}
-                            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all"
-                          >
-                            <MoreVertical size={18} />
-                          </button>
-
-                          <AnimatePresence>
-                            {openMenuId === member.id && (
-                              <>
-                                <div 
-                                  className="fixed inset-0 z-10" 
-                                  onClick={() => setOpenMenuId(null)}
-                                />
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden ring-4 ring-black/5"
-                                >
-                                  <div className="p-1.5 flex flex-col gap-1">
-                                    <button
-                                      onClick={() => {
-                                        handleToggleActive(member.id, member.is_active !== false);
-                                        setOpenMenuId(null);
-                                      }}
-                                      className={clsx(
-                                        "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors",
-                                        member.is_active === false
-                                          ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
-                                          : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                      )}
-                                    >
-                                      {member.is_active === false ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
-                                      {member.is_active === false ? 'Activate User' : 'Deactivate User'}
-                                    </button>
-
-                                    <button
-                                      onClick={() => {
-                                        setShowRoleModal(member.id);
-                                        setSelectedRole(member.app_role || 'teacher');
-                                        setOpenMenuId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                    >
-                                      <Shield size={16} />
-                                      Change Role
-                                    </button>
-
-                                    <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-
-                                    <button
-                                      onClick={() => handleDeleteUser(member)}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                    >
-                                      <Trash2 size={16} />
-                                      Delete User
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredStaff.length === 0 && (
-                <div className="p-12 text-center">
-                  <User size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-500 font-medium">No users found with this role</p>
-                </div>
-              )}
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full sm:w-72 pl-9 pr-4 py-2 bg-ps-surface border border-ps-border rounded-lg text-sm text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+              />
             </div>
           </div>
-        </>
+
+          {/* User Table */}
+          <div className="overflow-x-auto bg-ps-surface rounded-xl shadow-sm border border-ps-border">
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-ps-border bg-ps-bg/50">
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">User</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">App Role</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Department</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Email</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Status</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ps-border">
+                {filteredStaff.map(member => (
+                  <tr key={member.id} className="hover:bg-ps-bg/40 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-ps-accent-soft text-ps-accent flex items-center justify-center font-semibold text-sm shrink-0">
+                          {member.name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-ps-ink-1">{member.name}</p>
+                          <p className="text-xs text-ps-ink-2">{member.role}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={clsx(
+                        "text-xs font-medium px-2.5 py-1 rounded-full",
+                        member.app_role === 'superadmin'
+                          ? "bg-ps-accent-soft text-ps-accent"
+                          : "bg-ps-bg text-ps-ink-2 border border-ps-border"
+                      )}>
+                        {member.app_role || 'teacher'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-ps-ink-2">{member.department || 'General'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-ps-ink-2">{member.email}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={clsx(
+                        "text-xs font-medium px-2 py-0.5 rounded-full",
+                        member.is_active === false
+                          ? "bg-ps-danger/10 text-ps-danger"
+                          : "bg-ps-success/10 text-ps-success"
+                      )}>
+                        {member.is_active === false ? 'Inactive' : 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="relative inline-block text-left">
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                          aria-label={`Actions for ${member.name}`}
+                          className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+
+                        {openMenuId === member.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setOpenMenuId(null)}
+                            />
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-ps-surface rounded-lg shadow-lg border border-ps-border z-50 p-1">
+                              <button
+                                onClick={() => {
+                                  handleToggleActive(member.id, member.is_active !== false);
+                                  setOpenMenuId(null);
+                                }}
+                                className={clsx(
+                                  "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg transition-colors text-left",
+                                  member.is_active === false
+                                    ? "text-ps-success hover:bg-ps-success/10"
+                                    : "text-ps-ink-1 hover:bg-ps-bg"
+                                )}
+                              >
+                                {member.is_active === false ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+                                {member.is_active === false ? 'Activate User' : 'Deactivate User'}
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setShowRoleModal(member.id);
+                                  setSelectedRole(member.app_role || 'teacher');
+                                  setOpenMenuId(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors text-left"
+                              >
+                                <Shield size={16} />
+                                Change Role
+                              </button>
+
+                              <div className="h-px bg-ps-border my-1" />
+
+                              <button
+                                onClick={() => handleDeleteUser(member)}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ps-danger hover:bg-ps-danger/10 rounded-lg transition-colors text-left"
+                              >
+                                <Trash2 size={16} />
+                                Delete User
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredStaff.length === 0 && (
+              <div className="p-8 text-center text-ps-ink-2">
+                <p className="text-sm font-medium">No users found</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
-      {activeTab === 'reports' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">Session Notes & Progress Reports</h3>
-          </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-800">
-            {sessionNotes.map(note => (
-              <div key={note.id} className="p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{note.students?.name || 'Student'}</span>
-                      <span className="text-xs px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-600 rounded-full">{note.note_type}</span>
-                    </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{note.content}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map(r => (
-                          <Star key={r} size={12} className={note.rating >= r ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'} fill={note.rating >= r ? 'currentColor' : 'none'} />
-                        ))}
-                      </div>
-                      <span className="text-xs text-slate-400">{new Date(note.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {sessionNotes.length === 0 && (
-              <div className="p-12 text-center">
-                <FileText size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No session notes recorded yet</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {activeTab === 'activity' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">System Activity Log</h3>
+      {/* ── 2. AUDIT TRAIL TAB ── */}
+      {activeTab === 'audit' && (
+        <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-ps-border flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-ps-ink-1">System Activity Log</h2>
+              <p className="text-xs text-ps-ink-2 mt-0.5">Immutable audit trail of authentication and identity events</p>
+            </div>
             <button
               onClick={fetchAuditLogs}
-              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-            >Refresh</button>
+              className="text-xs font-medium text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+            >
+              Refresh
+            </button>
           </div>
-          <div className="divide-y divide-slate-50 dark:divide-slate-800">
+
+          <div className="overflow-x-auto">
             {auditLoading && (
               <div className="p-12 text-center">
-                <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="w-6 h-6 border-2 border-ps-accent border-t-transparent rounded-full animate-spin mx-auto" />
               </div>
             )}
-            {!auditLoading && auditLogs.map(log => {
-              const { action, actor, target } = auditLine(log, staff);
-              return (
-                <div key={log.id} className="px-6 py-4 flex items-start gap-4">
-                  <div className="mt-0.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
-                    <Activity size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                      <span>{action}</span>
-                      {target && <span className="font-normal text-slate-500"> → {target}</span>}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {actor}
-                      {' · '}{new Date(log.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+
+            {!auditLoading && auditLogs.length > 0 && (
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-ps-border bg-ps-bg/50">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Timestamp</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Action</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Performed By</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">IP Address</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ps-border text-sm">
+                  {auditLogs.map(log => {
+                    const { action, actor, target } = auditLine(log, staff);
+                    const isExpanded = expandedLogIds.has(log.id);
+                    const hasDetails = log.details && typeof log.details === 'object' && Object.keys(log.details).length > 0;
+
+                    return (
+                      <React.Fragment key={log.id}>
+                        <tr className="hover:bg-ps-bg/40 transition-colors">
+                          <td className="px-6 py-3.5 text-xs text-ps-ink-2 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-3.5 font-medium text-ps-ink-1">
+                            <span>{action}</span>
+                            {target && <span className="text-ps-ink-2 font-normal"> → {target}</span>}
+                          </td>
+                          <td className="px-6 py-3.5 text-ps-ink-2">
+                            {actor}
+                          </td>
+                          <td className="px-6 py-3.5 text-xs text-ps-ink-2 font-mono">
+                            {log.ip_address || '—'}
+                          </td>
+                          <td className="px-6 py-3.5 text-right">
+                            {hasDetails ? (
+                              <button
+                                onClick={() => toggleExpandLog(log.id)}
+                                className="inline-flex items-center gap-1 text-xs text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+                              >
+                                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                {isExpanded ? 'Hide' : 'View'}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-ps-ink-2/60">—</span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && hasDetails && (
+                          <tr className="bg-ps-bg/60">
+                            <td colSpan={5} className="px-6 py-3">
+                              <pre className="text-xs bg-ps-surface p-3 rounded-lg border border-ps-border text-ps-ink-2 overflow-x-auto font-mono">
+                                {JSON.stringify(log.details, null, 2)}
+                              </pre>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+
             {!auditLoading && auditLogs.length === 0 && (
-              <div className="p-12 text-center">
-                <Clock size={32} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No activity logs found</p>
+              <div className="p-8 text-center text-ps-ink-2">
+                <Clock size={28} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">No activity logs recorded</p>
               </div>
             )}
           </div>
         </div>
       )}
-      {/* ── Change Role Modal ── */}
-      <AnimatePresence>
-        {showRoleModal && (
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-            onClick={() => setShowRoleModal(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">Change User Role</h3>
-              
-              {/* Security Warning */}
-              {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
-                <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl flex gap-3 items-start animate-pulse">
-                  <ShieldAlert size={20} className="text-rose-600 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] text-rose-700 dark:text-rose-400 font-black uppercase tracking-wider mb-1">CRITICAL WARNING</p>
-                    <p className="text-xs text-rose-600 dark:text-rose-300 font-bold leading-tight">
-                      You are changing your OWN role. You will LOSE administrative access and be locked out of this page immediately.
-                    </p>
-                  </div>
+
+      {/* ── 3. PLATFORM CONFIG TAB ── */}
+      {activeTab === 'config' && (
+        <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border p-6 space-y-6">
+          <div className="border-b border-ps-border pb-4">
+            <h2 className="text-base font-semibold text-ps-ink-1 flex items-center gap-2">
+              <Sliders size={18} className="text-ps-accent" />
+              Platform Scheduling Settings
+            </h2>
+            <p className="text-xs text-ps-ink-2 mt-1">
+              Global constraints and operational parameters for automated and manual scheduling engines.
+            </p>
+          </div>
+
+          {/* Audit Notice Callout */}
+          <div className="p-3.5 rounded-lg bg-ps-bg border border-ps-border flex items-start gap-3">
+            <Info size={16} className="text-ps-accent shrink-0 mt-0.5" />
+            <div className="text-xs text-ps-ink-2 leading-relaxed">
+              <span className="font-medium text-ps-ink-1">Audit Notice: </span>
+              Changes are logged when audit schema supports <code className="px-1 py-0.5 bg-ps-surface border border-ps-border rounded font-mono text-ps-accent">config_changed</code>.
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveConfig} className="space-y-6 max-w-2xl">
+            {/* Operating Hours */}
+            <div>
+              <label className="block text-sm font-medium text-ps-ink-1 mb-2">Center Operating Hours</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs text-ps-ink-2 mb-1">Start Time</span>
+                  <input
+                    type="time"
+                    value={configForm.operating_start_time}
+                    onChange={e => setConfigForm(p => ({ ...p, operating_start_time: e.target.value }))}
+                    className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
                 </div>
-              ) : (
-                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl flex gap-3 items-start">
-                  <ShieldAlert size={18} className="text-amber-600 shrink-0" />
-                  <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-tight">
-                    This will immediately update the user's access permissions across the entire system.
+                <div>
+                  <span className="block text-xs text-ps-ink-2 mb-1">End Time</span>
+                  <input
+                    type="time"
+                    value={configForm.operating_end_time}
+                    onChange={e => setConfigForm(p => ({ ...p, operating_end_time: e.target.value }))}
+                    className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Numeric Constraints */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ps-ink-1 mb-1">Max Daily Hours Per Student</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  max="12"
+                  value={configForm.max_daily_hours_per_student}
+                  onChange={e => setConfigForm(p => ({ ...p, max_daily_hours_per_student: e.target.value }))}
+                  className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+                <span className="text-xs text-ps-ink-2 mt-1 block">Upper limit on daily scheduled therapy time</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ps-ink-1 mb-1">Minimum Break Minutes</label>
+                <input
+                  type="number"
+                  step="5"
+                  min="0"
+                  max="60"
+                  value={configForm.min_break_minutes}
+                  onChange={e => setConfigForm(p => ({ ...p, min_break_minutes: e.target.value }))}
+                  className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+                <span className="text-xs text-ps-ink-2 mt-1 block">Buffer between back-to-back sessions</span>
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div className="space-y-4 pt-2">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={configForm.allow_overbook}
+                  onChange={e => setConfigForm(p => ({ ...p, allow_overbook: e.target.checked }))}
+                  className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ps-ink-1 block">Allow Overbooking</span>
+                  <span className="text-xs text-ps-ink-2 block">Permit scheduling sessions beyond room maximum capacity when approved</span>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={configForm.auto_schedule_enabled}
+                  onChange={e => setConfigForm(p => ({ ...p, auto_schedule_enabled: e.target.checked }))}
+                  className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ps-ink-1 block">Auto-Scheduler Engine</span>
+                  <span className="text-xs text-ps-ink-2 block">Enable automated constraint-satisfaction solver runs for pending assignments</span>
+                </div>
+              </label>
+            </div>
+
+            <div className="pt-4 border-t border-ps-border">
+              <button
+                type="submit"
+                disabled={configLoading}
+                className="px-5 py-2.5 bg-ps-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
+              >
+                {configLoading ? 'Saving...' : 'Save Configuration'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ── Change Role Modal ── */}
+      {showRoleModal && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={() => setShowRoleModal(null)}
+        >
+          <div
+            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-ps-ink-1 mb-2">Change User Role</h3>
+            
+            {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
+              <div className="mb-4 p-3 bg-ps-danger/10 border border-ps-danger/30 rounded-lg flex gap-3 items-start">
+                <ShieldAlert size={18} className="text-ps-danger shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs text-ps-danger font-semibold mb-1">Critical Warning</p>
+                  <p className="text-xs text-ps-danger leading-tight">
+                    You are changing your OWN role. You will lose administrative access and be locked out of this console.
                   </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4 p-3 bg-ps-bg border border-ps-border rounded-lg flex gap-3 items-start">
+                <ShieldAlert size={16} className="text-ps-ink-2 shrink-0 mt-0.5" />
+                <p className="text-xs text-ps-ink-2 leading-tight">
+                  This will immediately update access permissions across the system.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2 mb-4">
+              {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+                <button
+                  key={role}
+                  onClick={() => setSelectedRole(role)}
+                  className={clsx(
+                    "w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors border",
+                    selectedRole === role
+                      ? "border-ps-accent bg-ps-accent-soft text-ps-ink-1"
+                      : "border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
+                  )}
+                >
+                  <span className="capitalize block">{role === 'superadmin' ? 'Super Admin' : role}</span>
+                  <span className="text-xs text-ps-ink-2 font-normal block mt-0.5">
+                    {role === 'superadmin' ? 'Full system access + user management + platform config' :
+                     role === 'admin' ? 'Schedule, directory, and room operations' :
+                     role === 'teacher' ? 'Manage classes and attendance' :
+                     role === 'therapist' ? 'Session notes and progress' :
+                     'View child schedule'}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleUpdateRole(showRoleModal)}
+                className="flex-1 py-2 bg-ps-accent hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
+              >
+                Update Role
+              </button>
+              <button
+                onClick={() => setShowRoleModal(null)}
+                className="px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create User Modal ── */}
+      {showCreateModal && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={handleCancelCreate}
+        >
+          <div
+            className="bg-ps-surface rounded-xl shadow-xl max-w-lg w-full overflow-hidden border border-ps-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-ps-border">
+              <div>
+                <h3 className="text-base font-semibold text-ps-ink-1">Create New User</h3>
+                <p className="text-xs text-ps-ink-2 mt-0.5">Administrator-provisioned account</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelCreate}
+                className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {createError && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-danger/10 border border-ps-danger/30 text-ps-danger text-xs font-medium">
+                  <AlertCircle size={16} />
+                  {createError}
+                </div>
+              )}
+              {createSuccess && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-success/10 border border-ps-success/30 text-ps-success text-xs font-medium">
+                  <CheckCircle2 size={16} />
+                  {createSuccess}
                 </div>
               )}
 
-              <div className="space-y-2 mb-4">
-                {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Full Name</label>
+                <div className="relative">
+                  <User className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.name ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    type="text"
+                    value={newUser.name}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, name: e.target.value }));
+                      if (errors.name) setErrors(p => ({ ...p, name: '' }));
+                    }}
+                    onBlur={() => validateField('name')}
+                    placeholder="FirstName LastName"
+                    className={clsx(
+                      "w-full pl-10 pr-4 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.name
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
+                </div>
+                {errors.name && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.name}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    type="email"
+                    autoComplete="username"
+                    value={newUser.email}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, email: e.target.value }));
+                      if (errors.email) setErrors(p => ({ ...p, email: '' }));
+                    }}
+                    onBlur={() => validateField('email')}
+                    placeholder="email@polisync.com"
+                    className={clsx(
+                      "w-full pl-10 pr-4 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.email
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.email}</p>}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Temporary Password</label>
+                <div className="relative">
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    id="temp_password_input"
+                    type="text"
+                    style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
+                    autoComplete="new-password"
+                    value={newUser.password}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, password: e.target.value }));
+                      if (errors.password) setErrors(p => ({ ...p, password: '' }));
+                    }}
+                    onBlur={() => validateField('password')}
+                    placeholder="Min 8 characters"
+                    className={clsx(
+                      "w-full pl-10 pr-10 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.password
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
                   <button
-                    key={role}
-                    onClick={() => setSelectedRole(role)}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all border-2 ${
-                      selectedRole === role
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300'
-                    }`}
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ps-ink-2 hover:text-ps-ink-1"
                   >
-                    <span className="capitalize">{role === 'superadmin' ? 'Super Admin' : role}</span>
-                    <p className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {role === 'superadmin' ? 'Full system access + user management + database control' :
-                       role === 'admin' ? 'Schedule, directory, and room management' :
-                       role === 'teacher' ? 'Manage classes and attendance' :
-                       role === 'therapist' ? 'Session notes and progress' :
-                       'View child schedule'}
-                    </p>
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleUpdateRole(showRoleModal)}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors"
-                >
-                  Update Role
-                </button>
-                <button
-                  onClick={() => setShowRoleModal(null)}
-                  className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Create User Modal ── */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-            onClick={handleCancelCreate}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Create New User</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Admin-provisioned account</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCancelCreate}
-                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                >
-                  <X size={18} />
-                </button>
+                {errors.password && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
+                {!errors.password && <p className="text-xs text-ps-ink-2 mt-1">User will be prompted to change password on initial login.</p>}
               </div>
 
-              {/* Body */}
-              <div className="p-6 space-y-4">
-                {createError && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 text-red-700 dark:text-red-400 text-sm">
-                    <AlertCircle size={16} />
-                    {createError}
-                  </div>
-                )}
-                {createSuccess && (
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 text-sm">
-                    <CheckCircle2 size={16} />
-                    {createSuccess}
-                  </div>
-                )}
-
-                {/* Name */}
+              {/* Role + Department */}
+              <div className={clsx("grid gap-4", newUser.role === 'parent' ? "grid-cols-1" : "grid-cols-2")}>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Full Name</label>
+                  <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Role</label>
                   <div className="relative">
-                    <User className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.name ? 'text-red-400' : 'text-slate-400'}`} size={16} />
-                    <input
-                      type="text"
-                      value={newUser.name}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, name: e.target.value }));
-                        if (errors.name) setErrors(p => ({ ...p, name: '' }));
-                      }}
-                      onBlur={() => validateField('name')}
-                      placeholder="FirstName LastName"
-                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.name
-                          ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white'
-                      }`}
-                    />
-                  </div>
-                  {errors.name && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {errors.name}</p>}
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
-                  <div className="relative">
-                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? 'text-red-400' : 'text-slate-400'}`} size={16} />
-                    <input
-                      type="email"
-                      autoComplete="username"
-                      value={newUser.email}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, email: e.target.value }));
-                        if (errors.email) setErrors(p => ({ ...p, email: '' }));
-                      }}
-                      onBlur={() => validateField('email')}
-                      placeholder="email@polisync.com"
-                      className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.email
-                          ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white'
-                      }`}
-                    />
-                  </div>
-                  {errors.email && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {errors.email}</p>}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Temporary Password</label>
-                  <div className="relative">
-                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-red-400' : 'text-slate-400'}`} size={16} />
-                    <input
-                      id="temp_password_input"
-                      type="text"
-                      style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
-                      autoComplete="new-password"
-                      value={newUser.password}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, password: e.target.value }));
-                        if (errors.password) setErrors(p => ({ ...p, password: '' }));
-                      }}
-                      onBlur={() => validateField('password')}
-                      placeholder="Min 8 characters"
-                      className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.password
-                          ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500 text-slate-900 dark:text-white placeholder:text-red-300 dark:placeholder:text-red-500/50'
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white'
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser(p => ({ ...p, role: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                      <option value="teacher">Teacher</option>
+                      <option value="therapist">Therapist</option>
+                      <option value="parent">Parent</option>
+                      <option value="admin">Admin</option>
+                      <option value="superadmin">Super Admin</option>
+                    </select>
                   </div>
-                  {errors.password && <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
-                  {!errors.password && <p className="text-[11px] text-slate-400 mt-1">User will be asked to change password on first login.</p>}
                 </div>
 
-                {/* Role + Department row */}
-                <div className={clsx("grid gap-4", newUser.role === 'parent' ? "grid-cols-1" : "grid-cols-2")}>
+                {newUser.role !== 'parent' && (
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Role</label>
+                    <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Department</label>
                     <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
                       <select
-                        value={newUser.role}
-                        onChange={(e) => setNewUser(p => ({ ...p, role: e.target.value }))}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all appearance-none"
+                        value={newUser.department}
+                        onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
+                        className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
                       >
-                        <option value="teacher">Teacher</option>
-                        <option value="therapist">Therapist</option>
-                        <option value="parent">Parent</option>
-                        <option value="admin">Admin</option>
-                        <option value="superadmin">Super Admin</option>
+                        <option value="General">General</option>
+                        <option value="SPED">SPED</option>
+                        <option value="Rehab">Rehab</option>
+                        <option value="Playschool">Playschool</option>
+                        <option value="Admin">Admin</option>
                       </select>
                     </div>
                   </div>
-                  {newUser.role !== 'parent' && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Department</label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <select
-                          value={newUser.department}
-                          onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all appearance-none"
-                        >
-                          <option value="General">General</option>
-                          <option value="SPED">SPED</option>
-                          <option value="Rehab">Rehab</option>
-                          <option value="Playschool">Playschool</option>
-                          <option value="Admin">Admin</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
+              </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone (optional)</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                      type="tel"
-                      value={newUser.phone}
-                      onChange={(e) => setNewUser(p => ({ ...p, phone: e.target.value }))}
-                      placeholder="+63 9XX XXX XXXX"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 dark:text-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleCreateUser}
-                    disabled={createLoading || !newUser.name || !newUser.email || !newUser.password}
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 disabled:cursor-default text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
-                  >
-                    {createLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <UserPlus size={16} />
-                        Create Account
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelCreate}
-                    className="px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    Cancel
-                  </button>
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Phone (optional)</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+                  <input
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="+63 9XX XXX XXXX"
+                    className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
                 </div>
               </div>
-            </motion.div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCreateUser}
+                  disabled={createLoading || !newUser.name || !newUser.email || !newUser.password}
+                  className="flex-1 py-2 bg-ps-accent hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
+                >
+                  {createLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus size={16} />
+                      Create Account
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelCreate}
+                  className="px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
       {/* ── Delete User Modal ── */}
-      <AnimatePresence>
-        {deleteModalData && (
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-            onClick={() => setDeleteModalData(null)}
+      {deleteModalData && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onClick={() => setDeleteModalData(null)}
+        >
+          <div
+            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0">
-                  <AlertCircle size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Delete User?</h3>
-                  <p className="text-sm font-medium text-slate-500 truncate">{deleteModalData.name}</p>
-                </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-ps-danger/10 flex items-center justify-center text-ps-danger shrink-0">
+                <AlertCircle size={20} />
               </div>
-              
-              <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-xl p-4 mb-6">
-                <p className="text-sm text-rose-700 dark:text-rose-400 font-medium">
-                  This action cannot be undone. This will permanently delete the user's account and remove their access to the system.
-                </p>
+              <div>
+                <h3 className="text-base font-semibold text-ps-ink-1">Delete User?</h3>
+                <p className="text-xs text-ps-ink-2 truncate">{deleteModalData.name}</p>
               </div>
+            </div>
+            
+            <div className="bg-ps-danger/10 border border-ps-danger/30 rounded-lg p-3.5 mb-6">
+              <p className="text-xs text-ps-danger leading-relaxed">
+                This action cannot be undone. This will permanently delete the user's account and revoke access immediately.
+              </p>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setDeleteModalData(null)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDeleteUser}
-                  disabled={deleteCountdown > 0}
-                  className={clsx(
-                    "flex-1 py-2.5 font-bold rounded-xl transition-all flex items-center justify-center gap-2",
-                    deleteCountdown > 0
-                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 dark:shadow-none"
-                  )}
-                >
-                  {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete'}
-                </button>
-              </div>
-            </motion.div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteModalData(null)}
+                className="flex-1 px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={deleteCountdown > 0}
+                className={clsx(
+                  "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
+                  deleteCountdown > 0
+                    ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
+                    : "bg-ps-danger hover:opacity-90 text-white"
+                )}
+              >
+                {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
       {/* ── Self Role Change Warning Modal ── */}
-      <AnimatePresence>
-        {showSelfRoleWarning && (
-          <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
-            onClick={() => setShowSelfRoleWarning(false)}
+      {showSelfRoleWarning && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+          onClick={() => setShowSelfRoleWarning(false)}
+        >
+          <div
+            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-800"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0">
-                  <ShieldAlert size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Change Own Role?</h3>
-                  <p className="text-sm font-medium text-slate-500 truncate">Target Role: <span className="capitalize text-indigo-500">{selectedRole}</span></p>
-                </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-ps-danger/10 flex items-center justify-center text-ps-danger shrink-0">
+                <ShieldAlert size={20} />
               </div>
-              
-              <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-xl p-4 mb-6">
-                <p className="text-sm text-rose-700 dark:text-rose-400 font-medium leading-relaxed">
-                  You are stripping yourself of admin access.<br />
-                  This action is irreversible from this account.<br />
-                  You will be locked out immediately.
-                </p>
+              <div>
+                <h3 className="text-base font-semibold text-ps-ink-1">Change Own Role?</h3>
+                <p className="text-xs text-ps-ink-2 truncate">Target Role: <span className="capitalize text-ps-accent font-medium">{selectedRole}</span></p>
               </div>
+            </div>
+            
+            <div className="bg-ps-danger/10 border border-ps-danger/30 rounded-lg p-3.5 mb-6">
+              <p className="text-xs text-ps-danger leading-relaxed">
+                You are stripping yourself of superadmin access.
+                This action is irreversible from this account.
+                You will be locked out immediately.
+              </p>
+            </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSelfRoleWarning(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmSelfRoleChange}
-                  disabled={selfRoleCountdown > 0}
-                  className={clsx(
-                    "flex-1 py-2.5 font-bold rounded-xl transition-all flex items-center justify-center gap-2",
-                    selfRoleCountdown > 0
-                      ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 dark:shadow-none"
-                  )}
-                >
-                  {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
-                </button>
-              </div>
-            </motion.div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSelfRoleWarning(false)}
+                className="flex-1 px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSelfRoleChange}
+                disabled={selfRoleCountdown > 0}
+                className={clsx(
+                  "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
+                  selfRoleCountdown > 0
+                    ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
+                    : "bg-ps-danger hover:opacity-90 text-white"
+                )}
+              >
+                {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };

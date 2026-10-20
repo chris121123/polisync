@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Clock, Calendar, Users, FileText, ChevronRight, Star, Activity, BookOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, Calendar, Users, FileText, Star, Activity, BookOpen, Edit3, X, MapPin } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
-
 import { StatCard } from '../admin/AdminDashboard';
 
 const TherapistDashboard = () => {
   const { user, sessions, students, fetchMyAssignments, myAssignments, addSessionNote } = useGlobalState();
   const navigate = useNavigate();
-  // Weekend defaults to Monday: tabs only cover Mon–Fri.
   const [selectedDay, setSelectedDay] = useState(() => {
     const d = new Date().getDay();
     return d === 0 || d === 6 ? 1 : d;
@@ -18,6 +17,7 @@ const TherapistDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [noteContent, setNoteContent] = useState('');
   const [noteRating, setNoteRating] = useState(3);
+  const [hoverRating, setHoverRating] = useState(0);
   const [noteStudentId, setNoteStudentId] = useState('');
 
   useEffect(() => {
@@ -45,6 +45,7 @@ const TherapistDashboard = () => {
     setNoteContent('');
     setNoteRating(3);
     setNoteStudentId('');
+    setHoverRating(0);
   };
 
   const handleAddNote = async () => {
@@ -60,248 +61,305 @@ const TherapistDashboard = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Therapist Dashboard</h1>
-        <p className="text-slate-500 font-medium mt-1">Manage therapy sessions and track progress</p>
+    <div className="space-y-8 animate-page-entry">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <div className="inline-block relative">
+            <h1 className="text-3xl font-display font-bold text-ps-ink-1">
+              My Caseload
+            </h1>
+            <div className="h-1 w-full bg-teal-500 rounded-full mt-1 opacity-80" />
+          </div>
+          <p className="text-ps-ink-2 font-medium">
+            Clinical management and developmental notes for your weekly students.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-          title="Sessions" 
-          value={mySessions.length} 
-          icon={Calendar} 
-          subtext="Total this week"
-          color="indigo" 
-        />
-        <StatCard 
-          title="Hours / Week" 
+          title="Caseload Hours" 
           value={`${totalHoursThisWeek}h`} 
           icon={Clock} 
-          subtext="Total contact hours"
-          color="emerald" 
+          subtext="Contact time this week"
         />
-        <StatCard 
-          title="Students" 
-          value={uniqueStudents} 
-          icon={Users} 
-          subtext="Unique caseload"
-          color="amber" 
+        <StatCard
+          title="Active Students"
+          value={uniqueStudents}
+          icon={Users}
+          subtext="Unique children"
         />
-        <StatCard 
-          title="Programs" 
-          value={myAssignments.length} 
-          icon={FileText} 
-          subtext="Assigned programs"
-          color="rose" 
+        <StatCard
+          title="Scheduled Sessions"
+          value={mySessions.length}
+          icon={Calendar}
+          subtext="Total clinical blocks"
+        />
+        <StatCard
+          title="Active Programs"
+          value={myAssignments.length}
+          icon={FileText}
+          subtext="Assigned specializations"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h2 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <Activity size={18} className="text-teal-500" />
-                  My Sessions
-                </h2>
-                <button
-                  onClick={() => navigate('/therapist/notes')}
-                  className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
-                >
-                  View All Notes →
-                </button>
+        {/* Sessions Panel */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-ps-surface rounded-3xl p-6 lg:p-8 shadow-sm border border-ps-border">
+            {/* Header & Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-ps-border">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl">
+                  <Activity size={20} />
+                </div>
+                <h2 className="text-lg font-display font-bold text-ps-ink-1">Daily Schedule</h2>
               </div>
-              <div className="flex gap-1.5 mt-3">
-                {dayNames.map((day, idx) => (
+              <button
+                onClick={() => navigate('/therapist/notes')}
+                className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+              >
+                All Clinical Notes →
+              </button>
+            </div>
+
+            {/* Day Pill Selector */}
+            <div className="flex items-center gap-2 py-4 overflow-x-auto">
+              {dayNames.map((day, idx) => {
+                const count = mySessions.filter(s => sessionDayIndex(s) === idx).length;
+                const isActive = selectedDay === idx + 1;
+                return (
                   <button
                     key={day}
                     onClick={() => setSelectedDay(idx + 1)}
-                    aria-pressed={selectedDay === idx + 1}
-                    aria-label={day}
-                    className={`px-3 py-1.5 min-h-[40px] min-w-[40px] rounded-lg text-xs font-bold transition-all ${
-                      selectedDay === idx + 1
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
+                    className={clsx(
+                      "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0",
+                      isActive 
+                        ? "bg-teal-600 text-white shadow-lg shadow-teal-500/20" 
+                        : "bg-ps-bg text-ps-ink-2 hover:bg-slate-200/50 dark:hover:bg-ps-bg/80 hover:text-ps-ink-1"
+                    )}
                   >
-                    {day.slice(0, 3)}
+                    <span>{day.slice(0, 3)}</span>
+                    <span className={clsx(
+                      "w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold",
+                      isActive ? "bg-white/20 text-white" : "bg-ps-surface text-ps-ink-2 shadow-xs"
+                    )}>
+                      {count}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
-            <div className="divide-y divide-slate-50 dark:divide-slate-800">
-              {todaySessions.length > 0 ? todaySessions.map(session => (
-                <div key={session.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-900/30 flex flex-col items-center justify-center">
-                        <span className="text-xs font-bold text-teal-700 dark:text-teal-300">{formatTime(session.startHour)}</span>
-                        <span className="text-[10px] text-teal-400">{session.span}h</span>
+            {/* Session List */}
+            <div className="space-y-4 pt-2">
+              {todaySessions.length > 0 ? (
+                todaySessions.map((session, i) => (
+                  <motion.div 
+                    key={session.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="p-5 rounded-2xl border border-ps-border bg-ps-bg/30 hover:bg-ps-surface hover:shadow-md transition-all group relative border-l-4 border-l-teal-500 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Time Badge */}
+                      <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 flex flex-col items-center justify-center shrink-0 border border-teal-100 dark:border-teal-900/50">
+                        <span className="text-xs font-bold">{formatTime(session.startHour)}</span>
+                        <span className="text-[10px] font-medium opacity-70">{session.span}h</span>
                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">{session.title}</h3>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {session.room && (
-                          <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-md">{session.room}</span>
-                        )}
-                        {session.type && (
-                          <span className="text-xs px-2 py-0.5 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-md">{session.type}</span>
-                        )}
-                      </div>
-                      {session.studentIds?.length > 0 && (
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {session.studentIds.map(sid => {
-                            const student = getStudent(sid);
-                            return student ? (
-                              <span key={sid} className="text-xs px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg">
-                                {student.name}
-                              </span>
-                            ) : null;
-                          })}
+
+                      {/* Content */}
+                      <div className="space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-display font-bold text-ps-ink-1 leading-tight">
+                            {session.title}
+                          </h3>
+                          {session.type && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                              {session.type}
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        <div className="flex items-center gap-3 text-xs text-ps-ink-2">
+                          {session.room && (
+                            <span className="flex items-center gap-1 font-medium">
+                              <MapPin size={12} className="text-teal-500" /> {session.room}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Students Avatar Clusters */}
+                        {session.studentIds?.length > 0 && (
+                          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+                            {session.studentIds.map(sid => {
+                              const student = getStudent(sid);
+                              return student ? (
+                                <div key={sid} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ps-surface border border-ps-border text-xs font-medium text-ps-ink-1">
+                                  <div className="w-4 h-4 rounded-full bg-teal-500/20 text-teal-700 text-[10px] font-bold flex items-center justify-center">
+                                    {student.name.charAt(0)}
+                                  </div>
+                                  <span>{student.name}</span>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Add Note Action */}
                     <button
                       onClick={() => openNoteModal(session)}
-                      aria-label={`Add note for ${session.title}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 min-h-[40px] text-xs font-bold text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors shrink-0"
+                      className="px-3 py-2 rounded-xl border border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400 font-bold text-xs hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all flex items-center gap-1.5 sm:opacity-0 group-hover:opacity-100 shrink-0 self-end sm:self-center"
                     >
-                      <FileText size={14} />
-                      Add Note
+                      <Edit3 size={14} />
+                      <span>Add Note</span>
                     </button>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="p-12 text-center bg-ps-bg/20 rounded-2xl border-2 border-dashed border-ps-border">
+                  <div className="w-12 h-12 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Calendar size={24} />
                   </div>
-                </div>
-              )) : (
-                <div className="p-12 text-center">
-                  <Calendar size={32} className="text-slate-400 mx-auto mb-3" />
-                  <p className="text-slate-500 font-medium">No sessions on {dayNames[selectedDay - 1] ?? dayNames[0]}</p>
+                  <p className="text-sm font-bold text-ps-ink-1">No Clinical Sessions Scheduled</p>
+                  <p className="text-xs text-ps-ink-2 mt-1">Enjoy your open preparation time for {dayNames[selectedDay - 1]}.</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* Sidebar panels */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <BookOpen size={16} className="text-teal-500" />
-              My Programs
-            </h3>
-            <div className="space-y-3">
-              {myAssignments.length > 0 ? myAssignments.map(a => (
-                <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.programs?.color || '#0d9488' }} />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{a.programs?.name}</span>
-                </div>
-              )) : (
-                <p className="text-sm text-slate-500 text-center py-4">No program assignments</p>
-              )}
+          {/* Assigned Programs */}
+          <div className="bg-ps-surface rounded-3xl p-6 shadow-sm border border-ps-border space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl">
+                <BookOpen size={18} />
+              </div>
+              <h3 className="font-display font-bold text-ps-ink-1">My Programs</h3>
             </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-              <Star size={16} className="text-teal-500" />
-              Quick Stats
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">Sessions this week</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{mySessions.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">Total hours</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{totalHoursThisWeek}h</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">Students assigned</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{uniqueStudents}</span>
-              </div>
+            
+            <div className="space-y-2.5">
+              {myAssignments.length > 0 ? (
+                myAssignments.map(a => (
+                  <div key={a.id} className="p-3.5 rounded-2xl border border-ps-border bg-ps-bg/30 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.programs?.color || '#0d9488' }} />
+                      <span className="text-sm font-bold text-ps-ink-1">{a.programs?.name}</span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-ps-ink-2 bg-ps-surface px-2 py-0.5 rounded-full border border-ps-border">
+                      Active
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-ps-ink-2 py-2 text-center">No programs assigned currently.</p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {selectedSession && (
-        <div 
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
-          onClick={closeNoteModal}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full p-6"
-            onClick={(e) => e.stopPropagation()}
+      {/* Session Note Modal */}
+      <AnimatePresence>
+        {selectedSession && (
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={closeNoteModal}
           >
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">Add Session Note</h3>
-            <p className="text-sm text-slate-500 mb-4">{selectedSession.title} · {sessionDayName(selectedSession)}</p>
-
-            <div className="mb-4">
-              <label htmlFor="note-student" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Student</label>
-              <select
-                id="note-student"
-                value={noteStudentId}
-                onChange={(e) => setNoteStudentId(e.target.value)}
-                className="w-full p-3 min-h-[40px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-              >
-                {(selectedSession.studentIds || []).map(sid => {
-                  const student = getStudent(sid);
-                  return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
-                })}
-              </select>
-            </div>
-
-            <div className="mb-4">
-              <span id="note-rating-label" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Session Rating</span>
-              <div className="flex gap-2" role="group" aria-labelledby="note-rating-label">
-                {[1, 2, 3, 4, 5].map(rating => (
-                  <button
-                    key={rating}
-                    onClick={() => setNoteRating(rating)}
-                    aria-label={`Rate ${rating} out of 5`}
-                    aria-pressed={noteRating === rating}
-                    className={`p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg transition-colors ${noteRating >= rating ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}
-                  >
-                    <Star size={24} fill={noteRating >= rating ? 'currentColor' : 'none'} />
-                  </button>
-                ))}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-ps-surface rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-ps-border space-y-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-display font-bold text-ps-ink-1">Session Note</h3>
+                  <p className="text-xs text-ps-ink-2 mt-0.5">{selectedSession.title} • {sessionDayName(selectedSession)}</p>
+                </div>
+                <button onClick={closeNoteModal} className="p-2 text-ps-ink-2 hover:bg-ps-bg rounded-xl">
+                  <X size={18} />
+                </button>
               </div>
-            </div>
 
-            <div className="mb-4">
-              <label htmlFor="note-content" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Notes</label>
-              <textarea
-                id="note-content"
-                value={noteContent}
-                onChange={e => setNoteContent(e.target.value)}
-                placeholder="Session observations, student progress, recommendations..."
-                rows={4}
-                className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-              />
-            </div>
+              {/* Student Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Select Student</label>
+                <select
+                  value={noteStudentId}
+                  onChange={(e) => setNoteStudentId(e.target.value)}
+                  className="w-full p-3.5 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-teal-500"
+                >
+                  {(selectedSession.studentIds || []).map(sid => {
+                    const student = getStudent(sid);
+                    return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
+                  })}
+                </select>
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddNote}
-                disabled={!noteContent.trim()}
-                className="flex-1 py-2.5 min-h-[40px] bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-teal-600 disabled:cursor-default"
-              >
-                Save Note
-              </button>
-              <button
-                onClick={closeNoteModal}
-                className="px-4 py-2.5 min-h-[40px] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+              {/* Star Rating */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Progress & Engagement Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(rating => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(rating)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      onClick={() => setNoteRating(rating)}
+                      className="p-1 text-amber-400 hover:scale-110 transition-transform"
+                    >
+                      <Star 
+                        size={28} 
+                        fill={(hoverRating || noteRating) >= rating ? 'currentColor' : 'none'} 
+                        strokeWidth={1.5}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clinical Note Content */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Clinical Observations & Plan</label>
+                <textarea
+                  value={noteContent}
+                  onChange={e => setNoteContent(e.target.value)}
+                  placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
+                  rows={4}
+                  className="w-full p-4 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-teal-500 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleAddNote}
+                  disabled={!noteContent.trim()}
+                  className="flex-1 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-600/20 disabled:opacity-50"
+                >
+                  Save Progress Note
+                </button>
+                <button
+                  onClick={closeNoteModal}
+                  className="px-5 py-3.5 border border-ps-border text-ps-ink-2 font-bold rounded-xl hover:bg-ps-bg transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
