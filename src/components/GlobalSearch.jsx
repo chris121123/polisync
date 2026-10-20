@@ -86,11 +86,12 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           action: () => navigate(`/profile/${s.id}?type=student`),
         }));
 
-      // Admin-level gate: /schedule, /directory, /rooms are AdminRoute-guarded
-      const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
+      // Admin-only gate: /schedule, /directory, /rooms are RoleRoute(allowedRoles=['admin'])-guarded
+      // in App.jsx and hidden from superadmin in the sidebar — superadmin gets bounced to /dashboard.
+      const isAdminOnly = appRole === 'admin';
 
       // Search Sessions
-      sessions.filter(s => isAdminLevel && s.title.toLowerCase().includes(lowerQuery))
+      sessions.filter(s => isAdminOnly && s.title.toLowerCase().includes(lowerQuery))
         .slice(0, 3)
         .forEach(s => searchResults.push({
           id: `session-${s.id}`,
@@ -101,7 +102,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         }));
 
       // Search Rooms
-      rooms.filter(r => isAdminLevel && (r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery)))
+      rooms.filter(r => isAdminOnly && (r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery)))
         .slice(0, 4)
         .forEach(r => searchResults.push({
           id: `room-${r.id}`,
@@ -142,7 +143,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           action: () => navigate('/admin/users'),
         });
       }
-      if (isAdminLevel && ("directory".includes(lowerQuery) || "staff".includes(lowerQuery) || "people".includes(lowerQuery))) {
+      if (isAdminOnly && ("directory".includes(lowerQuery) || "staff".includes(lowerQuery) || "people".includes(lowerQuery))) {
         searchResults.push({
           id: 'nav-directory',
           title: 'Directory',
@@ -155,7 +156,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
       // Natural language queries
       if (searchResults.length === 0) {
         // Try common natural language patterns
-        if (isAdminLevel && (lowerQuery.includes('conflict') || lowerQuery.includes('overlap'))) {
+        if (isAdminOnly && (lowerQuery.includes('conflict') || lowerQuery.includes('overlap'))) {
           searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule Conflicts',
@@ -163,7 +164,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
             icon: Calendar,
             action: () => navigate('/schedule'),
           });
-        } else if (isAdminLevel && (lowerQuery.includes('room') || lowerQuery.includes('available') || lowerQuery.includes('venue'))) {
+        } else if (isAdminOnly && (lowerQuery.includes('room') || lowerQuery.includes('available') || lowerQuery.includes('venue'))) {
           searchResults.push({
             id: 'nav-rooms',
             title: 'Room Availability',
@@ -171,7 +172,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
             icon: DoorOpen,
             action: () => navigate('/rooms'),
           });
-        } else if (isAdminLevel && (lowerQuery.includes('schedule') || lowerQuery.includes('session') || lowerQuery.includes('calendar'))) {
+        } else if (isAdminOnly && (lowerQuery.includes('schedule') || lowerQuery.includes('session') || lowerQuery.includes('calendar'))) {
           searchResults.push({
             id: 'nav-schedule',
             title: 'View Schedule',
@@ -214,7 +215,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm px-4"
+        className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/40 px-4"
         onClick={handleClose}
       >
         <motion.div
@@ -222,29 +223,29 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-2xl bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          className="w-full max-w-2xl bg-ps-surface rounded-2xl shadow-md border border-ps-border overflow-hidden"
         >
-          <div className="relative border-b border-slate-100 dark:border-slate-800 p-4">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-300" size={24} />
+          <div className="relative border-b border-ps-border p-4">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-ps-ink-2" size={24} />
             <input
               type="text"
               autoFocus
               placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
               aria-label="Global search"
-              className="w-full pl-12 pr-4 py-3 text-lg bg-transparent border-none outline-none focus:ring-0 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 font-medium"
+              className="w-full pl-12 pr-4 py-3 text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-ps-ink-2 font-medium"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             {isSearching && (
-              <Loader2 className="absolute right-6 top-1/2 -translate-y-1/2 text-indigo-500 animate-spin" size={20} />
+              <Loader2 className="absolute right-6 top-1/2 -translate-y-1/2 text-ps-accent animate-spin" size={20} />
             )}
           </div>
 
-          <div className="p-2 max-h-[60vh] overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="p-2 max-h-[60vh] overflow-y-auto bg-ps-bg">
             {!query && (
-              <div className="p-8 text-center text-slate-500 dark:text-slate-300">
+              <div className="p-8 text-center text-ps-ink-2">
                 <p className="text-sm font-medium">{isParent ? 'Search your linked children by name.' : 'Search for students, staff, rooms, sessions, or diagnoses.'}</p>
-                <p className="text-xs mt-2 text-slate-500 dark:text-slate-400">{isParent ? "Try: your child's first name" : 'Try: "Room 5", "autism", "therapist", "speech"'}</p>
+                <p className="text-xs mt-2 text-ps-ink-2">{isParent ? "Try: your child's first name" : 'Try: "Room 5", "autism", "therapist", "speech"'}</p>
               </div>
             )}
             
@@ -252,17 +253,17 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
               <button
                 key={result.id}
                 onClick={() => handleResultClick(result)}
-                className="w-full flex items-start gap-4 p-4 text-left rounded-xl hover:bg-white dark:bg-slate-900 dark:hover:bg-slate-800 hover:shadow-sm dark:hover:shadow-none transition-all group"
+                className="w-full flex items-start gap-4 p-4 text-left rounded-xl hover:bg-ps-surface hover:shadow-sm transition-all group focus-visible:outline-2 focus-visible:outline-ps-accent"
               >
-                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 group-hover:border-indigo-100 dark:border-indigo-800 dark:group-hover:border-indigo-900 text-slate-500 dark:text-slate-300 group-hover:text-indigo-600 dark:text-indigo-400 dark:group-hover:text-indigo-400 shadow-sm">
+                <div className="p-2.5 rounded-lg bg-ps-surface border border-ps-border group-hover:border-ps-accent text-ps-ink-2 group-hover:text-ps-accent shadow-sm">
                   <result.icon size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{result.title}</h4>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-300 mt-0.5 truncate">{result.sub}</p>
+                  <h4 className="text-sm font-semibold text-ps-ink-1 truncate">{result.title}</h4>
+                  <p className="text-xs font-medium text-ps-ink-2 mt-0.5 truncate">{result.sub}</p>
                 </div>
                 {result.action && (
-                  <ArrowRight size={16} className="text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 shrink-0 mt-1 transition-colors" />
+                  <ArrowRight size={16} className="text-ps-ink-2 group-hover:text-ps-accent shrink-0 mt-1 transition-colors" />
                 )}
               </button>
             ))}
