@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  DoorOpen, Users, AlertTriangle, Plus, X, 
+  DoorOpen, Users, User, AlertTriangle, Plus, X, 
   MapPin, Clock, Info, ArrowUpRight, Filter, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -87,19 +87,22 @@ const Rooms = () => {
   const getStatusConfig = (status) => {
     if (status === 'Over Capacity') return {
       badge: "bg-ps-danger/10 text-ps-danger border-ps-danger/20",
-      accent: "bg-ps-danger/100",
+      accent: "bg-ps-danger",
+      dot: "bg-ps-danger",
       text: "text-ps-danger",
       bg: "bg-ps-danger/5"
     };
     if (status === 'In Use') return {
       badge: "bg-ps-accent-soft text-ps-accent border-ps-accent/20",
       accent: "bg-ps-accent",
+      dot: "bg-ps-accent",
       text: "text-ps-accent",
       bg: "bg-ps-accent-soft/50"
     };
     return {
       badge: "bg-ps-success/10 text-ps-success border-ps-success/20",
-      accent: "bg-ps-success/100",
+      accent: "bg-ps-success",
+      dot: "bg-ps-success",
       text: "text-ps-success",
       bg: "bg-ps-success/5"
     };
@@ -173,41 +176,39 @@ const Rooms = () => {
                   layoutId={`room-${room.id}`}
                   onClick={() => setSelectedRoomId(room.id)}
                   className={clsx(
-                    "bg-ps-surface rounded-xl p-6 border transition-all cursor-pointer relative overflow-hidden group",
+                    "bg-ps-surface rounded-xl p-5 border transition-all cursor-pointer relative overflow-hidden group",
                     isSelected 
-                      ? "ring-2 ring-ps-accent shadow-sm z-10 border-transparent translate-y-[-4px]" 
-                      : "border-ps-border hover:shadow-sm hover:border-transparent hover:translate-y-[-4px]"
+                      ? "ring-2 ring-ps-accent shadow-sm z-10 border-transparent translate-y-[-2px]" 
+                      : "border-ps-border hover:shadow-sm hover:border-ps-border/80 hover:translate-y-[-2px]"
                   )}
                 >
-                  {/* Status Indicator Bar */}
-                  <div className={clsx("absolute top-0 left-0 right-0 h-1.5", cfg.accent)} />
-                  
-                  <div className="flex justify-between items-start mb-5">
-                    <div className={clsx("p-3 rounded-2xl transition-all group-hover:scale-110", cfg.bg, cfg.text)}>
-                      <DoorOpen size={24} strokeWidth={2.5} />
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-ps-bg border border-ps-border flex items-center justify-center text-ps-ink-2 group-hover:text-ps-accent transition-colors">
+                      <DoorOpen size={20} strokeWidth={2} />
                     </div>
-                    <span className={clsx("text-xs font-medium px-3 py-1 rounded-full border shadow-sm ", cfg.badge)}>
+                    <span className={clsx("text-xs font-medium px-2.5 py-0.5 rounded-full border shadow-sm flex items-center gap-1.5", cfg.badge)}>
+                      <span className={clsx("w-1.5 h-1.5 rounded-full shrink-0", cfg.dot)} />
                       {room.status}
                     </span>
                   </div>
                   
-                  <div className="mb-6">
-                    <h3 className="font-semibold text-ps-ink-1 text-xl tracking-tight leading-none group-hover:text-ps-accent transition-colors">{room.name}</h3>
+                  <div className="mb-5">
+                    <h3 className="font-semibold text-ps-ink-1 text-lg tracking-tight leading-none capitalize group-hover:text-ps-accent transition-colors">{room.name}</h3>
                     <div className="flex items-center gap-1.5 mt-2">
-                       <MapPin size={10} className="text-ps-ink-2" />
-                       <span className="text-xs text-ps-ink-2 font-medium  leading-none">{room.type}</span>
+                       <MapPin size={11} className="text-ps-ink-2" />
+                       <span className="text-xs text-ps-ink-2 font-medium leading-none">{room.type}</span>
                     </div>
                   </div>
                   
-                  <div className="space-y-4 bg-ps-bg p-4 rounded-2xl border border-ps-border">
-                    <div className="flex justify-between items-center text-xs font-medium  text-ps-ink-2">
+                  <div className="space-y-3 bg-ps-bg p-3.5 rounded-xl border border-ps-border">
+                    <div className="flex justify-between items-center text-xs font-medium text-ps-ink-2">
                       <span className="flex items-center gap-1.5"><Users size={12}/> Occupancy</span>
-                      <span className={clsx(room.currentOccupancy >= room.maxCapacity ? "text-ps-danger" : "text-ps-ink-1")}>
+                      <span className={clsx("font-semibold", room.currentOccupancy >= room.maxCapacity ? "text-ps-danger" : "text-ps-ink-1")}>
                         {room.currentOccupancy} / {room.maxCapacity}
                       </span>
                     </div>
                     
-                    <div className="w-full h-2 bg-ps-border/50 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-ps-border/60 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min((room.currentOccupancy / room.maxCapacity) * 100, 100)}%` }}
@@ -217,14 +218,14 @@ const Rooms = () => {
 
                     {room.status !== 'Available' && (
                       <div className="flex items-center justify-between pt-1">
-                        <div className="flex -space-x-2">
+                        <div className="flex -space-x-1.5">
                           {[1, 2, 3].slice(0, room.currentOccupancy).map(idx => (
-                            <div key={idx} className="w-5 h-5 rounded-full bg-ps-border border-2 border-white dark:border-ps-border flex items-center justify-center text-xs font-medium text-ps-ink-2">
-                              S
+                            <div key={idx} className="w-5 h-5 rounded-full bg-ps-surface border border-ps-border flex items-center justify-center text-ps-ink-2 shadow-xs">
+                              <User size={10} />
                             </div>
                           ))}
                           {room.currentOccupancy > 3 && (
-                            <div className="w-5 h-5 rounded-full bg-ps-accent-soft border-2 border-white dark:border-ps-border flex items-center justify-center text-xs font-medium text-ps-accent">
+                            <div className="w-5 h-5 rounded-full bg-ps-accent-soft border border-ps-accent/20 flex items-center justify-center text-[10px] font-semibold text-ps-accent">
                               +{room.currentOccupancy - 3}
                             </div>
                           )}

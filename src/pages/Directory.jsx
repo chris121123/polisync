@@ -5,6 +5,13 @@ import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import { useGlobalState } from '../context/GlobalStateContext';
 
+const getInitials = (name) => {
+  if (!name) return '??';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+};
+
 const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -146,21 +153,32 @@ const Directory = () => {
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar">
-          {['All', 'Staff', 'Student', 'Rehab', 'SPED', 'Playschool', 'Admin'].map(f => (
-            <button
-              key={f}
-              onClick={() => setFilterType(f)}
-              className={clsx(
-                "px-4 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
-                filterType === f 
-                  ? "bg-ps-ink-1 text-ps-surface border-ps-ink-1 shadow-sm" 
-                  : "bg-ps-surface text-ps-ink-2 border-ps-border hover:bg-ps-bg"
-              )}
-            >
-              {f}
-            </button>
-          ))}
+        <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 hide-scrollbar">
+          {['All', 'Staff', 'Student', 'Rehab', 'SPED', 'Playschool', 'Admin'].map(f => {
+            const count = f === 'All' 
+              ? combinedData.length 
+              : combinedData.filter(i => i.type === f || i.department === f).length;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilterType(f)}
+                className={clsx(
+                  "px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-1.5",
+                  filterType === f 
+                    ? "bg-ps-accent text-white border-ps-accent shadow-sm" 
+                    : "bg-ps-surface text-ps-ink-2 border-ps-border hover:bg-ps-bg hover:text-ps-ink-1"
+                )}
+              >
+                <span>{f}</span>
+                <span className={clsx(
+                  "text-[10px] px-1.5 py-0.5 rounded-full font-semibold",
+                  filterType === f ? "bg-white/20 text-white" : "bg-ps-bg text-ps-ink-2"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -178,40 +196,58 @@ const Directory = () => {
             </thead>
             <tbody className="divide-y divide-ps-border">
               {filteredData.length > 0 ? filteredData.map((row) => (
-                <tr key={`${row.type}-${row.id}`} className="hover:bg-ps-bg transition-colors group">
-                  <td className="px-6 py-4">
+                <tr key={`${row.type}-${row.id}`} className="hover:bg-ps-bg/60 transition-colors group">
+                  <td className="px-6 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-ps-accent-soft text-ps-accent font-medium flex items-center justify-center shrink-0">
-                        {row.name.charAt(0)}
+                      <div className={clsx(
+                        "w-9 h-9 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 shadow-sm",
+                        row.type === 'Staff'
+                          ? "bg-ps-accent-soft text-ps-accent border border-ps-accent/20"
+                          : "bg-ps-bg text-ps-ink-1 border border-ps-border"
+                      )}>
+                        {getInitials(row.name)}
                       </div>
-                      <div>
-                        <p className="font-medium text-ps-ink-1">{row.name}</p>
-                        <p className="text-xs font-medium text-ps-ink-2 capitalize">
+                      <div className="min-w-0">
+                        <Link 
+                          to={`/profile/${row.id}?type=${row.type.toLowerCase()}`}
+                          className="font-medium text-sm text-ps-ink-1 hover:text-ps-accent transition-colors block truncate"
+                        >
+                          {row.name}
+                        </Link>
+                        <p className="text-xs text-ps-ink-2 font-medium capitalize">
                           {row.type === 'Staff' ? (row.app_role || 'Staff') : row.type}
+                          {row.email ? ` • ${row.email}` : ''}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-ps-ink-2 font-medium">{row.role}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-3.5 text-ps-ink-2 font-medium">{row.role}</td>
+                  <td className="px-6 py-3.5">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-ps-bg text-ps-ink-1 border border-ps-border">
                       {row.department}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-3.5">
                     <span className={clsx(
-                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                      row.status === 'Active' || row.status === 'Enrolled' ? "bg-ps-success/10 text-ps-success border border-ps-success/20" : "bg-ps-accent-soft text-ps-accent border border-ps-accent/20"
+                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
+                      row.status === 'Active' || row.status === 'Enrolled' 
+                        ? "bg-ps-success/10 text-ps-success border border-ps-success/20" 
+                        : "bg-ps-bg text-ps-ink-2 border border-ps-border"
                     )}>
+                      <span className={clsx(
+                        "w-1.5 h-1.5 rounded-full",
+                        row.status === 'Active' || row.status === 'Enrolled' ? "bg-ps-success" : "bg-ps-ink-2"
+                      )} />
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-3.5 text-right">
                     <Link 
                       to={`/profile/${row.id}?type=${row.type.toLowerCase()}`}
-                      className="inline-flex items-center justify-center p-2 rounded-lg text-ps-ink-2 hover:text-ps-accent hover:bg-ps-accent-soft transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-surface border border-transparent hover:border-ps-border transition-all"
                     >
-                      <ArrowUpRight size={18} strokeWidth={2.5}/>
+                      <span>View</span>
+                      <ArrowUpRight size={13} />
                     </Link>
                   </td>
                 </tr>

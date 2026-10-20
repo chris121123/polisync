@@ -12,17 +12,13 @@ const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-const getRoomColor = (idx) => {
-  const colors = [
-    { bg: 'bg-sped/10',  border: 'border-sped/20', text: 'text-sped',  dot: 'bg-sped',  header: 'bg-sped/10' },
-    { bg: 'bg-rehab/10',     border: 'border-rehab/20',    text: 'text-rehab',     dot: 'bg-rehab',     header: 'bg-rehab/10'     },
-    { bg: 'bg-ps-warn/10',   border: 'border-ps-warn/20',  text: 'text-ps-warn',   dot: 'bg-ps-warn',   header: 'bg-ps-warn/10'   },
-    { bg: 'bg-ps-success/10', border: 'border-ps-success/20', text: 'text-ps-success', dot: 'bg-ps-success', header: 'bg-ps-success/10' },
-    { bg: 'bg-ps-danger/10',    border: 'border-ps-danger/20',   text: 'text-ps-danger',    dot: 'bg-ps-danger',    header: 'bg-ps-danger/10'    },
-    { bg: 'bg-ps-accent-soft',  border: 'border-ps-accent/20', text: 'text-ps-accent',  dot: 'bg-ps-accent',  header: 'bg-ps-accent-soft/70'  },
-  ];
-  return colors[idx % colors.length];
-};
+const getRoomColor = () => ({
+  bg: 'bg-ps-bg',
+  border: 'border-ps-border',
+  text: 'text-ps-ink-1',
+  dot: 'bg-ps-accent',
+  header: 'bg-ps-surface',
+});
 
 const TYPE_CONFIG = {
   sped:       { gradient: 'bg-sped',  light: 'bg-sped/10',  border: 'border-sped/20 dark:border-sped/20',  text: 'text-sped dark:text-sped',  badge: 'bg-sped/10 text-sped',  label: 'SPED'       },
@@ -966,20 +962,18 @@ const ScheduleCalendar = () => {
           </div>
 
           {/* Stats strip */}
-          <div className="px-6 pb-3 flex flex-wrap items-center gap-4 xl:gap-6">
+          <div className="px-6 py-2.5 border-t border-ps-border/60 flex flex-wrap items-center gap-4 sm:gap-6 bg-ps-bg/30">
             {[
-              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-ps-accent', bg: 'bg-ps-accent-soft' },
-              { label: 'Students', value: totalStudents, icon: Users, color: 'text-ps-success', bg: 'bg-ps-success/10' },
-              { label: 'Rooms',  value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-ps-warn', bg: 'bg-ps-warn/10' },
-              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-ps-success' : 'text-ps-ink-2', bg: availableStaffCount > 0 ? 'bg-ps-success/10' : 'bg-ps-bg' },
-              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-ps-danger' : 'text-ps-ink-2', bg: conflicts.length > 0 ? 'bg-ps-danger/10' : 'bg-ps-bg' },
+              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-ps-ink-1' },
+              { label: 'Students', value: totalStudents, icon: Users, color: 'text-ps-ink-1' },
+              { label: 'Rooms Utilized', value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-ps-ink-1' },
+              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-ps-success font-semibold' : 'text-ps-ink-2' },
+              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-ps-danger font-semibold' : 'text-ps-ink-2' },
             ].map(stat => (
-              <div key={stat.label} className="flex items-center gap-2">
-                <div className={clsx('p-1.5 rounded-lg', stat.bg)}>
-                  <stat.icon size={14} className={stat.color} />
-                </div>
+              <div key={stat.label} className="flex items-center gap-1.5">
+                <stat.icon size={13} className="text-ps-ink-2 shrink-0" />
                 <span className="text-xs text-ps-ink-2 font-medium">{stat.label}:</span>
-                <span className={clsx('text-sm font-medium', stat.color)}>{stat.value}</span>
+                <span className={clsx('text-xs font-medium', stat.color)}>{stat.value}</span>
               </div>
             ))}
           </div>
@@ -1059,17 +1053,18 @@ const ScheduleCalendar = () => {
                   </div>
                   <span className="text-xs font-medium text-ps-ink-2 text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
                 </div>
-                {displayRooms.map((roomName, idx) => {
-                  const globalIdx = roomPage * ROOMS_PER_PAGE + idx;
-                  const rc = getRoomColor(globalIdx);
+                {displayRooms.map((roomName) => {
                   const roomSessions = sessions.filter(s => s.room === roomName).length;
                   return (
-                    <div key={roomName} className={clsx('flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border', rc.header)}>
-                      <div className="flex items-center gap-2">
-                        <div className={clsx('w-2.5 h-2.5 rounded-full shrink-0', rc.dot)} />
-                        <span className={clsx('text-xs font-medium  truncate', rc.text)}>{roomName}</span>
+                    <div key={roomName} className="flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border bg-ps-surface">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={clsx(
+                          'w-2 h-2 rounded-full shrink-0',
+                          roomSessions > 0 ? 'bg-ps-accent' : 'bg-ps-ink-2/40'
+                        )} />
+                        <span className="text-xs font-semibold text-ps-ink-1 truncate capitalize">{roomName}</span>
                       </div>
-                      <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', rc.bg, rc.text, rc.border, 'border')}>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 bg-ps-bg text-ps-ink-2 border border-ps-border">
                         {roomSessions} {roomSessions === 1 ? 'session' : 'sessions'}
                       </span>
                     </div>

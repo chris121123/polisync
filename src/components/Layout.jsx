@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, ShieldAlert, Menu, Settings as SettingsIcon, FileText, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
 import NotificationPanel from './NotificationPanel';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { useGlobalState } from '../context/GlobalStateContext';
+
+const getInitials = (name) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+};
 
 const Layout = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -69,12 +76,10 @@ const Layout = () => {
     return 'bg-ps-accent-soft text-ps-ink-1 font-medium';
   };
 
-  const isAdminLevel = appRole === 'admin' || appRole === 'superadmin';
-
   const navLinks = [
     {
       to: '/dashboard',
-      icon: isAdminLevel ? ShieldAlert : LayoutDashboard,
+      icon: LayoutDashboard,
       label: appRole === 'superadmin' ? 'Super Admin Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'),
     },
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes', section: 'Operations' }] : []),
@@ -210,8 +215,8 @@ const Layout = () => {
               "flex items-center bg-ps-bg rounded-xl relative group transition-all",
               isSidebarOpen ? "gap-3 p-3" : "p-2 justify-center"
             )}>
-              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-medium shrink-0 shadow-sm">
-                {user?.name?.charAt(0) || 'U'}
+              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-semibold text-xs shrink-0 shadow-sm">
+                {getInitials(user?.name)}
               </div>
               {isSidebarOpen && (
                 <div className="flex-1 min-w-0">
