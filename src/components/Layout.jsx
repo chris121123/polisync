@@ -102,11 +102,11 @@ const Layout = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-ps-accent dark:bg-indigo-600 flex items-center justify-center text-white shrink-0">
                 <Stethoscope size={18} />
               </div>
               <div className="hidden sm:block">
-                <h1 className="font-bold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
+                <h1 className="font-semibold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
                 <p className="text-xs font-medium text-ps-ink-2">Special Ed Center</p>
               </div>
             </div>
@@ -163,7 +163,7 @@ const Layout = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-ps-ink-1/20 backdrop-blur-[2px] z-20 lg:hidden"
+              className="fixed inset-0 bg-black/20 z-20 lg:hidden"
             />
           )}
         </AnimatePresence>
@@ -210,7 +210,7 @@ const Layout = () => {
               "flex items-center bg-ps-bg rounded-xl relative group transition-all",
               isSidebarOpen ? "gap-3 p-3" : "p-2 justify-center"
             )}>
-              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-bold shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-medium shrink-0 shadow-sm">
                 {user?.name?.charAt(0) || 'U'}
               </div>
               {isSidebarOpen && (
@@ -232,7 +232,7 @@ const Layout = () => {
                   </button>
                 </div>
               ) : (
-                <div className="absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all z-50 flex flex-col gap-2">
+                <div className="absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border rounded-xl shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all z-50 flex flex-col gap-2">
                     <button 
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg focus-visible:outline-2 focus-visible:outline-ps-accent"
@@ -247,7 +247,7 @@ const Layout = () => {
 
         {/* Dynamic Page Content */}
         <main className="flex-1 min-h-0 overflow-y-auto bg-ps-bg transition-colors">
-          <React.Suspense fallback={<div className="p-8 font-bold text-ps-ink-2">Loading center data...</div>}>
+          <React.Suspense fallback={<div className="p-8 font-medium text-ps-ink-2">Loading center data...</div>}>
             <Outlet />
           </React.Suspense>
         </main>

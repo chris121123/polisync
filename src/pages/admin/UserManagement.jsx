@@ -331,7 +331,7 @@ const UserManagement = () => {
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-            className="flex items-center gap-2 px-4 py-2 bg-ps-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
+            className="flex items-center gap-2 px-4 py-2 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <UserPlus size={16} />
             Create User
@@ -370,7 +370,7 @@ const UserManagement = () => {
                   className={clsx(
                     "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize focus-visible:outline-2 focus-visible:outline-ps-accent",
                     filterRole === role
-                      ? "bg-ps-accent text-white"
+                      ? "bg-ps-accent dark:bg-indigo-600 text-white"
                       : "bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
                   )}
                 >
@@ -396,12 +396,12 @@ const UserManagement = () => {
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-ps-border bg-ps-bg/50">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">User</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">App Role</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Department</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Email</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Status</th>
-                  <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Actions</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">User</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">App Role</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Department</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Email</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Status</th>
+                  <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ps-border">
@@ -460,7 +460,7 @@ const UserManagement = () => {
                               className="fixed inset-0 z-40"
                               onClick={() => setOpenMenuId(null)}
                             />
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-ps-surface rounded-lg shadow-lg border border-ps-border z-50 p-1">
+                            <div className="absolute right-0 top-full mt-1 w-48 bg-ps-surface rounded-lg shadow-md border border-ps-border z-50 p-1">
                               <button
                                 onClick={() => {
                                   handleToggleActive(member.id, member.is_active !== false);
@@ -544,11 +544,11 @@ const UserManagement = () => {
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="border-b border-ps-border bg-ps-bg/50">
-                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Timestamp</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Action</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Performed By</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">IP Address</th>
-                    <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2 uppercase tracking-wider">Details</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Timestamp</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Action</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Performed By</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">IP Address</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ps-border text-sm">
@@ -725,7 +725,7 @@ const UserManagement = () => {
               <button
                 type="submit"
                 disabled={configLoading}
-                className="px-5 py-2.5 bg-ps-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                className="px-5 py-2.5 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
               >
                 {configLoading ? 'Saving...' : 'Save Configuration'}
               </button>
@@ -737,11 +737,11 @@ const UserManagement = () => {
       {/* ── Change Role Modal ── */}
       {showRoleModal && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
           onClick={() => setShowRoleModal(null)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-ps-ink-1 mb-2">Change User Role</h3>
@@ -792,7 +792,7 @@ const UserManagement = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => handleUpdateRole(showRoleModal)}
-                className="flex-1 py-2 bg-ps-accent hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
+                className="flex-1 py-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
               >
                 Update Role
               </button>
@@ -810,11 +810,11 @@ const UserManagement = () => {
       {/* ── Create User Modal ── */}
       {showCreateModal && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
           onClick={handleCancelCreate}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-xl max-w-lg w-full overflow-hidden border border-ps-border"
+            className="bg-ps-surface rounded-xl shadow-md max-w-lg w-full overflow-hidden border border-ps-border"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -996,7 +996,7 @@ const UserManagement = () => {
                   type="button"
                   onClick={handleCreateUser}
                   disabled={createLoading || !newUser.name || !newUser.email || !newUser.password}
-                  className="flex-1 py-2 bg-ps-accent hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
                 >
                   {createLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1023,11 +1023,11 @@ const UserManagement = () => {
       {/* ── Delete User Modal ── */}
       {deleteModalData && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
           onClick={() => setDeleteModalData(null)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -1060,7 +1060,7 @@ const UserManagement = () => {
                   "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
                   deleteCountdown > 0
                     ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
-                    : "bg-ps-danger hover:opacity-90 text-white"
+                    : "bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white"
                 )}
               >
                 {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
@@ -1073,11 +1073,11 @@ const UserManagement = () => {
       {/* ── Self Role Change Warning Modal ── */}
       {showSelfRoleWarning && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[10000] flex items-center justify-center p-4"
           onClick={() => setShowSelfRoleWarning(false)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-xl max-w-sm w-full p-6 border border-ps-border"
+            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -1112,7 +1112,7 @@ const UserManagement = () => {
                   "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
                   selfRoleCountdown > 0
                     ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
-                    : "bg-ps-danger hover:opacity-90 text-white"
+                    : "bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white"
                 )}
               >
                 {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}

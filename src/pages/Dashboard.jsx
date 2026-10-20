@@ -24,7 +24,7 @@ const Dashboard = () => {
   // Fallback if role is not recognized yet
   return (
     <div className="flex items-center justify-center h-full">
-      <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-8 h-8 border-4 border-ps-accent border-t-transparent rounded-full animate-spin" />
     </div>
   );
 };

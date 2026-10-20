@@ -13,10 +13,11 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SessionNotes from './pages/therapist/SessionNotes';
-import { ProtectedRoute, AdminRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
+import { ProtectedRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
+import clsx from 'clsx';
 
 
 function App() {
@@ -32,15 +33,16 @@ function App() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center z-[9999]">
-        <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 dark:text-slate-400 font-bold animate-pulse">Initializing PoliSync...</p>
+      <div className="fixed inset-0 bg-ps-bg flex flex-col items-center justify-center z-[9999]">
+        <div className="w-16 h-16 border-4 border-ps-accent border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-ps-ink-2 font-medium">Initializing PoliSync...</p>
       </div>
     );
   }
 
   return (
-    <Router>
+    <MotionConfig reducedMotion="user">
+      <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Navigate to="/login" replace />} />
@@ -66,27 +68,28 @@ function App() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-            className="fixed bottom-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border backdrop-blur-md"
-            style={{
-              backgroundColor: toast.type === 'error' ? 'rgba(254, 242, 242, 0.9)' : toast.type === 'success' ? 'rgba(236, 253, 245, 0.9)' : 'rgba(239, 246, 255, 0.9)',
-              borderColor: toast.type === 'error' ? '#fee2e2' : toast.type === 'success' ? '#d1fae5' : '#dbeafe',
-              color: toast.type === 'error' ? '#991b1b' : toast.type === 'success' ? '#065f46' : '#1e40af'
-            }}
+            className={clsx(
+              "fixed bottom-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-sm border",
+              toast.type === 'error' && "bg-ps-danger/10 border-ps-danger/20 text-ps-danger",
+              toast.type === 'success' && "bg-ps-success/10 border-ps-success/20 text-ps-success",
+              toast.type === 'info' && "bg-ps-accent-soft border-ps-accent/20 text-ps-accent"
+            )}
           >
             {toast.type === 'error' && <AlertCircle size={20} />}
             {toast.type === 'success' && <CheckCircle2 size={20} />}
             {toast.type === 'info' && <Info size={20} />}
-            <p className="text-sm font-bold">{toast.message}</p>
+            <p className="text-sm font-medium">{toast.message}</p>
             <button
               onClick={() => notify(null)}
-              className="ml-2 p-1 hover:bg-black/5 rounded-lg transition-colors"
+              className="ml-2 p-1 hover:bg-ps-bg rounded-lg transition-colors"
             >
               <X size={16} />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
-    </Router>
+      </Router>
+    </MotionConfig>
   );
 }
 

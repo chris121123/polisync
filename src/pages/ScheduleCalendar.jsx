@@ -14,20 +14,20 @@ const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 const getRoomColor = (idx) => {
   const colors = [
-    { bg: 'bg-violet-50 dark:bg-violet-900/20',  border: 'border-violet-200 dark:border-violet-800/50', text: 'text-violet-700 dark:text-violet-300',  dot: 'bg-violet-400',  header: 'bg-violet-100/70 dark:bg-violet-900/40' },
-    { bg: 'bg-sky-50 dark:bg-sky-900/20',     border: 'border-sky-200 dark:border-sky-800/50',    text: 'text-sky-700 dark:text-sky-300',     dot: 'bg-sky-400',     header: 'bg-sky-100/70 dark:bg-sky-900/40'     },
-    { bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800/50',  text: 'text-amber-700 dark:text-amber-300',   dot: 'bg-amber-400',   header: 'bg-amber-100/70 dark:bg-amber-900/40'   },
-    { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/50',text: 'text-emerald-700 dark:text-emerald-300', dot: 'bg-emerald-400', header: 'bg-emerald-100/70 dark:bg-emerald-900/40' },
-    { bg: 'bg-rose-50 dark:bg-rose-900/20',    border: 'border-rose-200 dark:border-rose-800/50',   text: 'text-rose-700 dark:text-rose-300',    dot: 'bg-rose-400',    header: 'bg-rose-100/70 dark:bg-rose-900/40'    },
-    { bg: 'bg-indigo-50 dark:bg-indigo-900/20',  border: 'border-indigo-200 dark:border-indigo-800/50', text: 'text-indigo-700 dark:text-indigo-300',  dot: 'bg-indigo-400',  header: 'bg-indigo-100/70 dark:bg-indigo-900/40'  },
+    { bg: 'bg-sped/10',  border: 'border-sped/20', text: 'text-sped',  dot: 'bg-sped',  header: 'bg-sped/10' },
+    { bg: 'bg-rehab/10',     border: 'border-rehab/20',    text: 'text-rehab',     dot: 'bg-rehab',     header: 'bg-rehab/10'     },
+    { bg: 'bg-ps-warn/10',   border: 'border-ps-warn/20',  text: 'text-ps-warn',   dot: 'bg-ps-warn',   header: 'bg-ps-warn/10'   },
+    { bg: 'bg-ps-success/10', border: 'border-ps-success/20', text: 'text-ps-success', dot: 'bg-ps-success', header: 'bg-ps-success/10' },
+    { bg: 'bg-ps-danger/10',    border: 'border-ps-danger/20',   text: 'text-ps-danger',    dot: 'bg-ps-danger',    header: 'bg-ps-danger/10'    },
+    { bg: 'bg-ps-accent-soft',  border: 'border-ps-accent/20', text: 'text-ps-accent',  dot: 'bg-ps-accent',  header: 'bg-ps-accent-soft/70'  },
   ];
   return colors[idx % colors.length];
 };
 
 const TYPE_CONFIG = {
-  sped:       { gradient: 'from-purple-500 to-violet-600',  light: 'bg-purple-50 dark:bg-purple-900/20',  border: 'border-purple-300 dark:border-purple-800/50',  text: 'text-purple-900 dark:text-purple-100',  badge: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300',  label: 'SPED'       },
-  rehab:      { gradient: 'from-sky-500 to-blue-600',       light: 'bg-sky-50 dark:bg-sky-900/20',     border: 'border-sky-300 dark:border-sky-800/50',     text: 'text-sky-900 dark:text-sky-100',     badge: 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300',        label: 'Rehab'      },
-  playschool: { gradient: 'from-amber-400 to-orange-500',   light: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-300 dark:border-amber-800/50',   text: 'text-amber-900 dark:text-amber-100',   badge: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',    label: 'Playschool' },
+  sped:       { gradient: 'bg-sped',  light: 'bg-sped/10',  border: 'border-sped/20 dark:border-sped/20',  text: 'text-sped dark:text-sped',  badge: 'bg-sped/10 text-sped',  label: 'SPED'       },
+  rehab:      { gradient: 'bg-rehab',       light: 'bg-rehab/10',     border: 'border-rehab/20 dark:border-rehab/20',     text: 'text-rehab dark:text-ps-ink-1',     badge: 'bg-rehab/10 text-rehab',        label: 'Rehab'      },
+  playschool: { gradient: 'bg-ps-warn dark:bg-amber-700',   light: 'bg-ps-warn/10 dark:bg-amber-900/20',   border: 'border-ps-warn/20 dark:border-amber-800/50',   text: 'text-amber-900 dark:text-amber-100',   badge: 'bg-ps-warn/10 dark:bg-amber-900/40 text-ps-warn dark:text-amber-300',    label: 'Playschool' },
 };
 
 const formatHour = (h) => {
@@ -80,8 +80,8 @@ const NowIndicator = () => {
   return (
     <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top }}>
       <div className="flex items-center gap-0">
-        <div className="w-3 h-3 rounded-full bg-rose-500 shadow-md shadow-rose-300 shrink-0 -ml-1.5" />
-        <div className="flex-1 h-0.5 bg-rose-500/70" />
+        <div className="w-3 h-3 rounded-full bg-ps-danger shadow-sm shrink-0 -ml-1.5" />
+        <div className="flex-1 h-0.5 bg-ps-danger/70" />
       </div>
     </div>
   );
@@ -105,34 +105,34 @@ const SessionCard = ({ session, staffList, isSelected, hasConflict, onClick, onD
       whileDrag={{ scale: 1.05, zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
       className={clsx(
         'absolute w-[96%] left-[2%] rounded-xl cursor-grab overflow-hidden transition-shadow duration-200',
-        isSelected ? 'ring-2 ring-indigo-500 ring-offset-1 shadow-xl z-20' : 'shadow-sm hover:shadow-md z-10',
-        hasConflict ? 'ring-2 ring-rose-500' : '',
+        isSelected ? 'ring-2 ring-ps-accent ring-offset-1 shadow-md z-20' : 'shadow-sm hover:shadow-md z-10',
+        hasConflict ? 'ring-2 ring-ps-danger' : '',
       )}
       style={{ top: `${(session.startHour - 8) * 96 + 4}px`, height: `${session.span * 96 - 8}px` }}
     >
       <div className={clsx('absolute inset-0 rounded-xl', cfg.light, cfg.border, 'border')} />
-      <div className={clsx('absolute top-0 left-0 right-0 h-1 rounded-t-xl bg-gradient-to-r', cfg.gradient)} />
-      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-xl bg-gradient-to-b', cfg.gradient)} />
+      <div className={clsx('absolute top-0 left-0 right-0 h-1 rounded-t-xl', cfg.gradient)} />
+      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-xl', cfg.gradient)} />
 
-      {hasConflict && <div className="absolute inset-0 rounded-xl bg-rose-500/10 animate-pulse" />}
+      {hasConflict && <div className="absolute inset-0 rounded-xl bg-ps-danger/10" />}
 
       <div className="relative z-10 p-2.5 pl-3.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
         <div>
           <div className="flex items-start justify-between gap-1">
-            <p className={clsx('font-bold text-xs leading-tight line-clamp-2', cfg.text)}>{session.title}</p>
+            <p className={clsx('font-semibold text-xs leading-tight line-clamp-2', cfg.text)}>{session.title}</p>
             {hasConflict
-              ? <AlertCircle size={12} className="text-rose-500 animate-pulse shrink-0 mt-0.5" />
-              : <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0', cfg.badge)}>{cfg.label}</span>
+              ? <AlertCircle size={12} className="text-ps-danger shrink-0 mt-0.5" />
+              : <span className={clsx('text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0', cfg.badge)}>{cfg.label}</span>
             }
           </div>
           {!isShort && provider && (
-            <p className={clsx('text-[10px] mt-1 font-semibold opacity-75 flex items-center gap-1', cfg.text)}>
+            <p className={clsx('text-xs mt-1 font-semibold opacity-75 flex items-center gap-1', cfg.text)}>
               <Users size={9} /> {provider.name}
             </p>
           )}
         </div>
         {!isShort && (
-          <div className={clsx('flex items-center gap-1 text-[9px] font-bold opacity-60', cfg.text)}>
+          <div className={clsx('flex items-center gap-1 text-xs font-medium opacity-60', cfg.text)}>
             <Clock size={9} />
             {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
           </div>
@@ -158,21 +158,21 @@ const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, onClic
       whileDrag={{ scale: 1.05, zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
       className={clsx(
         'absolute w-[92%] left-[4%] rounded-lg cursor-grab overflow-hidden transition-shadow duration-200',
-        isSelected ? 'ring-2 ring-indigo-500 shadow-lg z-20' : 'shadow-sm hover:shadow-md z-10',
-        hasConflict ? 'ring-2 ring-rose-400' : '',
+        isSelected ? 'ring-2 ring-ps-accent shadow-md z-20' : 'shadow-sm hover:shadow-md z-10',
+        hasConflict ? 'ring-2 ring-ps-danger' : '',
       )}
       style={{ top: `${(session.startHour - 8) * 64 + 2}px`, height: `${session.span * 64 - 4}px` }}
     >
       <div className={clsx('absolute inset-0 rounded-lg', cfg.light, cfg.border, 'border')} />
-      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-lg bg-gradient-to-b', cfg.gradient)} />
-      {hasConflict && <div className="absolute inset-0 rounded-lg bg-rose-500/10 animate-pulse" />}
+      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-lg', cfg.gradient)} />
+      {hasConflict && <div className="absolute inset-0 rounded-lg bg-ps-danger/10" />}
 
       <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-center overflow-hidden pointer-events-none">
-        <p className={clsx('font-bold text-[10px] leading-tight line-clamp-1', cfg.text)}>{session.title}</p>
+        <p className={clsx('font-semibold text-xs leading-tight line-clamp-1', cfg.text)}>{session.title}</p>
         {session.span >= 1.5 && provider && (
-          <p className="text-[8px] font-semibold text-slate-400 mt-0.5 truncate">{provider.name}</p>
+          <p className="text-xs font-semibold text-ps-ink-2 mt-0.5 truncate">{provider.name}</p>
         )}
-        <p className="text-[8px] font-bold text-slate-400 mt-0.5">
+        <p className="text-xs font-medium text-ps-ink-2 mt-0.5">
           {formatHour(session.startHour).replace(':00', '')}–{formatHour(session.startHour + session.span).replace(':00', '')}
         </p>
       </div>
@@ -229,25 +229,24 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 md:p-4"
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, y: '100%' }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: '100%' }}
-        className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 md:p-6 bg-gradient-to-r from-teal-500 to-emerald-600 relative shrink-0">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_white,_transparent)]" />
+        <div className="p-4 md:p-6 bg-ps-success dark:bg-emerald-700 relative shrink-0">
           <div className="relative flex justify-between items-start">
             <div>
-              <p className="text-white/70 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Staff Availability</p>
-              <h3 className="text-white text-lg md:text-xl font-bold">Manage Schedule</h3>
+              <p className="text-white/70 text-xs md:text-xs font-medium  mb-1">Staff Availability</p>
+              <h3 className="text-white text-lg md:text-xl font-semibold">Manage Schedule</h3>
             </div>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors">
+            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-ps-surface/30 text-white transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -256,24 +255,24 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
         <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
           {/* Date Picker */}
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Select Date</label>
+            <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Select Date</label>
             <input
               type="date"
               value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 text-sm font-semibold transition-all"
+              className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-success focus:ring-2 focus:ring-ps-success/20 text-sm font-semibold transition-all"
             />
-            <p className="text-xs text-slate-400 font-medium mt-1">{dayLabel}</p>
+            <p className="text-xs text-ps-ink-2 font-medium mt-1">{dayLabel}</p>
           </div>
 
           {/* Available Count */}
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
+            <p className="text-sm font-semibold text-ps-ink-2">
+              <span className="text-ps-success font-medium">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
             </p>
             <button
               onClick={handleSelectAll}
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+              className="text-xs font-medium text-ps-success hover:text-ps-success transition-colors px-3 py-1.5 rounded-lg hover:bg-ps-success/10"
             >
               {therapistsAndTeachers.length > 0 && therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id)) ? 'Deselect All' : 'Select All'}
             </button>
@@ -290,24 +289,24 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
                   className={clsx(
                     'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
                     isAvailable
-                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                      ? 'border-ps-success/20 bg-ps-success/10'
+                      : 'border-ps-border bg-ps-surface hover:border-ps-border'
                   )}
                 >
                   <div className={clsx(
                     'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-                    isAvailable ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
+                    isAvailable ? 'bg-ps-success dark:bg-emerald-700 text-white' : 'bg-ps-bg text-ps-ink-2'
                   )}>
                     {isAvailable ? <CheckCircle2 size={16} /> : <UserCheck size={16} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={clsx('text-sm font-semibold truncate', isAvailable ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-300')}>
+                    <p className={clsx('text-sm font-semibold truncate', isAvailable ? 'text-ps-success' : 'text-ps-ink-2')}>
                       {person.name}
                     </p>
-                    <p className="text-[10px] font-medium text-slate-400 truncate">{person.role} · {person.department || 'General'}</p>
+                    <p className="text-xs font-medium text-ps-ink-2 truncate">{person.role} · {person.department || 'General'}</p>
                   </div>
                   {isAvailable && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 shrink-0">
+                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-ps-success/10 text-ps-success shrink-0">
                       Available
                     </span>
                   )}
@@ -320,7 +319,7 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
         <div className="px-4 md:px-6 pb-4 md:pb-6">
           <button
             onClick={() => { notify(`Availability saved for ${dayLabel}`); onClose(); }}
-            className="w-full py-3 text-sm font-bold bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:opacity-90 transition-all shadow-md shadow-emerald-200 flex items-center justify-center gap-2"
+            className="w-full py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <CheckCircle2 size={16} /> Done
           </button>
@@ -393,60 +392,59 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-slate-900/50 backdrop-blur-md p-0 md:p-4"
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
       onClick={() => { reset(); onClose(); }}
     >
       <motion.div
         initial={{ opacity: 0, y: "100%" }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: "100%" }}
-        className="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <div className={clsx('p-4 md:p-6 bg-gradient-to-r relative shrink-0', typeCfg.gradient)}>
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_white,_transparent)]" />
+        <div className={clsx('p-4 md:p-6 relative shrink-0', formData.type === 'rehab' ? 'bg-sky-700' : formData.type === 'sped' ? 'bg-purple-700' : typeCfg.gradient)}>
           <div className="relative flex justify-between items-start">
             <div>
-              <p className="text-white/70 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">New Session</p>
-              <h3 className="text-white text-lg md:text-xl font-bold">{formData.title || 'Untitled Session'}</h3>
+              <p className="text-white/70 text-xs md:text-xs font-medium  mb-1">New Session</p>
+              <h3 className="text-white text-lg md:text-xl font-semibold">{formData.title || 'Untitled Session'}</h3>
             </div>
-            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-white dark:bg-slate-900/20 hover:bg-white dark:bg-slate-900/30 text-white transition-colors">
+            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors">
               <X size={18} />
             </button>
           </div>
           <div className="relative flex gap-2 mt-4">
             {[1, 2].map(s => (
-              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-white dark:bg-slate-900' : 'bg-white/30 dark:bg-slate-900/30')} />
+              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-ps-surface' : 'bg-white/30')} />
             ))}
           </div>
         </div>
 
         <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
           {step === 1 && (
-            <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Session Title *</label>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Title *</label>
                 <input
                   autoFocus
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-semibold transition-all"
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
                   placeholder="e.g., SPED Group B Morning"
                   value={formData.title}
                   onChange={e => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Category</label>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Category</label>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
                     <button
                       key={key}
                       onClick={() => setFormData({ ...formData, type: key })}
                       className={clsx(
-                        'py-3 rounded-xl text-xs font-bold border-2 transition-all',
+                        'py-3 rounded-xl text-xs font-medium border-2 transition-all',
                         formData.type === key
-                          ? `bg-gradient-to-r ${cfg.gradient} text-white border-transparent shadow-md`
-                          : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                          ? `bg-ps-accent dark:bg-indigo-600 text-white border-transparent shadow-md`
+                          : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
                       )}
                     >
                       {cfg.label}
@@ -456,7 +454,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
               </div>
               {/* Session Date */}
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Session Date *</label>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Date *</label>
                 <input
                   type="date"
                   value={formData.sessionDate}
@@ -464,30 +462,30 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   onChange={e => {
                     setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
                   }}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-sm font-semibold transition-all"
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
                 />
                 {formData.sessionDate && (
-                  <p className="text-xs text-slate-400 font-medium mt-1">
+                  <p className="text-xs text-ps-ink-2 font-medium mt-1">
                     {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                     {availableStaff.length > 0 && (
-                      <span className="text-emerald-500 ml-2">· {availableStaff.length} staff available</span>
+                      <span className="text-ps-success ml-2">· {availableStaff.length} staff available</span>
                     )}
                   </p>
                 )}
                 {formData.sessionDate && !availableStaff.length && (
-                  <p className="text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 font-medium mt-1 flex items-center gap-1 px-2 py-1 rounded-lg">
+                  <p className="text-xs text-ps-warn bg-ps-warn/10 dark:text-ps-warn font-medium mt-1 flex items-center gap-1 px-2 py-1 rounded-lg">
                     <AlertCircle size={10} /> No staff marked available for this date —
-                    <button onClick={onOpenAvailability} className="ml-1 underline font-bold">Open Availability</button> to mark staff first.
+                    <button onClick={onOpenAvailability} className="ml-1 underline font-medium">Open Availability</button> to mark staff first.
                   </p>
                 )}
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Provider / Therapist *</label>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mb-2 -mt-1">
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Provider / Therapist *</label>
+                <p className="text-xs text-ps-ink-2 font-medium mb-2 -mt-1">
                   The staff member (therapist or teacher) responsible for conducting this session.
                 </p>
                 <select
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-semibold"
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
                   value={formData.therapistId}
                   onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
                 >
@@ -495,15 +493,15 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
                 </select>
                 {formData.sessionDate && availableStaff.length > 0 && (
-                  <p className="text-[10px] text-emerald-500 font-medium mt-1 flex items-center gap-1">
+                  <p className="text-xs text-ps-success font-medium mt-1 flex items-center gap-1">
                     <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                 )}
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Assign Students</label>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Assign Students</label>
                 <select
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-semibold"
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
                   onChange={e => {
                     const sid = e.target.value;
                     if (sid && !formData.studentIds.includes(sid)) {
@@ -519,7 +517,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   {formData.studentIds.map(sid => {
                     const student = students.find(s => String(s.id) === String(sid));
                     return (
-                      <span key={sid} className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-lg flex items-center gap-1">
+                      <span key={sid} className="px-2 py-1 bg-ps-accent-soft text-ps-accent text-xs font-medium rounded-lg flex items-center gap-1">
                         {student?.name}
                         <button onClick={() => setFormData({ ...formData, studentIds: formData.studentIds.filter(id => id !== sid) })}>
                           <X size={12} />
@@ -533,9 +531,9 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
           )}
 
           {step === 2 && (
-            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Venue / Room</label>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Venue / Room</label>
                 <div className="grid grid-cols-2 max-h-[160px] overflow-y-auto pr-2 gap-2 pb-2">
                   {rooms.map((r, idx) => {
                     const rc = getRoomColor(idx);
@@ -544,8 +542,8 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                         key={r.name}
                         onClick={() => setFormData({ ...formData, room: r.name })}
                         className={clsx(
-                          'px-4 py-3 rounded-xl text-xs font-bold border-2 flex items-center justify-between gap-2 transition-all',
-                          formData.room === r.name ? `${rc.bg} ${rc.border} ${rc.text} shadow-sm` : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 border-slate-200 dark:border-slate-700'
+                          'px-4 py-3 rounded-xl text-xs font-medium border-2 flex items-center justify-between gap-2 transition-all',
+                          formData.room === r.name ? `${rc.bg} ${rc.border} ${rc.text} shadow-sm` : 'bg-ps-bg text-ps-ink-2 border-ps-border'
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -559,9 +557,9 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Start Time</label>
+                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Start Time</label>
                   <select
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-indigo-500 text-sm font-semibold"
+                    className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
                     value={formData.startHour}
                     onChange={e => setFormData({ ...formData, startHour: parseInt(e.target.value) })}
                   >
@@ -569,15 +567,15 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Duration</label>
+                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Duration</label>
                   <div className="grid grid-cols-3 gap-1">
                     {[1, 2, 3].map(d => (
                       <button
                         key={d}
                         onClick={() => setFormData({ ...formData, span: d })}
                         className={clsx(
-                          'py-3 rounded-xl text-xs font-bold border-2 transition-all',
-                          formData.span === d ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          'py-3 rounded-xl text-xs font-medium border-2 transition-all',
+                          formData.span === d ? 'bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent shadow-md' : 'bg-ps-bg text-ps-ink-2 border-ps-border'
                         )}
                       >
                         {d}h
@@ -586,18 +584,18 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
                   </div>
                 </div>
                 {conflictMessage && (
-                  <div className="mt-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 rounded-xl flex items-start gap-2">
-                    <AlertCircle size={14} className="text-rose-500 shrink-0 mt-0.5" />
-                    <p className="text-xs font-semibold text-rose-700 dark:text-rose-300">{conflictMessage}</p>
+                  <div className="mt-4 p-3 bg-ps-danger/10 border border-ps-danger/20 rounded-xl flex items-start gap-2">
+                    <AlertCircle size={14} className="text-ps-danger shrink-0 mt-0.5" />
+                    <p className="text-xs font-semibold text-ps-danger">{conflictMessage}</p>
                   </div>
                 )}
               </div>
               {/* Preview */}
               <div className={clsx('p-4 rounded-xl border-2 flex items-center gap-3', typeCfg.light, typeCfg.border)}>
-                <div className={clsx('w-1 self-stretch rounded-full bg-gradient-to-b', typeCfg.gradient)} />
+                <div className={clsx('w-1 self-stretch rounded-full', typeCfg.gradient)} />
                 <div>
-                  <p className={clsx('font-bold text-sm', typeCfg.text)}>{formData.title || '(untitled)'}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className={clsx('font-semibold text-sm', typeCfg.text)}>{formData.title || '(untitled)'}</p>
+                  <p className="text-xs text-ps-ink-2 mt-0.5">
                     {formData.room} · {formatHour(formData.startHour)} – {formatHour(formData.startHour + formData.span)} · {typeCfg.label}
                   </p>
                 </div>
@@ -608,7 +606,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
 
         <div className="px-6 pb-6 flex gap-3">
           {step === 2 && (
-            <button onClick={() => setStep(1)} className="px-6 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-xl transition-colors border border-slate-200 dark:border-slate-700">
+            <button onClick={() => setStep(1)} className="px-6 py-3 text-sm font-medium text-ps-ink-2 hover:bg-ps-bg rounded-xl transition-colors border border-ps-border">
               Back
             </button>
           )}
@@ -616,7 +614,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
             <button
               onClick={() => setStep(2)}
               disabled={!formData.title || !formData.therapistId}
-              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-md shadow-indigo-200"
+              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm"
             >
               Next: Choose Slot →
             </button>
@@ -624,7 +622,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
             <button
               onClick={() => { onAdd(formData); reset(); onClose(); }}
               disabled={!!conflictMessage}
-              className="flex-1 py-3 text-sm font-bold bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2"
+              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <CheckCircle2 size={16} /> Create Session
             </button>
@@ -830,7 +828,7 @@ const ScheduleCalendar = () => {
   // Removed unused todayIdx
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-slate-50 dark:bg-slate-800/50 max-h-[calc(100vh-64px)]">
+    <div className="flex h-full w-full overflow-hidden bg-ps-bg max-h-[calc(100vh-64px)]">
 
       {/* ── Left: Calendar ─────────────────────────────────────────────── */}
       <div 
@@ -839,27 +837,27 @@ const ScheduleCalendar = () => {
       >
 
         {/* ── Toolbar ───────── */}
-        <div className="flex-shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:bg-slate-900">
+        <div className="flex-shrink-0 border-b border-ps-border bg-ps-surface">
           {/* Top row */}
           <div className="px-6 py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-ps-accent dark:bg-indigo-600 flex items-center justify-center">
                   <CalendarIcon size={18} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-none">Schedule</h1>
-                  <p className="text-xs text-slate-400 font-medium">{calendarView === 'daily' ? 'Daily view' : 'Weekly view'}</p>
+                  <h1 className="text-lg font-semibold text-ps-ink-1 leading-none">Schedule</h1>
+                  <p className="text-xs text-ps-ink-2 font-medium">{calendarView === 'daily' ? 'Daily view' : 'Weekly view'}</p>
                 </div>
               </div>
 
               {/* View toggle: Daily / Weekly */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
+              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1">
                 <button
                   onClick={() => setCalendarView('daily')}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
-                    calendarView === 'daily' ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-200'
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                    calendarView === 'daily' ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
                   )}
                 >
                   Daily
@@ -867,8 +865,8 @@ const ScheduleCalendar = () => {
                 <button
                   onClick={() => setCalendarView('weekly')}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
-                    calendarView === 'weekly' ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-200'
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                    calendarView === 'weekly' ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
                   )}
                 >
                   Weekly
@@ -876,14 +874,14 @@ const ScheduleCalendar = () => {
               </div>
 
               {/* Date nav */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
+              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1">
                 <button 
                   onClick={() => calendarView === 'daily' ? navigateDate(-1) : navigateWeek(-1)}
-                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm text-slate-500 transition-all"
+                  className="p-1.5 rounded-lg hover:bg-ps-bg hover:shadow-sm text-ps-ink-2 transition-all"
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="px-3 text-sm font-bold text-slate-700 dark:text-slate-200">
+                <span className="px-3 text-sm font-medium text-ps-ink-1">
                   {calendarView === 'daily'
                     ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
                     : `Week of ${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
@@ -891,7 +889,7 @@ const ScheduleCalendar = () => {
                 </span>
                 <button 
                   onClick={() => calendarView === 'daily' ? navigateDate(1) : navigateWeek(1)}
-                  className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm text-slate-500 transition-all"
+                  className="p-1.5 rounded-lg hover:bg-ps-bg hover:shadow-sm text-ps-ink-2 transition-all"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -899,7 +897,7 @@ const ScheduleCalendar = () => {
 
               <button 
                 onClick={goToToday}
-                className="px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-700 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-ps-accent bg-ps-accent-soft hover:bg-ps-accent-soft border border-ps-accent/20 rounded-lg transition-colors"
               >
                 Today
               </button>
@@ -907,7 +905,7 @@ const ScheduleCalendar = () => {
 
             <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
               {/* Type filters */}
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+              <div className="flex items-center gap-1 bg-ps-bg rounded-xl p-1">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'sped', label: 'SPED' },
@@ -918,10 +916,10 @@ const ScheduleCalendar = () => {
                     key={f.key}
                     onClick={() => setFilterType(f.key)}
                     className={clsx(
-                      'px-3 py-1.5 rounded-lg text-xs font-bold transition-all',
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                       filterType === f.key
-                        ? 'bg-white dark:bg-slate-900 dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-200'
+                        ? 'bg-ps-surface text-ps-ink-1 shadow-sm'
+                        : 'text-ps-ink-2 hover:text-ps-ink-1'
                     )}
                   >
                     {f.label}
@@ -933,10 +931,10 @@ const ScheduleCalendar = () => {
                 onClick={handleAutoSchedule}
                 disabled={isAutoScheduling}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
                   isAutoScheduling 
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed" 
-                    : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-emerald-200"
+                    ? "bg-ps-border text-ps-ink-2 cursor-not-allowed" 
+                    : "border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent"
                 )}
               >
                 {isAutoScheduling ? (
@@ -949,18 +947,18 @@ const ScheduleCalendar = () => {
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAvailabilityModalOpen(true); }}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-teal-200"
+                className="flex items-center gap-2 border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
               >
                 <UserCheck size={16} strokeWidth={2.5} />
                 <span className="hidden sm:inline">Availability</span>
                 {availableStaffCount > 0 && (
-                  <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{availableStaffCount}</span>
+                  <span className="bg-ps-accent-soft text-ps-accent text-xs font-medium px-1.5 py-0.5 rounded-full">{availableStaffCount}</span>
                 )}
               </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-indigo-200"
+                className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
               >
                 <Plus size={16} strokeWidth={2.5} /> Add Session
               </button>
@@ -970,25 +968,25 @@ const ScheduleCalendar = () => {
           {/* Stats strip */}
           <div className="px-6 pb-3 flex flex-wrap items-center gap-4 xl:gap-6">
             {[
-              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
-              { label: 'Students', value: totalStudents, icon: Users, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
-              { label: 'Rooms',  value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
-              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400', bg: availableStaffCount > 0 ? 'bg-teal-50 dark:bg-teal-900/30' : 'bg-slate-50 dark:bg-slate-800/50' },
-              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400', bg: conflicts.length > 0 ? 'bg-rose-50 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-slate-800/50' },
+              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-ps-accent', bg: 'bg-ps-accent-soft' },
+              { label: 'Students', value: totalStudents, icon: Users, color: 'text-ps-success', bg: 'bg-ps-success/10' },
+              { label: 'Rooms',  value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-ps-warn', bg: 'bg-ps-warn/10' },
+              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-ps-success' : 'text-ps-ink-2', bg: availableStaffCount > 0 ? 'bg-ps-success/10' : 'bg-ps-bg' },
+              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-ps-danger' : 'text-ps-ink-2', bg: conflicts.length > 0 ? 'bg-ps-danger/10' : 'bg-ps-bg' },
             ].map(stat => (
               <div key={stat.label} className="flex items-center gap-2">
                 <div className={clsx('p-1.5 rounded-lg', stat.bg)}>
                   <stat.icon size={14} className={stat.color} />
                 </div>
-                <span className="text-xs text-slate-400 font-medium">{stat.label}:</span>
-                <span className={clsx('text-sm font-bold', stat.color)}>{stat.value}</span>
+                <span className="text-xs text-ps-ink-2 font-medium">{stat.label}:</span>
+                <span className={clsx('text-sm font-medium', stat.color)}>{stat.value}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* ── Grid ───────── */}
-        <div ref={scrollRef} className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-800/50">
+        <div ref={scrollRef} className="flex-1 overflow-auto bg-ps-bg">
 
           {/* ════════════ MOBILE LIST VIEW ════════════ */}
           {isMobile ? (
@@ -1002,29 +1000,29 @@ const ScheduleCalendar = () => {
                     key={session.id} 
                     onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); setPendingDelete(false); }}
                     className={clsx(
-                      "bg-white dark:bg-slate-900 p-4 rounded-2xl border shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform",
-                      hasConflict ? "border-rose-300 ring-2 ring-rose-500/20" : cfg.border,
-                      selectedSessionId === session.id ? "ring-2 ring-indigo-500" : ""
+                      "bg-ps-surface p-4 rounded-2xl border shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform",
+                      hasConflict ? "border-ps-danger/20 ring-2 ring-ps-danger/20" : cfg.border,
+                      selectedSessionId === session.id ? "ring-2 ring-ps-accent" : ""
                     )}
                   >
                     <div className={clsx('absolute left-0 top-0 bottom-0 w-1.5', cfg.gradient)} />
                     <div className="flex justify-between items-start mb-2 pl-2">
-                      <h3 className={clsx("font-bold text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
+                      <h3 className={clsx("font-semibold text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
                       {hasConflict ? (
-                        <span className="shrink-0 px-2 py-1 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-lg flex items-center gap-1"><AlertCircle size={10}/> Conflict</span>
+                        <span className="shrink-0 px-2 py-1 bg-ps-danger/10 text-ps-danger text-xs font-medium rounded-lg flex items-center gap-1"><AlertCircle size={10}/> Conflict</span>
                       ) : (
-                        <span className={clsx('text-[10px] font-bold px-2 py-1 rounded-lg shrink-0', cfg.badge)}>{cfg.label}</span>
+                        <span className={clsx('text-xs font-medium px-2 py-1 rounded-lg shrink-0', cfg.badge)}>{cfg.label}</span>
                       )}
                     </div>
                     <div className="space-y-1.5 pl-2 mt-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
                         <Clock size={14} className="opacity-70" /> {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
                       </div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
                         <MapPin size={14} className="opacity-70" /> {session.room}
                       </div>
                       {provider && (
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
                           <Users size={14} className="opacity-70" /> {provider.name}
                         </div>
                       )}
@@ -1033,7 +1031,7 @@ const ScheduleCalendar = () => {
                 );
               })}
               {filteredSessions.length === 0 && (
-                <div className="text-center p-8 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 text-slate-400">
+                <div className="text-center p-8 bg-ps-surface rounded-2xl border border-dashed border-ps-border text-ps-ink-2">
                   <CalendarIcon size={32} className="mx-auto mb-3 opacity-20" />
                   <p className="font-semibold text-sm">No sessions found</p>
                 </div>
@@ -1045,33 +1043,33 @@ const ScheduleCalendar = () => {
               {calendarView === 'daily' && (
                 <div className="min-w-[760px] pb-10">
               {/* Room header row */}
-              <div className="flex sticky top-0 z-30 bg-white dark:bg-slate-900 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="w-20 shrink-0 bg-white dark:bg-slate-900 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-center items-center gap-1">
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+              <div className="flex sticky top-0 z-30 bg-ps-surface border-b border-ps-border shadow-sm">
+                <div className="w-20 shrink-0 bg-ps-surface border-r border-ps-border flex flex-col justify-center items-center gap-1">
+                  <div className="flex bg-ps-bg rounded-lg p-0.5">
                     <button 
                       onClick={() => setRoomPage(Math.max(0, roomPage - 1))}
                       disabled={roomPage === 0}
-                      className="p-1 rounded text-slate-500 hover:bg-white dark:bg-slate-900 dark:bg-slate-900 disabled:opacity-30 disabled:hover:bg-transparent"
+                      className="p-1 rounded text-ps-ink-2 hover:bg-ps-bg disabled:opacity-30 disabled:hover:bg-transparent"
                     ><ChevronLeft size={14}/></button>
                     <button 
                       onClick={() => setRoomPage(Math.min(maxRoomPages - 1, roomPage + 1))}
                       disabled={roomPage === maxRoomPages - 1}
-                      className="p-1 rounded text-slate-500 hover:bg-white dark:bg-slate-900 dark:bg-slate-900 disabled:opacity-30 disabled:hover:bg-transparent"
+                      className="p-1 rounded text-ps-ink-2 hover:bg-ps-bg disabled:opacity-30 disabled:hover:bg-transparent"
                     ><ChevronRight size={14}/></button>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400 text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
+                  <span className="text-xs font-medium text-ps-ink-2 text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
                 </div>
                 {displayRooms.map((roomName, idx) => {
                   const globalIdx = roomPage * ROOMS_PER_PAGE + idx;
                   const rc = getRoomColor(globalIdx);
                   const roomSessions = sessions.filter(s => s.room === roomName).length;
                   return (
-                    <div key={roomName} className={clsx('flex-1 px-3 py-3 flex items-center justify-between border-l border-slate-200 dark:border-slate-700', rc.header)}>
+                    <div key={roomName} className={clsx('flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border', rc.header)}>
                       <div className="flex items-center gap-2">
                         <div className={clsx('w-2.5 h-2.5 rounded-full shrink-0', rc.dot)} />
-                        <span className={clsx('text-xs font-bold uppercase tracking-wider truncate', rc.text)}>{roomName}</span>
+                        <span className={clsx('text-xs font-medium  truncate', rc.text)}>{roomName}</span>
                       </div>
-                      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0', rc.bg, rc.text, rc.border, 'border')}>
+                      <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', rc.bg, rc.text, rc.border, 'border')}>
                         {roomSessions} {roomSessions === 1 ? 'session' : 'sessions'}
                       </span>
                     </div>
@@ -1084,25 +1082,25 @@ const ScheduleCalendar = () => {
                 <div className="w-20 shrink-0 relative">
                   {HOURS.map((hour, i) => (
                     <div key={hour} className="h-24 flex items-start justify-end pr-3 pt-2">
-                      <span className={clsx('text-[10px] font-bold tabular-nums', i === 0 ? 'text-transparent' : 'text-slate-400')}>
+                      <span className={clsx('text-xs font-medium tabular-nums', i === 0 ? 'text-transparent' : 'text-ps-ink-2')}>
                         {formatHour(hour)}
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex-1 flex relative border-l border-slate-200 dark:border-slate-700">
+                <div className="flex-1 flex relative border-l border-ps-border">
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-slate-200 dark:border-slate-700' : 'border-dashed border-slate-200 dark:border-slate-700/60')} style={{ top: `${i * 96}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 96}px` }} />
                     ))}
                     {HOURS.slice(0, -1).map((_, i) => (
-                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-slate-100 dark:border-slate-800 border-dashed" style={{ top: `${i * 96 + 48}px` }} />
+                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-ps-border border-dashed" style={{ top: `${i * 96 + 48}px` }} />
                     ))}
                   </div>
 
                   {displayRooms.map((roomName, colIdx) => (
-                    <div key={roomName} className={clsx('flex-1 relative border-l border-slate-200 dark:border-slate-700')}>
+                    <div key={roomName} className={clsx('flex-1 relative border-l border-ps-border')}>
                       {colIdx === 0 && <NowIndicator />}
                       {filteredSessions.filter(s => s.room === roomName).map(session => (
                         <SessionCard
@@ -1132,7 +1130,7 @@ const ScheduleCalendar = () => {
           {calendarView === 'weekly' && (
             <div className="min-w-[800px]">
               {/* Day header row */}
-              <div className="flex sticky top-0 z-30 bg-white dark:bg-slate-900 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+              <div className="flex sticky top-0 z-30 bg-ps-surface border-b border-ps-border shadow-sm">
                 <div className="w-16 shrink-0" />
                 {WEEKDAYS.map((day, idx) => {
                   const dayDate = weekDates[idx];
@@ -1142,23 +1140,23 @@ const ScheduleCalendar = () => {
 
                   return (
                     <div key={day} className={clsx(
-                      'flex-1 px-3 py-3 flex items-center justify-between border-l border-slate-200 dark:border-slate-700',
-                      isToday ? 'bg-indigo-50/70 dark:bg-indigo-900/40' : 'bg-white dark:bg-slate-900 dark:bg-slate-900'
+                      'flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border',
+                      isToday ? 'bg-ps-accent-soft/70' : 'bg-ps-surface'
                     )}>
                       <div className="flex items-center gap-2">
                         <div className={clsx(
-                          'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black',
-                          isToday ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium',
+                          isToday ? 'bg-ps-accent dark:bg-indigo-600 text-white shadow-sm' : 'bg-ps-bg text-ps-ink-2'
                         )}>
                           {dateNum}
                         </div>
                         <div>
-                          <span className={clsx('text-xs font-bold uppercase tracking-wider', isToday ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-500')}>
+                          <span className={clsx('text-xs font-medium ', isToday ? 'text-ps-accent' : 'text-ps-ink-2')}>
                             {WEEKDAYS_SHORT[idx]}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-ps-bg text-ps-ink-2 border border-ps-border">
                         {sessionCount}
                       </span>
                     </div>
@@ -1172,7 +1170,7 @@ const ScheduleCalendar = () => {
                 <div className="w-16 shrink-0 relative">
                   {HOURS.map((hour, i) => (
                     <div key={hour} className="h-16 flex items-start justify-end pr-2 pt-1">
-                      <span className={clsx('text-[9px] font-bold tabular-nums', i === 0 ? 'text-transparent' : 'text-slate-400')}>
+                      <span className={clsx('text-xs font-medium tabular-nums', i === 0 ? 'text-transparent' : 'text-ps-ink-2')}>
                         {formatHour(hour).replace(':00', '')}
                       </span>
                     </div>
@@ -1180,11 +1178,11 @@ const ScheduleCalendar = () => {
                 </div>
 
                 {/* Day columns */}
-                <div className="flex-1 flex relative border-l border-slate-200 dark:border-slate-700">
+                <div className="flex-1 flex relative border-l border-ps-border">
                   {/* Hour grid lines */}
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-slate-200 dark:border-slate-700' : 'border-dashed border-slate-200 dark:border-slate-700/60')} style={{ top: `${i * 64}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 64}px` }} />
                     ))}
                   </div>
 
@@ -1193,9 +1191,9 @@ const ScheduleCalendar = () => {
                     const isToday = formatDateISO(dayDate) === formatDateISO(new Date());
                     return (
                       <div key={day} className={clsx(
-                        'flex-1 relative border-l border-slate-200 dark:border-slate-700',
+                        'flex-1 relative border-l border-ps-border',
                         dayIdx === 0 && 'border-l-0',
-                        isToday && 'bg-indigo-50/20 dark:bg-indigo-900/20'
+                        isToday && 'bg-ps-accent-soft/20'
                       )}>
                         {isToday && <NowIndicator />}
 
@@ -1240,7 +1238,7 @@ const ScheduleCalendar = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setSelectedSessionId(null)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+                className="fixed inset-0 bg-black/40 z-40 lg:hidden"
               />
             )}
             <motion.div
@@ -1250,10 +1248,10 @@ const ScheduleCalendar = () => {
               exit={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className={clsx(
-                "bg-white dark:bg-slate-900 flex flex-col z-50",
+                "bg-ps-surface flex flex-col z-50",
                 isMobile 
-                  ? "fixed bottom-0 left-0 right-0 h-[85vh] rounded-t-3xl shadow-2xl" 
-                  : "w-[360px] shrink-0 border-l border-slate-200 dark:border-slate-700 h-full relative"
+                  ? "fixed bottom-0 left-0 right-0 h-[85vh] rounded-t-2xl shadow-md" 
+                  : "w-[360px] shrink-0 border-l border-ps-border h-full relative"
               )}
             >
             {(() => {
@@ -1262,25 +1260,24 @@ const ScheduleCalendar = () => {
               const hasConflict = isConflicted(selectedSession.id);
               return (
                 <>
-                  <div className={clsx('p-5 bg-gradient-to-br relative overflow-hidden', cfg.gradient)}>
-                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_bottom_left,_white,_transparent)]" />
+                  <div className={clsx('p-5 relative overflow-hidden', selectedSession.type === 'rehab' ? 'bg-sky-700' : selectedSession.type === 'sped' ? 'bg-purple-700' : cfg.gradient)}>
                     <div className="relative">
                       <div className="flex justify-between items-start mb-3">
-                        <span className="text-white/70 text-[10px] font-bold uppercase tracking-widest">{cfg.label}</span>
+                        <span className="text-white/70 text-xs font-medium ">{cfg.label}</span>
                         <div className="flex items-center gap-1">
                           {pendingDelete ? (
                             <>
                               <button
                                 onClick={() => { deleteSession(selectedSession.id); setSelectedSessionId(null); }}
                                 aria-label="Confirm delete session"
-                                className="px-2.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold transition-colors"
+                                className="px-2.5 py-1.5 rounded-lg bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white text-xs font-medium transition-colors"
                               >
                                 Confirm
                               </button>
                               <button
                                 onClick={() => setPendingDelete(false)}
                                 aria-label="Cancel delete"
-                                className="px-2.5 py-1.5 rounded-lg bg-slate-500 hover:bg-slate-600 text-white text-[10px] font-bold transition-colors"
+                                className="px-2.5 py-1.5 rounded-lg bg-ps-ink-2 hover:opacity-90 text-white text-xs font-medium transition-colors"
                               >
                                 Cancel
                               </button>
@@ -1289,7 +1286,7 @@ const ScheduleCalendar = () => {
                             <button
                               onClick={() => setPendingDelete(true)}
                               aria-label="Delete session"
-                              className="p-2 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-rose-500 text-white transition-colors"
+                              className="p-2 rounded-lg bg-white/20 hover:bg-ps-danger dark:hover:bg-red-700 text-white transition-colors"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -1297,13 +1294,13 @@ const ScheduleCalendar = () => {
                           <button
                             onClick={() => { setSelectedSessionId(null); setPendingDelete(false); }}
                             aria-label="Close session details"
-                            className="p-1.5 rounded-lg bg-white dark:bg-slate-900 dark:bg-slate-900/20 hover:bg-white dark:bg-slate-900 dark:bg-slate-900/30 text-white transition-colors"
+                            className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
                           >
                             <X size={14} />
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-white font-bold text-lg leading-tight">{selectedSession.title}</h3>
+                      <h3 className="text-white font-semibold text-lg leading-tight">{selectedSession.title}</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <span className="flex items-center gap-1 text-white/80 text-xs font-medium">
                           <Clock size={11} /> {formatHour(selectedSession.startHour)} – {formatHour(selectedSession.startHour + selectedSession.span)}
@@ -1314,16 +1311,16 @@ const ScheduleCalendar = () => {
                         {provider && <span className="flex items-center gap-1 text-white/80 text-xs font-medium"><Users size={11} /> {provider.name}</span>}
                       </div>
                       {hasConflict && (
-                        <div className="mt-3 flex items-center gap-2 bg-white dark:bg-slate-900 dark:bg-slate-900/20 rounded-lg px-3 py-1.5">
-                          <AlertCircle size={13} className="text-white animate-pulse" />
-                          <span className="text-white text-xs font-bold">Scheduling Conflict Detected</span>
+                        <div className="mt-3 flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5">
+                          <AlertCircle size={13} className="text-white" />
+                          <span className="text-white text-xs font-medium">Scheduling Conflict Detected</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex border-b border-ps-border">
                     {[
                       { key: 'info', label: 'Details', icon: Info },
                       { key: 'reschedule', label: 'Reschedule', icon: RefreshCw },
@@ -1332,14 +1329,14 @@ const ScheduleCalendar = () => {
                         key={tab.key}
                         onClick={() => setDetailTab(tab.key)}
                         className={clsx(
-                          'flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold border-b-2 transition-colors',
-                          detailTab === tab.key ? 'text-indigo-600 dark:text-indigo-400 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600 dark:text-slate-300'
+                          'flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium border-b-2 transition-colors',
+                          detailTab === tab.key ? 'text-ps-accent border-ps-accent' : 'text-ps-ink-2 border-transparent hover:text-ps-ink-2'
                         )}
                       >
                         <tab.icon size={13} />
                         {tab.label}
                         {tab.key === 'reschedule' && hasConflict && (
-                          <span className="w-2 h-2 rounded-full bg-rose-500" />
+                          <span className="w-2 h-2 rounded-full bg-ps-danger/100" />
                         )}
                       </button>
                     ))}
@@ -1355,14 +1352,14 @@ const ScheduleCalendar = () => {
                           { icon: MapPin, label: 'Venue', value: selectedSession.room },
                           { icon: TrendingUp, label: 'Students', value: `${selectedSession.studentIds?.length ?? 0} enrolled` },
                         ].map(row => (
-                          <div key={row.label} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                            <div className="p-2 bg-white dark:bg-slate-900 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
-                              <row.icon size={14} className="text-slate-500" />
+                          <div key={row.label} className="flex items-start gap-3 p-3 bg-ps-bg rounded-xl">
+                            <div className="p-2 bg-ps-surface rounded-lg border border-ps-border shrink-0">
+                              <row.icon size={14} className="text-ps-ink-2" />
                             </div>
                             <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{row.label}</p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-0.5">{row.value}</p>
-                              {row.sub && <p className="text-xs text-slate-400 font-medium">{row.sub}</p>}
+                              <p className="text-xs font-medium  text-ps-ink-2">{row.label}</p>
+                              <p className="text-sm font-medium text-ps-ink-1 mt-0.5">{row.value}</p>
+                              {row.sub && <p className="text-xs text-ps-ink-2 font-medium">{row.sub}</p>}
                             </div>
                           </div>
                         ))}
@@ -1372,19 +1369,19 @@ const ScheduleCalendar = () => {
                     {detailTab === 'reschedule' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                         {hasConflict && (
-                          <div className="p-4 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 rounded-xl">
-                            <p className="text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2 mb-1">
+                          <div className="p-4 bg-ps-danger/10 border border-ps-danger/20 rounded-xl">
+                            <p className="text-xs font-medium text-ps-danger flex items-center gap-2 mb-1">
                               <AlertCircle size={13} /> Conflict Detected
                             </p>
-                            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium leading-relaxed">
+                            <p className="text-xs text-ps-danger font-medium leading-relaxed">
                               This session overlaps with another session for the same therapist or room.
                             </p>
                           </div>
                         )}
 
                         <div>
-                          <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <Zap size={12} className="text-amber-500" /> Smart Suggestions
+                          <h5 className="text-xs font-semibold text-ps-ink-2  mb-3 flex items-center gap-2">
+                            <Zap size={12} className="text-ps-warn" /> Smart Suggestions
                           </h5>
                           <div className="space-y-2">
                             {(() => {
@@ -1393,7 +1390,7 @@ const ScheduleCalendar = () => {
                                 .filter(newHour => newHour + selectedSession.span <= 17 && !slotHasConflict(newHour));
                               if (suggestions.length === 0) {
                                 return (
-                                  <p className="text-xs text-slate-500 font-medium">No suggested slots left today (last start 17:00) — drag the session to another room or day.</p>
+                                  <p className="text-xs text-ps-ink-2 font-medium">No suggested slots left today (last start 17:00) — drag the session to another room or day.</p>
                                 );
                               }
                               return suggestions.map(newHour => (
@@ -1401,19 +1398,19 @@ const ScheduleCalendar = () => {
                                   key={newHour}
                                   whileHover={{ scale: 1.01 }}
                                   onClick={() => handleReschedule(newHour)}
-                                  className="w-full text-left p-3.5 rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 hover:border-emerald-400 hover:shadow-sm transition-all group"
+                                  className="w-full text-left p-3.5 rounded-xl border-2 border-ps-success/20 bg-ps-success/5 hover:border-ps-success/40 hover:shadow-sm transition-all group"
                                 >
                                   <div className="flex justify-between items-center">
                                     <div>
-                                      <span className="font-bold text-emerald-800 text-sm">{formatHour(newHour)}</span>
-                                      <span className="text-emerald-600 dark:text-emerald-400 text-xs mx-1">→</span>
-                                      <span className="font-bold text-emerald-800 text-sm">{formatHour(newHour + selectedSession.span)}</span>
+                                      <span className="font-medium text-ps-success text-sm">{formatHour(newHour)}</span>
+                                      <span className="text-ps-success text-xs mx-1">→</span>
+                                      <span className="font-medium text-ps-success text-sm">{formatHour(newHour + selectedSession.span)}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold px-2.5 py-1 bg-emerald-500 text-white rounded-lg group-hover:bg-emerald-600 transition-colors">
+                                    <span className="text-xs font-medium px-2.5 py-1 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg transition-colors">
                                       Move
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">{selectedSession.room} · no conflict at this time</p>
+                                  <p className="text-xs text-ps-success font-semibold mt-1">{selectedSession.room} · no conflict at this time</p>
                                 </motion.button>
                               ));
                             })()}
@@ -1421,9 +1418,9 @@ const ScheduleCalendar = () => {
                         </div>
 
                         {!hasConflict && (
-                          <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl flex items-center gap-3">
-                            <CheckCircle2 size={18} className="text-indigo-500 shrink-0" />
-                            <p className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">No conflicts — session is optimally placed.</p>
+                          <div className="p-4 bg-ps-accent-soft border border-ps-accent/20 rounded-xl flex items-center gap-3">
+                            <CheckCircle2 size={18} className="text-ps-accent shrink-0" />
+                            <p className="text-xs text-ps-accent font-semibold">No conflicts — session is optimally placed.</p>
                           </div>
                         )}
                       </motion.div>

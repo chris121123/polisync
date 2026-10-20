@@ -69,7 +69,7 @@ const TherapistDashboard = () => {
             <h1 className="text-3xl font-display font-bold text-ps-ink-1">
               My Caseload
             </h1>
-            <div className="h-1 w-full bg-teal-500 rounded-full mt-1 opacity-80" />
+            <div className="h-1 w-full bg-ps-accent rounded-full mt-1 opacity-80" />
           </div>
           <p className="text-ps-ink-2 font-medium">
             Clinical management and developmental notes for your weekly students.
@@ -108,18 +108,18 @@ const TherapistDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Sessions Panel */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-ps-surface rounded-3xl p-6 lg:p-8 shadow-sm border border-ps-border">
+          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 shadow-sm border border-ps-border">
             {/* Header & Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-ps-border">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl">
+                <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
                   <Activity size={20} />
                 </div>
                 <h2 className="text-lg font-display font-bold text-ps-ink-1">Daily Schedule</h2>
               </div>
               <button
                 onClick={() => navigate('/therapist/notes')}
-                className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-ps-accent hover:underline flex items-center gap-1"
               >
                 All Clinical Notes →
               </button>
@@ -137,13 +137,13 @@ const TherapistDashboard = () => {
                     className={clsx(
                       "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0",
                       isActive 
-                        ? "bg-teal-600 text-white shadow-lg shadow-teal-500/20" 
-                        : "bg-ps-bg text-ps-ink-2 hover:bg-slate-200/50 dark:hover:bg-ps-bg/80 hover:text-ps-ink-1"
+                        ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
+                        : "bg-ps-bg text-ps-ink-2 hover:bg-ps-border hover:text-ps-ink-1"
                     )}
                   >
                     <span>{day.slice(0, 3)}</span>
                     <span className={clsx(
-                      "w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold",
+                      "w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold",
                       isActive ? "bg-white/20 text-white" : "bg-ps-surface text-ps-ink-2 shadow-xs"
                     )}>
                       {count}
@@ -162,13 +162,13 @@ const TherapistDashboard = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="p-5 rounded-2xl border border-ps-border bg-ps-bg/30 hover:bg-ps-surface hover:shadow-md transition-all group relative border-l-4 border-l-teal-500 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="p-5 rounded-2xl border border-ps-border bg-ps-bg/30 hover:bg-ps-surface hover:shadow-sm transition-all group relative border-l-4 border-l-ps-accent flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="flex items-start gap-4">
                       {/* Time Badge */}
-                      <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 flex flex-col items-center justify-center shrink-0 border border-teal-100 dark:border-teal-900/50">
+                      <div className="w-14 h-14 rounded-2xl bg-ps-accent-soft text-ps-accent flex flex-col items-center justify-center shrink-0 border border-ps-accent/10">
                         <span className="text-xs font-bold">{formatTime(session.startHour)}</span>
-                        <span className="text-[10px] font-medium opacity-70">{session.span}h</span>
+                        <span className="text-xs font-medium opacity-70">{session.span}h</span>
                       </div>
 
                       {/* Content */}
@@ -178,7 +178,7 @@ const TherapistDashboard = () => {
                             {session.title}
                           </h3>
                           {session.type && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                            <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-ps-accent-soft text-ps-accent">
                               {session.type}
                             </span>
                           )}
@@ -187,7 +187,7 @@ const TherapistDashboard = () => {
                         <div className="flex items-center gap-3 text-xs text-ps-ink-2">
                           {session.room && (
                             <span className="flex items-center gap-1 font-medium">
-                              <MapPin size={12} className="text-teal-500" /> {session.room}
+                              <MapPin size={12} className="text-ps-accent" /> {session.room}
                             </span>
                           )}
                         </div>
@@ -199,7 +199,7 @@ const TherapistDashboard = () => {
                               const student = getStudent(sid);
                               return student ? (
                                 <div key={sid} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ps-surface border border-ps-border text-xs font-medium text-ps-ink-1">
-                                  <div className="w-4 h-4 rounded-full bg-teal-500/20 text-teal-700 text-[10px] font-bold flex items-center justify-center">
+                                  <div className="w-4 h-4 rounded-full bg-ps-accent/10 text-ps-accent text-xs font-bold flex items-center justify-center">
                                     {student.name.charAt(0)}
                                   </div>
                                   <span>{student.name}</span>
@@ -214,7 +214,7 @@ const TherapistDashboard = () => {
                     {/* Add Note Action */}
                     <button
                       onClick={() => openNoteModal(session)}
-                      className="px-3 py-2 rounded-xl border border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400 font-bold text-xs hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all flex items-center gap-1.5 sm:opacity-0 group-hover:opacity-100 shrink-0 self-end sm:self-center"
+                      className="px-3 py-2 rounded-xl border border-ps-accent/20 dark:border-ps-accent/20 text-ps-accent font-bold text-xs hover:bg-ps-accent-soft dark:hover:bg-ps-accent-soft transition-all flex items-center gap-1.5 sm:opacity-0 group-hover:opacity-100 shrink-0 self-end sm:self-center"
                     >
                       <Edit3 size={14} />
                       <span>Add Note</span>
@@ -223,7 +223,7 @@ const TherapistDashboard = () => {
                 ))
               ) : (
                 <div className="p-12 text-center bg-ps-bg/20 rounded-2xl border-2 border-dashed border-ps-border">
-                  <div className="w-12 h-12 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <div className="w-12 h-12 bg-ps-accent-soft text-ps-accent rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <Calendar size={24} />
                   </div>
                   <p className="text-sm font-bold text-ps-ink-1">No Clinical Sessions Scheduled</p>
@@ -237,9 +237,9 @@ const TherapistDashboard = () => {
         {/* Sidebar panels */}
         <div className="space-y-6">
           {/* Assigned Programs */}
-          <div className="bg-ps-surface rounded-3xl p-6 shadow-sm border border-ps-border space-y-4">
+          <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-teal-50 dark:bg-teal-900/20 text-teal-600 rounded-xl">
+              <div className="p-2 bg-ps-accent-soft text-ps-accent rounded-xl">
                 <BookOpen size={18} />
               </div>
               <h3 className="font-display font-bold text-ps-ink-1">My Programs</h3>
@@ -250,10 +250,10 @@ const TherapistDashboard = () => {
                 myAssignments.map(a => (
                   <div key={a.id} className="p-3.5 rounded-2xl border border-ps-border bg-ps-bg/30 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.programs?.color || '#0d9488' }} />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.programs?.color || '#4f46e5' }} />
                       <span className="text-sm font-bold text-ps-ink-1">{a.programs?.name}</span>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-ps-ink-2 bg-ps-surface px-2 py-0.5 rounded-full border border-ps-border">
+                    <span className="text-xs font-bold uppercase tracking-wide text-ps-ink-2 bg-ps-surface px-2 py-0.5 rounded-full border border-ps-border">
                       Active
                     </span>
                   </div>
@@ -270,14 +270,14 @@ const TherapistDashboard = () => {
       <AnimatePresence>
         {selectedSession && (
           <div 
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
             onClick={closeNoteModal}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-ps-surface rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-ps-border space-y-6"
+              className="bg-ps-surface rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 border border-ps-border space-y-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">
@@ -292,11 +292,11 @@ const TherapistDashboard = () => {
 
               {/* Student Select */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Select Student</label>
+                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Select Student</label>
                 <select
                   value={noteStudentId}
                   onChange={(e) => setNoteStudentId(e.target.value)}
-                  className="w-full p-3.5 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-teal-500"
+                  className="w-full p-3.5 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-ps-accent"
                 >
                   {(selectedSession.studentIds || []).map(sid => {
                     const student = getStudent(sid);
@@ -307,7 +307,7 @@ const TherapistDashboard = () => {
 
               {/* Star Rating */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Progress & Engagement Rating</label>
+                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Progress & Engagement Rating</label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(rating => (
                     <button
@@ -316,7 +316,7 @@ const TherapistDashboard = () => {
                       onMouseEnter={() => setHoverRating(rating)}
                       onMouseLeave={() => setHoverRating(0)}
                       onClick={() => setNoteRating(rating)}
-                      className="p-1 text-amber-400 hover:scale-110 transition-transform"
+                      className="p-1 text-ps-warn hover:scale-110 transition-transform"
                     >
                       <Star 
                         size={28} 
@@ -330,13 +330,13 @@ const TherapistDashboard = () => {
 
               {/* Clinical Note Content */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-ps-ink-2">Clinical Observations & Plan</label>
+                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Clinical Observations & Plan</label>
                 <textarea
                   value={noteContent}
                   onChange={e => setNoteContent(e.target.value)}
                   placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
                   rows={4}
-                  className="w-full p-4 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-teal-500 resize-none"
+                  className="w-full p-4 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-ps-accent resize-none"
                 />
               </div>
 
@@ -345,7 +345,7 @@ const TherapistDashboard = () => {
                 <button
                   onClick={handleAddNote}
                   disabled={!noteContent.trim()}
-                  className="flex-1 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-600/20 disabled:opacity-50"
+                  className="flex-1 py-3.5 bg-ps-accent dark:bg-indigo-600 hover:bg-ps-accent/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
                 >
                   Save Progress Note
                 </button>

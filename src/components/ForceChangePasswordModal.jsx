@@ -55,47 +55,47 @@ const ForceChangePasswordModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/40">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800"
+        className="bg-ps-surface rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-ps-border"
       >
-        <div className="p-8 pb-6 bg-amber-50 dark:bg-amber-900/20 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mb-4">
+        <div className="p-8 pb-6 bg-ps-warn/10 flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-ps-warn/20 text-ps-warn rounded-full flex items-center justify-center mb-4">
             <ShieldAlert size={32} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Action Required</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+          <h2 className="text-xl font-bold text-ps-ink-1">Action Required</h2>
+          <p className="text-sm text-ps-ink-2 mt-2">
             For security reasons, you must change your temporary password before accessing your account.
           </p>
         </div>
 
         <div className="p-8 pt-6 space-y-5">
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 text-red-600 dark:text-red-400 rounded-xl text-sm flex items-start gap-2">
+            <div className="p-3 bg-ps-danger/10 border border-ps-danger/20 text-ps-danger rounded-xl text-sm flex items-start gap-2">
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">New Password</label>
+            <label className="block text-sm font-semibold text-ps-ink-1 mb-1.5">New Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
               <input
                 type="text"
                 style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
                 placeholder="Min 8 characters"
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-900 dark:text-white transition-all"
+                className="w-full pl-10 pr-10 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ps-ink-2 hover:text-ps-ink-1 focus-visible:outline-2 focus-visible:outline-ps-accent"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -103,16 +103,16 @@ const ForceChangePasswordModal = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Confirm New Password</label>
+            <label className="block text-sm font-semibold text-ps-ink-1 mb-1.5">Confirm New Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
               <input
                 type="text"
                 style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                 placeholder="Confirm new password"
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-900 dark:text-white transition-all"
+                className="w-full pl-10 pr-10 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={handleSubmit}
               disabled={loading || !newPassword || !confirmPassword}
-              className="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-amber-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center h-[48px]"
+              className="w-full py-3 bg-ps-warn dark:bg-amber-700 hover:bg-ps-warn/90 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-ps-warn text-white font-bold rounded-xl transition-colors flex justify-center items-center h-[48px] focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -134,7 +134,7 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={logout}
               disabled={loading}
-              className="w-full py-3 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              className="w-full py-3 text-ps-ink-2 hover:text-ps-ink-1 font-bold rounded-xl hover:bg-ps-bg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               Cancel and Logout
             </button>

@@ -91,7 +91,7 @@ const RequirementsUpload = ({ studentId }) => {
           </div>
           <h3 className="text-lg font-display font-bold text-ps-ink-1">Document Center</h3>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-ps-ink-2 uppercase tracking-widest bg-ps-bg px-2.5 py-1 rounded-full">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-ps-ink-2 uppercase tracking-wide bg-ps-bg px-2.5 py-1 rounded-full">
           <Info size={12} /> Max 10MB
         </div>
       </div>
@@ -121,15 +121,15 @@ const RequirementsUpload = ({ studentId }) => {
               className="space-y-3"
             >
               <div className="flex items-center justify-between px-1 pt-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ps-ink-2">Ready to upload ({files.length})</span>
-                <button onClick={() => setFiles([])} className="text-[10px] font-bold text-ps-danger hover:underline">Clear all</button>
+                <span className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Ready to upload ({files.length})</span>
+                <button onClick={() => setFiles([])} className="text-xs font-bold text-ps-danger hover:underline">Clear all</button>
               </div>
               
               <div className="space-y-2">
                 {files.map((file, i) => (
                   <div key={i} className="flex items-center justify-between p-3.5 bg-ps-bg rounded-2xl border border-ps-border">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="p-1.5 bg-white dark:bg-ps-surface rounded-lg border border-ps-border text-ps-ink-2">
+                      <div className="p-1.5 bg-ps-surface rounded-lg border border-ps-border text-ps-ink-2">
                         <FileText size={14} />
                       </div>
                       <span className="text-xs font-bold text-ps-ink-1 truncate">{file.name}</span>
@@ -147,7 +147,7 @@ const RequirementsUpload = ({ studentId }) => {
               <button 
                 onClick={handleUpload} 
                 disabled={uploading}
-                className="w-full py-4 bg-ps-accent hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-ps-accent/20 disabled:opacity-50 group"
+                className="w-full py-4 bg-ps-accent dark:bg-indigo-600 hover:bg-ps-accent/90 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 group"
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} className="group-hover:-translate-y-0.5 transition-transform" />}
                 {uploading ? 'Processing Secure Upload...' : 'Submit Documents'}
@@ -159,7 +159,7 @@ const RequirementsUpload = ({ studentId }) => {
 
       {/* Submitted History */}
       <div className="pt-6 border-t border-ps-border space-y-4">
-        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-ps-ink-2 px-1">Submission History</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wide text-ps-ink-2 px-1">Submission History</h4>
         {loading ? (
           <div className="flex flex-col gap-2">
             {[1, 2].map(i => <div key={i} className="h-14 w-full bg-ps-bg animate-pulse rounded-2xl" />)}
@@ -179,7 +179,7 @@ const RequirementsUpload = ({ studentId }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-ps-ink-1 truncate group-hover:text-ps-accent transition-colors">{doc.file_name}</p>
-                  <p className="text-[10px] font-bold text-ps-ink-2 uppercase tracking-tight mt-0.5">
+                  <p className="text-xs font-bold text-ps-ink-2 uppercase tracking-tight mt-0.5">
                     Uploaded • {new Date(doc.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
@@ -189,7 +189,7 @@ const RequirementsUpload = ({ studentId }) => {
           </div>
         ) : (
           <div className="py-8 text-center bg-ps-bg/30 rounded-2xl border-2 border-dashed border-ps-border">
-            <p className="text-xs font-bold text-ps-ink-2 uppercase tracking-widest">No documents found</p>
+            <p className="text-xs font-bold text-ps-ink-2 uppercase tracking-wide">No documents found</p>
           </div>
         )}
       </div>
