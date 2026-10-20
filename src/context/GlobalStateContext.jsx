@@ -46,10 +46,21 @@ export const GlobalStateProvider = ({ children }) => {
       }
       
       setLoading(true);
+
+      // Fail-safe timer: guarantee loading spinner never stays indefinitely (e.g. mobile lock / network lag)
+      const safetyTimer = setTimeout(() => {
+        if (mounted) {
+          console.warn('Initialization safety timeout reached (4s). Releasing loading state.');
+          setLoading(false);
+        }
+      }, 4000);
       
       try {
-        // 1. Fetch Auth Session first so RouteGuards don't prematurely redirect
-        const { data: { session } } = await supabase.auth.getSession();
+        // 1. Fetch Auth Session with timeout to avoid hanging on mobile/cross-origin locks
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ data: { session: null } }), 3000));
+        const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]);
+        const session = sessionData?.session;
         
         if (session?.user) {
           // Fetch profile and role concurrently
@@ -73,23 +84,42 @@ export const GlobalStateProvider = ({ children }) => {
             });
         }
         
-        // 2. Fetch all other data
-        // Fetch Rooms
-        const { data: roomsData } = await supabase.from('rooms').select('*');
-        if (roomsData && mounted) setRooms(roomsData.map(r => ({ ...r, maxCapacity: r.max_capacity })));
+        // 2. Fetch all other data concurrently using Promise.allSettled
+        const [
+          roomsRes,
+          staffRes,
+          studentsRes,
+          sessionsRes,
+          staffAvailRes,
+          programsRes,
+          spRes,
+          saRes,
+          settingsRes
+        ] = await Promise.allSettled([
+          supabase.from('rooms').select('*'),
+          supabase.from('profiles').select('*'),
+          supabase.from('students').select('*'),
+          supabase.from('sessions').select('*'),
+          supabase.from('staff_availability').select('*'),
+          supabase.from('programs').select('*').eq('is_active', true),
+          supabase.from('student_programs').select('*'),
+          supabase.from('student_availability').select('*').eq('is_active', true),
+          supabase.from('scheduling_settings').select('*').single()
+        ]);
 
-        // Fetch Staff
-        const { data: staffData } = await supabase.from('profiles').select('*');
-        if (staffData && mounted) setStaff(staffData);
+        if (!mounted) return;
 
-        // Fetch Students
-        const { data: studentsData } = await supabase.from('students').select('*');
-        if (studentsData && mounted) setStudents(studentsData);
-
-        // Fetch Sessions
-        const { data: sessionsData } = await supabase.from('sessions').select('*');
-        if (sessionsData && mounted) {
-          setSessions(sessionsData.map(s => ({
+        if (roomsRes.status === 'fulfilled' && roomsRes.value.data) {
+          setRooms(roomsRes.value.data.map(r => ({ ...r, maxCapacity: r.max_capacity })));
+        }
+        if (staffRes.status === 'fulfilled' && staffRes.value.data) {
+          setStaff(staffRes.value.data);
+        }
+        if (studentsRes.status === 'fulfilled' && studentsRes.value.data) {
+          setStudents(studentsRes.value.data);
+        }
+        if (sessionsRes.status === 'fulfilled' && sessionsRes.value.data) {
+          setSessions(sessionsRes.value.data.map(s => ({
             id: s.id,
             title: s.title,
             therapistId: s.therapist_id,
@@ -104,30 +134,26 @@ export const GlobalStateProvider = ({ children }) => {
             isConfirmed: s.is_confirmed
           })));
         }
-
-        // Fetch Staff Availability
-        const { data: staffAvailData } = await supabase.from('staff_availability').select('*');
-        if (staffAvailData && mounted) setStaffAvailabilityState(staffAvailData);
-
-        // Fetch Programs
-        const { data: programsData } = await supabase.from('programs').select('*').eq('is_active', true);
-        if (programsData && mounted) setPrograms(programsData.map(p => ({ ...p, id: Number(p.id) })));
-
-        // Fetch Student Programs
-        const { data: spData } = await supabase.from('student_programs').select('*');
-        if (spData && mounted) setStudentPrograms(spData.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
-
-        // Fetch Student Availability
-        const { data: saData } = await supabase.from('student_availability').select('*').eq('is_active', true);
-        if (saData && mounted) setStudentAvailability(saData.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
-
-        // Fetch Scheduling Settings
-        const { data: settingsData } = await supabase.from('scheduling_settings').select('*').single();
-        if (settingsData && mounted) setSchedulingSettings(settingsData);
+        if (staffAvailRes.status === 'fulfilled' && staffAvailRes.value.data) {
+          setStaffAvailabilityState(staffAvailRes.value.data);
+        }
+        if (programsRes.status === 'fulfilled' && programsRes.value.data) {
+          setPrograms(programsRes.value.data.map(p => ({ ...p, id: Number(p.id) })));
+        }
+        if (spRes.status === 'fulfilled' && spRes.value.data) {
+          setStudentPrograms(spRes.value.data.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
+        }
+        if (saRes.status === 'fulfilled' && saRes.value.data) {
+          setStudentAvailability(saRes.value.data.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
+        }
+        if (settingsRes.status === 'fulfilled' && settingsRes.value.data) {
+          setSchedulingSettings(settingsRes.value.data);
+        }
 
       } catch (error) {
         console.error('Error fetching data during initialization:', error);
       } finally {
+        clearTimeout(safetyTimer);
         if (mounted) setLoading(false);
       }
     };

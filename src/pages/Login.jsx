@@ -86,28 +86,38 @@ const Login = () => {
         }
         
         const roleRoutes = {
+          superadmin: '/dashboard',
           admin: '/dashboard',
-          parent: '/parent',
-          teacher: '/teacher',
-          therapist: '/therapist'
+          parent: '/dashboard',
+          teacher: '/dashboard',
+          therapist: '/dashboard'
         };
         navigate(roleRoutes[loggedInUser.app_role] || '/dashboard');
       }
-    } catch (_err) {
-      const nextAttempts = failedAttempts + 1;
-      setFailedAttempts(nextAttempts);
+    } catch (err) {
+      console.error('[Login Error]:', err);
+      const errMsg = err?.message || '';
+      const isAuthFail = err?.status === 400 || err?.code === 'invalid_credentials' || errMsg.toLowerCase().includes('invalid login credentials');
 
-      if (nextAttempts >= MAX_ATTEMPTS) {
-        setIsLockedOut(true);
-        setError('');
-        sendResetEmail(email);
+      if (isAuthFail) {
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+
+        if (nextAttempts >= MAX_ATTEMPTS) {
+          setIsLockedOut(true);
+          setError('Account temporarily locked due to multiple failed attempts.');
+          sendResetEmail(email);
+        } else {
+          const remaining = MAX_ATTEMPTS - nextAttempts;
+          setError(
+            remaining === 1
+              ? 'Incorrect email or password. 1 attempt remaining before account lockout.'
+              : `Incorrect email or password. ${remaining} attempts remaining.`
+          );
+        }
       } else {
-        const remaining = MAX_ATTEMPTS - nextAttempts;
-        setError(
-          remaining === 1
-            ? 'Incorrect credentials. 1 attempt remaining before your account is locked.'
-            : `Incorrect credentials. ${remaining} attempts remaining.`
-        );
+        // Network, CORS, rate-limit, or server error
+        setError(errMsg || 'Connection error. Please verify network connection to Supabase.');
       }
     } finally {
       setLoading(false);
@@ -187,12 +197,22 @@ const Login = () => {
                   <span>A recovery email has been sent to <strong>{email.trim()}</strong>.</span>
                 </div>
               ) : (
-                <button
-                  onClick={() => sendResetEmail(email)}
-                  className="text-xs font-medium text-ps-danger hover:underline inline-flex items-center gap-1"
-                >
-                  Send password reset email to {email.trim()} →
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sendResetEmail(email)}
+                    className="text-xs font-medium text-ps-danger hover:underline inline-flex items-center gap-1"
+                  >
+                    Send password reset email to {email.trim()} →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsLockedOut(false); setFailedAttempts(0); setError(''); }}
+                    className="text-xs font-semibold text-ps-accent hover:underline text-left"
+                  >
+                    Reset attempt counter
+                  </button>
+                </div>
               )}
             </motion.div>
           )}

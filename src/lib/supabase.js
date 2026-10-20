@@ -19,6 +19,16 @@ if (!supabaseUrl || !isValidUrl(supabaseUrl) || !supabaseAnonKey) {
 }
 
 export const supabase = (supabaseUrl && isValidUrl(supabaseUrl) && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // Bypass navigator.locks deadlock on mobile browsers / non-HTTPS remote IPs (Tailscale)
+        lock: async (_name, _acquireTimeout, fn) => {
+          return await fn();
+        },
+      },
+    })
   : null;
 

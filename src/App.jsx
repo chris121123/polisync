@@ -31,11 +31,28 @@ function App() {
     }
   }, [darkMode]);
 
-  if (loading) {
+  const [skipLoading, setSkipLoading] = React.useState(false);
+  const [showSkipButton, setShowSkipButton] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShowSkipButton(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading && !skipLoading) {
     return (
-      <div className="fixed inset-0 bg-ps-bg flex flex-col items-center justify-center z-[9999]">
+      <div className="fixed inset-0 bg-ps-bg flex flex-col items-center justify-center z-[9999] p-4 text-center">
         <div className="w-16 h-16 border-4 border-ps-accent border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-ps-ink-2 font-medium">Initializing PoliSync...</p>
+        {showSkipButton && (
+          <button
+            type="button"
+            onClick={() => setSkipLoading(true)}
+            className="mt-6 text-xs font-semibold text-ps-primary hover:underline px-3.5 py-2 rounded-lg border border-ps-border bg-ps-surface shadow-xs transition-colors"
+          >
+            Taking longer than expected? Tap to continue
+          </button>
+        )}
       </div>
     );
   }
