@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock,
-  Users, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
+  Users, User, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
   LayoutGrid, List, BookOpen, MapPin, RefreshCw, TrendingUp, UserCheck
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -56,38 +56,42 @@ const isTherapistOrTeacher = (s) => {
 };
 
 // ─── Current-time indicator ──────────────────────────────────────────────────
-const NowIndicator = () => {
+const NowIndicator = ({ rowHeight = 96 }) => {
   const [top, setTop] = useState(null);
 
   useEffect(() => {
     const calc = () => {
       const now = new Date();
       const h = now.getHours() + now.getMinutes() / 60;
-      if (h >= 8 && h <= 17) setTop((h - 8) * 96);
+      if (h >= 8 && h <= 18) setTop((h - 8) * rowHeight);
       else setTop(null);
     };
     calc();
     const id = setInterval(calc, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [rowHeight]);
 
   if (top === null) return null;
 
   return (
     <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top }}>
       <div className="flex items-center gap-0">
-        <div className="w-3 h-3 rounded-full bg-ps-danger shadow-sm shrink-0 -ml-1.5" />
-        <div className="flex-1 h-0.5 bg-ps-danger/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-ps-danger shadow-sm shrink-0 -ml-1" />
+        <div className="flex-1 h-0.5 bg-ps-danger/80" />
       </div>
     </div>
   );
 };
 
 // ─── Session Card (Daily View) ───────────────────────────────────────────────
-const SessionCard = ({ session, staffList, isSelected, hasConflict, onClick, onDragEnd }) => {
+const SessionCard = ({ session, staffList, isSelected, hasConflict, conflict, onClick, onDragEnd }) => {
   const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
   const provider = staffList.find(s => String(s.id) === String(session.therapistId));
-  const isShort = session.span < 1.5;
+  const studentCount = session.studentIds?.length || 0;
+
+  const conflictLabel = conflict?.type === 'therapist' 
+    ? 'Staff Clash' 
+    : (conflict?.type === 'room' ? 'Room Overlap' : 'Conflict');
 
   return (
     <motion.div
@@ -97,51 +101,85 @@ const SessionCard = ({ session, staffList, isSelected, hasConflict, onClick, onD
       dragSnapToOrigin={true}
       dragMomentum={false}
       onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
-      whileHover={{ scale: 1.02, zIndex: 30 }}
-      whileDrag={{ scale: 1.05, zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
+      whileHover={{ scale: 1.01, zIndex: 30 }}
+      whileDrag={{ scale: 1.03, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
       className={clsx(
-        'absolute w-[96%] left-[2%] rounded-xl cursor-grab overflow-hidden transition-shadow duration-200',
-        isSelected ? 'ring-2 ring-ps-accent ring-offset-1 shadow-md z-20' : 'shadow-sm hover:shadow-md z-10',
-        hasConflict ? 'ring-2 ring-ps-danger' : '',
+        'absolute left-1.5 right-1.5 rounded-xl cursor-grab transition-all duration-200 select-none overflow-hidden',
+        'bg-ps-surface border shadow-xs hover:shadow-md',
+        isSelected ? 'ring-2 ring-ps-accent ring-offset-1 z-20 border-transparent' : 'border-ps-border hover:border-ps-accent/40 z-10',
+        hasConflict ? 'border-ps-danger/50 ring-1 ring-ps-danger/50 bg-ps-danger/5' : ''
       )}
-      style={{ top: `${(session.startHour - 8) * 96 + 4}px`, height: `${session.span * 96 - 8}px` }}
+      style={{
+        top: `${(session.startHour - 8) * 96 + 2}px`,
+        height: `${session.span * 96 - 4}px`,
+      }}
     >
-      <div className={clsx('absolute inset-0 rounded-xl', cfg.light, cfg.border, 'border')} />
-      <div className={clsx('absolute top-0 left-0 right-0 h-1 rounded-t-xl', cfg.gradient)} />
-      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-xl', cfg.gradient)} />
-
-      {hasConflict && <div className="absolute inset-0 rounded-xl bg-ps-danger/10" />}
+      {/* 3.5px solid left accent strip */}
+      <div className={clsx(
+        'absolute left-0 top-0 bottom-0 w-1',
+        hasConflict ? 'bg-ps-danger' : cfg.gradient
+      )} />
 
       <div className="relative z-10 p-2.5 pl-3.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
+        
+        {/* Top line: Title & Badges */}
         <div>
-          <div className="flex items-start justify-between gap-1">
-            <p className={clsx('font-semibold text-xs leading-tight line-clamp-2', cfg.text)}>{session.title}</p>
-            {hasConflict
-              ? <AlertCircle size={12} className="text-ps-danger shrink-0 mt-0.5" />
-              : <span className={clsx('text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0', cfg.badge)}>{cfg.label}</span>
-            }
-          </div>
-          {!isShort && provider && (
-            <p className={clsx('text-xs mt-1 font-semibold opacity-75 flex items-center gap-1', cfg.text)}>
-              <Users size={9} /> {provider.name}
+          <div className="flex items-start justify-between gap-1.5 min-w-0">
+            <p className={clsx(
+              'font-semibold text-xs leading-snug line-clamp-1 truncate',
+              hasConflict ? 'text-ps-danger font-bold' : 'text-ps-ink-1'
+            )}>
+              {session.title}
             </p>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {hasConflict ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-ps-danger/15 text-ps-danger border border-ps-danger/30">
+                  <AlertCircle size={10} className="shrink-0" />
+                  <span>{conflictLabel}</span>
+                </span>
+              ) : (
+                <span className={clsx('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-md shrink-0', cfg.badge)}>
+                  {cfg.label}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Time range */}
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-ps-ink-2 mt-1">
+            <Clock size={11} className="shrink-0 opacity-70" />
+            <span>{formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}</span>
+          </div>
+        </div>
+
+        {/* Bottom line: Provider and Student count */}
+        <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-ps-border/50 text-ps-ink-2 mt-auto">
+          <div className="flex items-center gap-1 truncate font-medium text-ps-ink-1 min-w-0">
+            <User size={11} className="shrink-0 text-ps-ink-2" />
+            <span className="truncate">{provider ? provider.name : 'Unassigned'}</span>
+          </div>
+          {studentCount > 0 && (
+            <div className="flex items-center gap-1 shrink-0 text-ps-ink-2 font-medium">
+              <Users size={11} className="shrink-0" />
+              <span>{studentCount}</span>
+            </div>
           )}
         </div>
-        {!isShort && (
-          <div className={clsx('flex items-center gap-1 text-xs font-medium opacity-60', cfg.text)}>
-            <Clock size={9} />
-            {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
-          </div>
-        )}
+
       </div>
     </motion.div>
   );
 };
 
 // ─── Weekly Session Card (compact) ───────────────────────────────────────────
-const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, onClick, onDragEnd }) => {
+const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, conflict, onClick, onDragEnd }) => {
   const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
   const provider = staffList.find(s => String(s.id) === String(session.therapistId));
+
+  const conflictLabel = conflict?.type === 'therapist' 
+    ? 'Clash' 
+    : (conflict?.type === 'room' ? 'Overlap' : 'Conflict');
 
   return (
     <motion.div
@@ -150,27 +188,55 @@ const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, onClic
       dragSnapToOrigin={true}
       dragMomentum={false}
       onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
-      whileHover={{ scale: 1.03, zIndex: 30 }}
-      whileDrag={{ scale: 1.05, zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
+      whileHover={{ scale: 1.02, zIndex: 30 }}
+      whileDrag={{ scale: 1.04, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
       className={clsx(
-        'absolute w-[92%] left-[4%] rounded-lg cursor-grab overflow-hidden transition-shadow duration-200',
-        isSelected ? 'ring-2 ring-ps-accent shadow-md z-20' : 'shadow-sm hover:shadow-md z-10',
-        hasConflict ? 'ring-2 ring-ps-danger' : '',
+        'absolute left-1 right-1 rounded-lg cursor-grab select-none overflow-hidden transition-all duration-200',
+        'bg-ps-surface border shadow-xs hover:shadow-md',
+        isSelected ? 'ring-2 ring-ps-accent z-20 border-transparent' : 'border-ps-border z-10',
+        hasConflict ? 'border-ps-danger/60 ring-1 ring-ps-danger/60 bg-ps-danger/5' : ''
       )}
-      style={{ top: `${(session.startHour - 8) * 64 + 2}px`, height: `${session.span * 64 - 4}px` }}
+      style={{
+        top: `${(session.startHour - 8) * 64 + 2}px`,
+        height: `${session.span * 64 - 4}px`,
+      }}
     >
-      <div className={clsx('absolute inset-0 rounded-lg', cfg.light, cfg.border, 'border')} />
-      <div className={clsx('absolute top-0 left-0 bottom-0 w-1 rounded-l-lg', cfg.gradient)} />
-      {hasConflict && <div className="absolute inset-0 rounded-lg bg-ps-danger/10" />}
+      <div className={clsx(
+        'absolute left-0 top-0 bottom-0 w-1',
+        hasConflict ? 'bg-ps-danger' : cfg.gradient
+      )} />
 
-      <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-center overflow-hidden pointer-events-none">
-        <p className={clsx('font-semibold text-xs leading-tight line-clamp-1', cfg.text)}>{session.title}</p>
-        {session.span >= 1.5 && provider && (
-          <p className="text-xs font-semibold text-ps-ink-2 mt-0.5 truncate">{provider.name}</p>
+      <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
+        <div>
+          <div className="flex items-center justify-between gap-1">
+            <p className={clsx(
+              'font-semibold text-xs leading-tight truncate',
+              hasConflict ? 'text-ps-danger' : 'text-ps-ink-1'
+            )}>
+              {session.title}
+            </p>
+            {hasConflict ? (
+              <span className="text-[9px] font-semibold px-1 rounded bg-ps-danger/15 text-ps-danger">
+                {conflictLabel}
+              </span>
+            ) : (
+              <span className={clsx('text-[9px] font-semibold uppercase px-1 rounded shrink-0', cfg.badge)}>
+                {cfg.label}
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] font-medium text-ps-ink-2 mt-0.5 flex items-center gap-1">
+            <Clock size={9} className="opacity-70" />
+            {formatHour(session.startHour).replace(':00', '')}–{formatHour(session.startHour + session.span).replace(':00', '')}
+          </p>
+        </div>
+
+        {provider && (
+          <p className="text-[10px] font-medium text-ps-ink-1 truncate pt-0.5 border-t border-ps-border/40 flex items-center gap-1">
+            <User size={9} className="shrink-0 text-ps-ink-2" />
+            <span className="truncate">{provider.name}</span>
+          </p>
         )}
-        <p className="text-xs font-medium text-ps-ink-2 mt-0.5">
-          {formatHour(session.startHour).replace(':00', '')}–{formatHour(session.startHour + session.span).replace(':00', '')}
-        </p>
       </div>
     </motion.div>
   );
@@ -704,6 +770,7 @@ const ScheduleCalendar = () => {
 
   const selectedSession = sessions.find(s => s.id === selectedSessionId);
   const isConflicted = id => conflicts.some(c => c.sessionIds.includes(id));
+  const getConflictForSession = id => conflicts.find(c => c.sessionIds?.includes(id));
 
   const handleAutoSchedule = async () => {
     setIsAutoScheduling(true);
@@ -1074,14 +1141,30 @@ const ScheduleCalendar = () => {
 
               {/* Time grid */}
               <div className="flex">
-                <div className="w-20 shrink-0 relative">
+                {/* Time gutter */}
+                <div className="w-20 shrink-0 relative select-none" style={{ height: `${HOURS.length * 96}px` }}>
                   {HOURS.map((hour, i) => (
-                    <div key={hour} className="h-24 flex items-start justify-end pr-3 pt-2">
-                      <span className={clsx('text-xs font-medium tabular-nums', i === 0 ? 'text-transparent' : 'text-ps-ink-2')}>
+                    <div
+                      key={hour}
+                      className={clsx(
+                        "absolute right-0 pr-3 flex items-center justify-end",
+                        i === 0 ? "top-0 pt-0.5" : "-translate-y-1/2"
+                      )}
+                      style={{ top: i === 0 ? '1px' : `${i * 96}px` }}
+                    >
+                      <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
                         {formatHour(hour)}
                       </span>
                     </div>
                   ))}
+                  <div
+                    className="absolute right-0 pr-3 flex items-center justify-end -translate-y-1/2"
+                    style={{ top: `${HOURS.length * 96}px` }}
+                  >
+                    <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                      {formatHour(18)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex-1 flex relative border-l border-ps-border">
@@ -1090,13 +1173,15 @@ const ScheduleCalendar = () => {
                       <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 96}px` }} />
                     ))}
                     {HOURS.slice(0, -1).map((_, i) => (
-                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-ps-border border-dashed" style={{ top: `${i * 96 + 48}px` }} />
+                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-ps-border/40 border-dashed" style={{ top: `${i * 96 + 48}px` }} />
                     ))}
+                    {/* Bottom closing border line */}
+                    <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 96}px` }} />
                   </div>
 
                   {displayRooms.map((roomName, colIdx) => (
                     <div key={roomName} className={clsx('flex-1 relative border-l border-ps-border')}>
-                      {colIdx === 0 && <NowIndicator />}
+                      {colIdx === 0 && <NowIndicator rowHeight={96} />}
                       {filteredSessions.filter(s => s.room === roomName).map(session => (
                         <SessionCard
                           key={session.id}
@@ -1104,6 +1189,7 @@ const ScheduleCalendar = () => {
                           staffList={staff}
                           isSelected={selectedSessionId === session.id}
                           hasConflict={isConflicted(session.id)}
+                          conflict={getConflictForSession(session.id)}
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedSessionId(session.id);
@@ -1162,14 +1248,29 @@ const ScheduleCalendar = () => {
               {/* Time grid */}
               <div className="flex">
                 {/* Time labels */}
-                <div className="w-16 shrink-0 relative">
+                <div className="w-16 shrink-0 relative select-none" style={{ height: `${HOURS.length * 64}px` }}>
                   {HOURS.map((hour, i) => (
-                    <div key={hour} className="h-16 flex items-start justify-end pr-2 pt-1">
-                      <span className={clsx('text-xs font-medium tabular-nums', i === 0 ? 'text-transparent' : 'text-ps-ink-2')}>
+                    <div
+                      key={hour}
+                      className={clsx(
+                        "absolute right-0 pr-2 flex items-center justify-end",
+                        i === 0 ? "top-0 pt-0.5" : "-translate-y-1/2"
+                      )}
+                      style={{ top: i === 0 ? '1px' : `${i * 64}px` }}
+                    >
+                      <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
                         {formatHour(hour).replace(':00', '')}
                       </span>
                     </div>
                   ))}
+                  <div
+                    className="absolute right-0 pr-2 flex items-center justify-end -translate-y-1/2"
+                    style={{ top: `${HOURS.length * 64}px` }}
+                  >
+                    <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                      {formatHour(18).replace(':00', '')}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Day columns */}
@@ -1179,6 +1280,8 @@ const ScheduleCalendar = () => {
                     {HOURS.map((_, i) => (
                       <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 64}px` }} />
                     ))}
+                    {/* Bottom closing border line */}
+                    <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 64}px` }} />
                   </div>
 
                   {WEEKDAYS.map((day, dayIdx) => {
@@ -1190,7 +1293,7 @@ const ScheduleCalendar = () => {
                         dayIdx === 0 && 'border-l-0',
                         isToday && 'bg-ps-accent-soft/20'
                       )}>
-                        {isToday && <NowIndicator />}
+                        {isToday && <NowIndicator rowHeight={64} />}
 
                         {sessionsByDay[dayIdx].map(session => (
                           <WeeklySessionCard
@@ -1199,6 +1302,7 @@ const ScheduleCalendar = () => {
                             staffList={staff}
                             isSelected={selectedSessionId === session.id}
                             hasConflict={isConflicted(session.id)}
+                            conflict={getConflictForSession(session.id)}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedSessionId(session.id);
