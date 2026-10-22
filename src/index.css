@@ -12,8 +12,8 @@
   --color-ps-ink-2: #5a6075;
   --color-ps-accent: #4f46e5;
   --color-ps-accent-soft: #eef2ff;
-  --color-ps-success: #047857;
-  --color-ps-warn: #b45309;
+  --color-ps-success: #065f46;
+  --color-ps-warn: #92400e;
   --color-ps-danger: #b91c1c;
 
   /* Preserve legacy colors for compatibility but update to match feel */
@@ -32,6 +32,9 @@
 
   /* Transitions */
   --transition-timing-standard: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Breakpoints */
+  --breakpoint-xs: 400px;
 }
 
 :root {
@@ -71,6 +74,14 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Typography Utilities */

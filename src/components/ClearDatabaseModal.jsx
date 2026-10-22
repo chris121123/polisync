@@ -68,36 +68,36 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
       <AnimatePresence mode="wait">
         {step === 1 ? (
           <motion.div
             key="step1"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            className="w-full max-w-lg bg-ps-surface rounded-xl shadow-xl overflow-hidden border border-ps-danger/30"
+            exit={{ opacity: 0, scale: 0.95, y: 0 }}
+            className="w-full max-w-lg bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-xl overflow-hidden border border-ps-danger/30 max-h-[90vh] flex flex-col"
           >
-            <div className="p-6 md:p-8 flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-ps-danger/15 rounded-full flex items-center justify-center mb-6 border-8 border-ps-danger/5">
-                <ShieldAlert size={32} className="text-ps-danger" />
+            <div className="p-5 sm:p-8 flex flex-col items-center text-center overflow-y-auto">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-ps-danger/15 rounded-full flex items-center justify-center mb-5 sm:mb-6 border-8 border-ps-danger/5 shrink-0">
+                <ShieldAlert size={28} className="text-ps-danger sm:w-8 sm:h-8" />
               </div>
               
-              <h2 className="text-2xl font-bold text-ps-danger mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-ps-danger mb-2">
                 CRITICAL WARNING
               </h2>
-              <p className="text-ps-ink-2 mb-6 font-medium leading-relaxed">
+              <p className="text-sm sm:text-base text-ps-ink-2 mb-6 font-medium leading-relaxed">
                 You are about to <strong className="text-ps-danger">PERMANENTLY ERASE</strong> all data in the system. This includes all students, staff, rooms, and sessions. This action <strong>CANNOT BE UNDONE</strong>.
               </p>
 
-              <div className="w-full bg-ps-danger/10 p-4 rounded-xl border border-ps-danger/20 mb-8 text-sm text-ps-danger font-bold">
+              <div className="w-full bg-ps-danger/10 p-3 sm:p-4 rounded-xl border border-ps-danger/20 mb-6 sm:mb-8 text-xs sm:text-sm text-ps-danger font-bold">
                 Please wait {countdown} seconds to proceed...
               </div>
 
-              <div className="flex w-full gap-3">
+              <div className="flex flex-col-reverse sm:flex-row w-full gap-3">
                 <button
                   onClick={onClose}
-                  className="flex-1 py-3 px-4 bg-ps-bg hover:bg-ps-border text-ps-ink-1 font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  className="w-full sm:flex-1 py-3 px-4 bg-ps-bg hover:bg-ps-border text-ps-ink-1 font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-ps-accent"
                 >
                   Cancel
                 </button>
@@ -105,7 +105,7 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                   onClick={() => setStep(2)}
                   disabled={countdown > 0}
                   className={clsx(
-                    "flex-1 py-3 px-4 font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-ps-accent",
+                    "w-full sm:flex-1 py-3 px-4 font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-ps-accent",
                     countdown > 0
                       ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed"
                       : "bg-ps-danger dark:bg-red-700 hover:bg-ps-danger/90 text-white shadow-sm"
@@ -121,10 +121,10 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
             key="step2"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            className="w-full max-w-md bg-ps-surface rounded-xl shadow-xl overflow-hidden border border-ps-danger/30"
+            exit={{ opacity: 0, scale: 0.95, y: 0 }}
+            className="w-full max-w-md bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-xl overflow-hidden border border-ps-danger/30 max-h-[90vh] flex flex-col"
           >
-            <div className="p-6 md:p-8">
+            <div className="p-5 sm:p-8 overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3 text-ps-danger">
                   <Lock size={24} />

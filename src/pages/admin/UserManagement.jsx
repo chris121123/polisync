@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   User,
+  Users,
   UserPlus,
   Shield,
   ShieldAlert,
@@ -32,6 +33,15 @@ import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import clsx from 'clsx';
 
+const EMPTY_CONFIG = {
+  operating_start_time: '08:00',
+  operating_end_time: '17:00',
+  allow_overbook: false,
+  max_daily_hours_per_student: 4.0,
+  auto_schedule_enabled: false,
+  min_break_minutes: 15,
+};
+
 const UserManagement = () => {
   const {
     staff,
@@ -55,28 +65,28 @@ const UserManagement = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditCategory, setAuditCategory] = useState('all');
 
   // ── Platform Configuration Form State ──
-  const [configForm, setConfigForm] = useState({
-    operating_start_time: '08:00',
-    operating_end_time: '17:00',
-    allow_overbook: false,
-    max_daily_hours_per_student: 4.0,
-    auto_schedule_enabled: false,
-    min_break_minutes: 15,
-  });
+  const [configForm, setConfigForm] = useState(EMPTY_CONFIG);
+  const [initialConfigForm, setInitialConfigForm] = useState(EMPTY_CONFIG);
   const [configLoading, setConfigLoading] = useState(false);
+
+  const isConfigDirty = JSON.stringify(configForm) !== JSON.stringify(initialConfigForm);
 
   useEffect(() => {
     if (schedulingSettings) {
-      setConfigForm({
+      const loaded = {
         operating_start_time: schedulingSettings.operating_start_time || '08:00',
         operating_end_time: schedulingSettings.operating_end_time || '17:00',
         allow_overbook: !!schedulingSettings.allow_overbook,
         max_daily_hours_per_student: schedulingSettings.max_daily_hours_per_student ?? 4.0,
         auto_schedule_enabled: !!schedulingSettings.auto_schedule_enabled,
         min_break_minutes: schedulingSettings.min_break_minutes ?? 15,
-      });
+      };
+      setConfigForm(loaded);
+      setInitialConfigForm(loaded);
     }
   }, [schedulingSettings]);
 
@@ -291,6 +301,7 @@ const UserManagement = () => {
         .eq('id', schedulingSettings?.id || 1);
       if (error) throw error;
       if (notify) notify('Platform configuration updated successfully');
+      setInitialConfigForm({ ...configForm });
     } catch (err) {
       if (notify) notify(err.message || 'Failed to update configuration', 'error');
     } finally {
@@ -314,6 +325,46 @@ const UserManagement = () => {
       return (s.name && s.name.toLowerCase().includes(q)) || (s.email && s.email.toLowerCase().includes(q));
     });
 
+  // Audit category mapping
+  const AUDIT_CATEGORIES = {
+    all: () => true,
+    account: (log) => ['user_created', 'user_deleted'].some(a => log.action?.includes(a.replace('user_', ''))),
+    role: (log) => log.action?.includes('role'),
+    status: (log) => log.action?.includes('activated') || log.action?.includes('deactivated'),
+  };
+
+  const filteredAuditLogs = auditLogs.filter(log => {
+    const matchesCategory = auditCategory === 'all' || AUDIT_CATEGORIES[auditCategory]?.(log);
+    if (!auditSearch) return matchesCategory;
+    const { action, actor, target } = auditLine(log, staff);
+    const q = auditSearch.toLowerCase();
+    return matchesCategory && (
+      action.toLowerCase().includes(q) ||
+      actor.toLowerCase().includes(q) ||
+      (target && target.toLowerCase().includes(q))
+    );
+  });
+
+  const getAuditBadge = (action) => {
+    if (!action) return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
+    if (action.includes('delete')) return { color: 'bg-ps-danger/10 text-ps-danger', dot: 'bg-ps-danger' };
+    if (action.includes('activate') && !action.includes('deactivate')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
+    if (action.includes('deactivate')) return { color: 'bg-ps-warn/10 text-ps-warn', dot: 'bg-ps-warn' };
+    if (action.includes('role')) return { color: 'bg-ps-accent-soft text-ps-accent', dot: 'bg-ps-accent' };
+    if (action.includes('create')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
+    return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
+  };
+
+  const ROLE_PILL_COLORS = {
+    all: 'bg-ps-accent dark:bg-indigo-600 text-white',
+    superadmin: 'bg-violet-600 text-white',
+    admin: 'bg-amber-600 text-white',
+    teacher: 'bg-indigo-600 text-white',
+    therapist: 'bg-teal-600 text-white',
+    parent: 'bg-pink-600 text-white',
+  };
+  const ROLE_PILL_INACTIVE = 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
+
   const tabs = [
     { id: 'users', label: 'Users' },
     { id: 'audit', label: 'Audit Trail' },
@@ -321,17 +372,17 @@ const UserManagement = () => {
   ];
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div>
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1">System Console</h1>
-          <p className="text-sm text-ps-ink-2 mt-1">Identity, audit trail, and platform configuration</p>
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">System Console</h1>
+          <p className="text-xs sm:text-sm text-ps-ink-2 mt-0.5">Identity, audit trail, and platform configuration</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-            className="flex items-center gap-2 px-4 py-2 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
+            className="flex items-center gap-2 px-4 py-2.5 bg-ps-accent dark:bg-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <UserPlus size={16} />
             Create User
@@ -340,13 +391,13 @@ const UserManagement = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 border-b border-ps-border pb-2">
+      <div className="flex gap-2 border-b border-ps-border pb-2 overflow-x-auto hide-scrollbar">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              "px-4 py-2 rounded-t-lg text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent",
+              "px-4 py-2 rounded-t-lg text-sm font-medium transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent",
               activeTab === tab.id
                 ? "bg-ps-surface text-ps-accent border-b-2 border-ps-accent"
                 : "text-ps-ink-2 hover:text-ps-ink-1"
@@ -362,19 +413,19 @@ const UserManagement = () => {
         <div className="space-y-4">
           {/* Role Filters + Search */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
                 <button
                   key={role}
                   onClick={() => setFilterRole(role)}
                   className={clsx(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize focus-visible:outline-2 focus-visible:outline-ps-accent",
+                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize focus-visible:outline-2 focus-visible:outline-ps-accent",
                     filterRole === role
-                      ? "bg-ps-accent dark:bg-indigo-600 text-white"
-                      : "bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
+                      ? ROLE_PILL_COLORS[role]
+                      : ROLE_PILL_INACTIVE
                   )}
                 >
-                  {role === 'superadmin' ? 'Super Admin' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
+                  {role === 'superadmin' ? 'Super Admin' : role === 'all' ? 'All' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
                 </button>
               ))}
             </div>
@@ -412,9 +463,9 @@ const UserManagement = () => {
                         <div className="w-9 h-9 rounded-full bg-ps-accent-soft text-ps-accent flex items-center justify-center font-semibold text-sm shrink-0">
                           {member.name?.charAt(0) || 'U'}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-ps-ink-1">{member.name}</p>
-                          <p className="text-xs text-ps-ink-2">{member.role}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-ps-ink-1 truncate">{member.name}</p>
+                          <p className="text-xs text-ps-ink-2 truncate">{member.email}</p>
                         </div>
                       </div>
                     </td>
@@ -509,8 +560,27 @@ const UserManagement = () => {
             </table>
 
             {filteredStaff.length === 0 && (
-              <div className="p-8 text-center text-ps-ink-2">
-                <p className="text-sm font-medium">No users found</p>
+              <div className="p-8 text-center">
+                <div className="w-10 h-10 rounded-full bg-ps-bg border border-ps-border flex items-center justify-center mx-auto mb-3">
+                  <Users size={18} className="text-ps-ink-2" />
+                </div>
+                {staff.length === 0 ? (
+                  <>
+                    <p className="text-sm font-semibold text-ps-ink-1">No users yet</p>
+                    <p className="text-xs text-ps-ink-2 mt-1 mb-4">Create your first platform account to get started.</p>
+                    <button
+                      onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-ps-accent dark:bg-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all"
+                    >
+                      <UserPlus size={14} /> Create first user
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-ps-ink-1">No users match this filter</p>
+                    <p className="text-xs text-ps-ink-2 mt-1">Try a different role filter or clear the search query.</p>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -520,17 +590,47 @@ const UserManagement = () => {
       {/* ── 2. AUDIT TRAIL TAB ── */}
       {activeTab === 'audit' && (
         <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-ps-border flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-ps-ink-1">System Activity Log</h2>
-              <p className="text-xs text-ps-ink-2 mt-0.5">Immutable audit trail of authentication and identity events</p>
+          <div className="px-6 py-4 border-b border-ps-border">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-base font-semibold text-ps-ink-1">System Activity Log</h2>
+                <p className="text-xs text-ps-ink-2 mt-0.5">Immutable audit trail of administrative and identity events</p>
+              </div>
+              <button
+                onClick={fetchAuditLogs}
+                className="text-xs font-medium text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+              >
+                Refresh
+              </button>
             </div>
-            <button
-              onClick={fetchAuditLogs}
-              className="text-xs font-medium text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
-            >
-              Refresh
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={14} />
+                <input
+                  type="text"
+                  value={auditSearch}
+                  onChange={e => setAuditSearch(e.target.value)}
+                  placeholder="Search action, actor, or target..."
+                  className="w-full pl-9 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-xs text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+              </div>
+              <div className="flex gap-1.5">
+                {[['all','All'],['account','Accounts'],['role','Role Changes'],['status','Status']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setAuditCategory(id)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent',
+                      auditCategory === id
+                        ? 'bg-ps-accent dark:bg-indigo-600 text-white'
+                        : 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -547,13 +647,14 @@ const UserManagement = () => {
                     <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Timestamp</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Action</th>
                     <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Performed By</th>
-                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">IP Address</th>
+                    <th className="hidden md:table-cell text-left px-6 py-3 text-xs font-medium text-ps-ink-2">IP Address</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ps-border text-sm">
-                  {auditLogs.map(log => {
+                  {filteredAuditLogs.map(log => {
                     const { action, actor, target } = auditLine(log, staff);
+                    const badge = getAuditBadge(log.action);
                     const isExpanded = expandedLogIds.has(log.id);
                     const hasDetails = log.details && typeof log.details === 'object' && Object.keys(log.details).length > 0;
 
@@ -563,14 +664,18 @@ const UserManagement = () => {
                           <td className="px-6 py-3.5 text-xs text-ps-ink-2 whitespace-nowrap">
                             {new Date(log.created_at).toLocaleString()}
                           </td>
-                          <td className="px-6 py-3.5 font-medium text-ps-ink-1">
-                            <span>{action}</span>
-                            {target && <span className="text-ps-ink-2 font-normal"> → {target}</span>}
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', badge.color)}>
+                                {action}
+                              </span>
+                              {target && <span className="text-xs text-ps-ink-2 font-normal">→ {target}</span>}
+                            </div>
                           </td>
-                          <td className="px-6 py-3.5 text-ps-ink-2">
+                          <td className="px-6 py-3.5 text-xs text-ps-ink-2">
                             {actor}
                           </td>
-                          <td className="px-6 py-3.5 text-xs text-ps-ink-2 font-mono">
+                          <td className="hidden md:table-cell px-6 py-3.5 text-xs text-ps-ink-2 font-mono">
                             {log.ip_address || '—'}
                           </td>
                           <td className="px-6 py-3.5 text-right">
@@ -599,6 +704,13 @@ const UserManagement = () => {
                       </React.Fragment>
                     );
                   })}
+                  {filteredAuditLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-xs text-ps-ink-2">
+                        No entries match your search or filter.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             )}
@@ -607,6 +719,7 @@ const UserManagement = () => {
               <div className="p-8 text-center text-ps-ink-2">
                 <Clock size={28} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm font-medium">No activity logs recorded</p>
+                <p className="text-xs mt-1">Actions like user creation and role changes will appear here.</p>
               </div>
             )}
           </div>
@@ -636,6 +749,21 @@ const UserManagement = () => {
           </div>
 
           <form onSubmit={handleSaveConfig} className="space-y-6 max-w-2xl">
+            {/* Auto-Scheduler Toggle — primary control, moved to top */}
+            <div className="p-4 rounded-xl border border-ps-border bg-ps-bg/40 flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="auto_schedule_enabled"
+                checked={configForm.auto_schedule_enabled}
+                onChange={e => setConfigForm(p => ({ ...p, auto_schedule_enabled: e.target.checked }))}
+                className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
+              />
+              <label htmlFor="auto_schedule_enabled" className="cursor-pointer">
+                <span className="text-sm font-semibold text-ps-ink-1 block">Auto-Scheduler Engine</span>
+                <span className="text-xs text-ps-ink-2 block mt-0.5">Enable automated constraint-satisfaction solver runs for pending student assignments. Disable to use manual scheduling only.</span>
+              </label>
+            </div>
+
             {/* Operating Hours */}
             <div>
               <label className="block text-sm font-medium text-ps-ink-1 mb-2">Center Operating Hours</label>
@@ -692,8 +820,8 @@ const UserManagement = () => {
               </div>
             </div>
 
-            {/* Toggles */}
-            <div className="space-y-4 pt-2">
+            {/* Allow Overbooking Toggle */}
+            <div>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -703,25 +831,12 @@ const UserManagement = () => {
                 />
                 <div>
                   <span className="text-sm font-medium text-ps-ink-1 block">Allow Overbooking</span>
-                  <span className="text-xs text-ps-ink-2 block">Permit scheduling sessions beyond room maximum capacity when approved</span>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={configForm.auto_schedule_enabled}
-                  onChange={e => setConfigForm(p => ({ ...p, auto_schedule_enabled: e.target.checked }))}
-                  className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
-                />
-                <div>
-                  <span className="text-sm font-medium text-ps-ink-1 block">Auto-Scheduler Engine</span>
-                  <span className="text-xs text-ps-ink-2 block">Enable automated constraint-satisfaction solver runs for pending assignments</span>
+                  <span className="text-xs text-ps-ink-2 block">Permit scheduling sessions beyond room maximum capacity when explicitly approved</span>
                 </div>
               </label>
             </div>
 
-            <div className="pt-4 border-t border-ps-border">
+            <div className="pt-4 border-t border-ps-border flex items-center gap-4">
               <button
                 type="submit"
                 disabled={configLoading}
@@ -729,6 +844,12 @@ const UserManagement = () => {
               >
                 {configLoading ? 'Saving...' : 'Save Configuration'}
               </button>
+              {isConfigDirty && !configLoading && (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-ps-warn">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ps-warn" />
+                  Unsaved changes
+                </span>
+              )}
             </div>
           </form>
         </div>
@@ -737,11 +858,11 @@ const UserManagement = () => {
       {/* ── Change Role Modal ── */}
       {showRoleModal && (
         <div 
-          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setShowRoleModal(null)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
+            className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-md max-w-sm w-full p-5 sm:p-6 border border-ps-border max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-ps-ink-1 mb-2">Change User Role</h3>
@@ -810,15 +931,15 @@ const UserManagement = () => {
       {/* ── Create User Modal ── */}
       {showCreateModal && (
         <div 
-          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={handleCancelCreate}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-md max-w-lg w-full overflow-hidden border border-ps-border"
+            className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-md max-w-lg w-full overflow-hidden border border-ps-border max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-ps-border">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-ps-border shrink-0">
               <div>
                 <h3 className="text-base font-semibold text-ps-ink-1">Create New User</h3>
                 <p className="text-xs text-ps-ink-2 mt-0.5">Administrator-provisioned account</p>
@@ -833,7 +954,7 @@ const UserManagement = () => {
             </div>
 
             {/* Body */}
-            <div className="p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
               {createError && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-danger/10 border border-ps-danger/30 text-ps-danger text-xs font-medium">
                   <AlertCircle size={16} />

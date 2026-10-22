@@ -37,14 +37,14 @@ const SessionNotes = () => {
   });
 
   return (
-    <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-ps-ink-1">Session Notes</h2>
-        <p className="text-ps-ink-2 font-medium mt-1">Review and manage your therapy session notes</p>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
+      <div className="pb-4 border-b border-ps-border/60">
+        <h2 className="text-2xl font-display font-bold text-ps-ink-1 tracking-tight">Session Notes</h2>
+        <p className="text-xs sm:text-sm text-ps-ink-2 font-medium mt-0.5">Review and manage your therapy session notes</p>
       </div>
 
       <div className="bg-ps-surface rounded-2xl shadow-sm border border-ps-border overflow-hidden">
-        <div className="p-4 border-b border-ps-border flex items-center gap-3">
+        <div className="p-4 border-b border-ps-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" />
             <input
@@ -55,12 +55,12 @@ const SessionNotes = () => {
               className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-xl text-sm text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
             />
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
             {['all', 'progress', 'general', 'attendance', 'incident'].map(type => (
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all shrink-0 ${
                   filter === type
                     ? 'bg-ps-accent dark:bg-indigo-600 text-white'
                     : 'bg-ps-bg text-ps-ink-2 hover:bg-ps-border'

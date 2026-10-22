@@ -61,24 +61,24 @@ const TherapistDashboard = () => {
   };
 
   return (
-    <div className="space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="space-y-2">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-ps-border/60">
+        <div className="space-y-1.5">
           <div className="inline-block relative">
-            <h1 className="text-3xl font-display font-bold text-ps-ink-1">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-ps-ink-1">
               My Caseload
             </h1>
             <div className="h-1 w-full bg-ps-accent rounded-full mt-1 opacity-80" />
           </div>
-          <p className="text-ps-ink-2 font-medium">
+          <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">
             Clinical management and developmental notes for your weekly students.
           </p>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Caseload Hours" 
           value={`${totalHoursThisWeek}h`} 
@@ -105,7 +105,7 @@ const TherapistDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Sessions Panel */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 shadow-sm border border-ps-border">
@@ -144,7 +144,7 @@ const TherapistDashboard = () => {
                     <span>{day.slice(0, 3)}</span>
                     <span className={clsx(
                       "w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold",
-                      isActive ? "bg-white/20 text-white" : "bg-ps-surface text-ps-ink-2 shadow-xs"
+                      isActive ? "bg-black/25 text-white" : "bg-ps-surface text-ps-ink-2 shadow-xs"
                     )}>
                       {count}
                     </span>
@@ -270,14 +270,14 @@ const TherapistDashboard = () => {
       <AnimatePresence>
         {selectedSession && (
           <div 
-            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={closeNoteModal}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-ps-surface rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 border border-ps-border space-y-6"
+              className="bg-ps-surface rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 lg:p-8 border border-ps-border space-y-5 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">

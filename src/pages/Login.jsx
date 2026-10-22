@@ -147,17 +147,17 @@ const Login = () => {
         </div>
 
         {/* Bottom Tagline / Trust */}
-        <div className="relative z-10 text-xs text-indigo-200/60 font-medium">
+        <div className="relative z-10 text-xs text-white/80 font-medium">
           © {new Date().getFullYear()} PoliSync Healthcare Solutions • Designed for Specialized Learning
         </div>
       </div>
 
       {/* ── Right Form Container ───────────────────────────────────────── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-screen overflow-y-auto">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="max-w-md w-full space-y-8"
+          className="max-w-md w-full space-y-6 sm:space-y-8 my-auto py-6"
         >
           {/* Mobile Header Logo */}
           <div className="flex flex-col items-center lg:items-start space-y-2">

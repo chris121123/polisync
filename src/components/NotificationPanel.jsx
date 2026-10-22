@@ -298,7 +298,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                             e.stopPropagation();
                             deleteNotification(notif.id);
                           }}
-                          className="p-1 text-ps-ink-2 hover:text-ps-danger opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all rounded-lg hover:bg-ps-danger/10 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                          className="p-1.5 text-ps-ink-2 hover:text-ps-danger opacity-0 group-hover:opacity-100 max-md:opacity-100 focus-visible:opacity-100 transition-all rounded-lg hover:bg-ps-danger/10 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
                           title="Delete notification"
                         >
                           <Trash2 size={14} />
