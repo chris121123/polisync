@@ -239,7 +239,7 @@ const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, ad
         <div className="p-4 md:p-6 bg-ps-success dark:bg-emerald-700 relative shrink-0">
           <div className="relative flex justify-between items-start">
             <div>
-              <p className="text-white/70 text-xs md:text-xs font-medium  mb-1">Staff Availability</p>
+              <p className="text-white text-xs md:text-xs font-medium  mb-1">Staff Availability</p>
               <h3 className="text-white text-lg md:text-xl font-semibold">Manage Schedule</h3>
             </div>
             <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-ps-surface/30 text-white transition-colors">
@@ -402,7 +402,7 @@ const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessi
         <div className={clsx('p-4 md:p-6 relative shrink-0', formData.type === 'rehab' ? 'bg-sky-700' : formData.type === 'sped' ? 'bg-purple-700' : typeCfg.gradient)}>
           <div className="relative flex justify-between items-start">
             <div>
-              <p className="text-white/70 text-xs md:text-xs font-medium  mb-1">New Session</p>
+              <p className="text-white text-xs md:text-xs font-medium  mb-1">New Session</p>
               <h3 className="text-white text-lg md:text-xl font-semibold">{formData.title || 'Untitled Session'}</h3>
             </div>
             <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors">
@@ -835,8 +835,8 @@ const ScheduleCalendar = () => {
         {/* ── Toolbar ───────── */}
         <div className="flex-shrink-0 border-b border-ps-border bg-ps-surface">
           {/* Top row */}
-          <div className="px-6 py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="px-6 py-3.5 sm:py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl bg-ps-accent dark:bg-indigo-600 flex items-center justify-center">
                   <CalendarIcon size={18} className="text-white" />
@@ -899,7 +899,7 @@ const ScheduleCalendar = () => {
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto mt-2 xl:mt-0">
               {/* Type filters */}
               <div className="flex items-center gap-1 bg-ps-bg rounded-xl p-1">
                 {[
@@ -1056,7 +1056,7 @@ const ScheduleCalendar = () => {
                 {displayRooms.map((roomName) => {
                   const roomSessions = sessions.filter(s => s.room === roomName).length;
                   return (
-                    <div key={roomName} className="flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border bg-ps-surface">
+                    <div key={roomName} className="flex-1 px-3 py-2.5 flex items-center justify-between border-l border-ps-border bg-ps-surface">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={clsx(
                           'w-2 h-2 rounded-full shrink-0',

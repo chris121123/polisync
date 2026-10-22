@@ -110,39 +110,40 @@ const Rooms = () => {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-ps-bg">
-      <div className="flex-1 overflow-y-auto px-8 py-8 flex flex-col space-y-8">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col space-y-6 lg:space-y-8">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-2 border-b border-ps-border/60">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded bg-ps-accent-soft text-ps-accent text-xs font-medium ">Venue Overview</span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="px-2 py-0.5 rounded bg-ps-accent-soft text-ps-accent text-xs font-medium">Venue Overview</span>
               <span className="w-1 h-1 rounded-full bg-ps-ink-2/40" />
-              <span className="text-xs font-medium text-ps-ink-2 ">{stats.occupied} rooms active</span>
+              <span className="text-xs font-medium text-ps-ink-2">{stats.occupied} rooms active</span>
             </div>
-            <h1 className="text-3xl font-semibold text-ps-ink-1 tracking-tight">Room Management</h1>
-            <p className="text-ps-ink-2 font-medium mt-1">Real-time occupancy tracking for all {stats.total} facilities.</p>
+            <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">Room Management</h1>
+            <p className="text-xs text-ps-ink-2 font-medium mt-1">Real-time occupancy tracking for all {stats.total} facilities.</p>
           </div>
           
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button 
               onClick={() => { setIsAddModalOpen(true); setFormErrors({}); }}
-              className="flex-1 md:flex-none bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-6 py-3 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+              className="flex-1 md:flex-none bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
             >
-              <Plus size={18} strokeWidth={2.5}/> Add New Room
+              <Plus size={16} strokeWidth={2.5}/> Add New Room
             </button>
           </div>
         </div>
 
         {/* Filters & Stats Bar */}
         <div className="flex flex-col space-y-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar shrink-0 pr-4">
+          <div className="flex gap-2 overflow-x-auto pb-1.5 hide-scrollbar shrink-0">
             {['All', 'Available', 'In Use', 'Issues', 'General SPED', 'Therapy Room', 'Playschool Area'].map(f => (
               <button
                 key={f}
                 onClick={() => setFilterType(f)}
                 className={clsx(
-                  "px-5 py-2.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-2",
+                  "px-4 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-2",
                   filterType === f 
                     ? "bg-ps-surface dark:bg-ps-surface text-ps-accent border-ps-accent/20 shadow-sm ring-1 ring-ps-accent/20" 
                     : "bg-ps-surface text-ps-ink-2 border-ps-border hover:bg-ps-bg"
@@ -161,10 +162,10 @@ const Rooms = () => {
           </div>
         </div>
 
-        {/* Grid View */}
+        {/* Grid View (Balanced 3-column grid for 6 rooms) */}
         <motion.div 
           layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6"
         >
             {filteredRooms.map((room) => {
               const cfg = getStatusConfig(room.status);
@@ -216,7 +217,7 @@ const Rooms = () => {
                       />
                     </div>
 
-                    {room.status !== 'Available' && (
+                    {room.status !== 'Available' ? (
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex -space-x-1.5">
                           {[1, 2, 3].slice(0, room.currentOccupancy).map(idx => (
@@ -237,17 +238,23 @@ const Rooms = () => {
                           </div>
                         )}
                       </div>
+                    ) : (
+                      <div className="flex items-center justify-between pt-1 text-xs text-ps-ink-2 font-medium">
+                        <span className="text-ps-ink-2">No active sessions</span>
+                        <span className="text-ps-success text-xs font-medium">Ready</span>
+                      </div>
                     )}
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-ps-border flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                     <span className="text-xs font-medium text-ps-accent flex items-center gap-1">View Details <ArrowUpRight size={12} /></span>
-                     <div className="text-xs font-medium text-ps-ink-2">ID: {room.id.toString().padStart(3, '0')}</div>
+                  <div className="mt-4 pt-3 border-t border-ps-border flex items-center justify-between text-xs font-medium text-ps-ink-2">
+                     <span className="text-ps-accent group-hover:underline flex items-center gap-1">View Details <ArrowUpRight size={12} /></span>
+                     <span>ID: {room.id.toString().padStart(3, '0')}</span>
                   </div>
                 </motion.div>
               );
             })}
         </motion.div>
+        </div>
       </div>
 
       {/* Detail Sliding Panel */}
@@ -266,7 +273,7 @@ const Rooms = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-[440px] bg-ps-surface shadow-[-20px_0_50px_rgba(0,0,0,0.05)] z-40 flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full sm:max-w-[440px] bg-ps-surface shadow-[-20px_0_50px_rgba(0,0,0,0.05)] z-40 flex flex-col"
             >
               {/* Panel Header */}
               <div className={clsx("p-8 relative overflow-hidden", getStatusConfig(selectedRoom.status).bg)}>
@@ -378,24 +385,24 @@ const Rooms = () => {
       <AnimatePresence>
         {isAddModalOpen && (
           <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4"
             onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-ps-surface rounded-xl shadow-sm w-full max-w-md overflow-hidden"
+              className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-sm w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-ps-border flex justify-between items-center">
+              <div className="p-5 sm:p-6 border-b border-ps-border flex justify-between items-center shrink-0">
                 <h3 className="text-xl font-semibold text-ps-ink-1">Add New Room</h3>
                 <button onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }} className="p-2 hover:bg-ps-bg rounded-xl transition-colors">
                   <X size={20} className="text-ps-ink-2" />
                 </button>
               </div>
               
-              <form onSubmit={handleAddRoom} className="p-6 space-y-4">
+              <form onSubmit={handleAddRoom} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
                 <div>
                   <label className="text-xs font-medium text-ps-ink-2  mb-1.5 block">Room Name</label>
                   <input 

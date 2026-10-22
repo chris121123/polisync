@@ -215,7 +215,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/40 px-4"
+        className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-[10vh] bg-black/40 px-3 sm:px-4"
         onClick={handleClose}
       >
         <motion.div
@@ -223,25 +223,25 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-2xl bg-ps-surface rounded-2xl shadow-md border border-ps-border overflow-hidden"
+          className="w-full max-w-2xl bg-ps-surface rounded-2xl shadow-md border border-ps-border overflow-hidden max-h-[85vh] flex flex-col"
         >
-          <div className="relative border-b border-ps-border p-4">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-ps-ink-2" size={24} />
+          <div className="relative border-b border-ps-border p-3 sm:p-4 shrink-0">
+            <Search className="absolute left-5 sm:left-6 top-1/2 -translate-y-1/2 text-ps-ink-2" size={22} />
             <input
               type="text"
               autoFocus
               placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
               aria-label="Global search"
-              className="w-full pl-12 pr-4 py-3 text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-ps-ink-2 font-medium"
+              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-base sm:text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-ps-ink-2 font-medium"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             {isSearching && (
-              <Loader2 className="absolute right-6 top-1/2 -translate-y-1/2 text-ps-accent animate-spin" size={20} />
+              <Loader2 className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 text-ps-accent animate-spin" size={20} />
             )}
           </div>
 
-          <div className="p-2 max-h-[60vh] overflow-y-auto bg-ps-bg">
+          <div className="p-2 overflow-y-auto bg-ps-bg flex-1">
             {!query && (
               <div className="p-8 text-center text-ps-ink-2">
                 <p className="text-sm font-medium">{isParent ? 'Search your linked children by name.' : 'Search for students, staff, rooms, sessions, or diagnoses.'}</p>

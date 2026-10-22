@@ -28,20 +28,20 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4"
       onClick={onClose}
     >
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-ps-surface rounded-xl shadow-md w-full max-w-lg overflow-hidden"
+        className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-md w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-ps-border flex justify-between items-center">
+        <div className="p-5 sm:p-6 border-b border-ps-border flex justify-between items-center shrink-0">
           <h3 className="text-xl font-semibold text-ps-ink-1">Add Student Record</h3>
           <button onClick={onClose} className="p-2 hover:bg-ps-bg rounded-full text-ps-ink-2 transition-colors"><X size={20}/></button>
         </div>
-        <div className="p-6 grid grid-cols-2 gap-4">
+        <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto">
           <div className="col-span-2">
             <label className="text-xs font-medium text-ps-ink-2 mb-1.5 block">Full Name</label>
             <input 
@@ -127,17 +127,17 @@ const Directory = () => {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full flex flex-col">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col space-y-6 lg:space-y-8 animate-page-entry">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-ps-border/60 gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-ps-ink-1">Staff & Student Directory</h1>
-          <p className="text-ps-ink-2 font-medium mt-1">Manage profiles and assigned programs.</p>
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">Staff & Student Directory</h1>
+          <p className="text-xs text-ps-ink-2 font-medium mt-0.5">Manage profiles and assigned programs.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-ps-accent hover:bg-ps-accent text-ps-surface px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-colors"
+          className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all"
         >
-          <Plus size={18} strokeWidth={2.5}/> Add New Record
+          <Plus size={16} strokeWidth={2.5}/> Add New Record
         </button>
       </div>
 
@@ -165,14 +165,14 @@ const Directory = () => {
                 className={clsx(
                   "px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-1.5",
                   filterType === f 
-                    ? "bg-ps-accent text-white border-ps-accent shadow-sm" 
+                    ? "bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent shadow-sm" 
                     : "bg-ps-surface text-ps-ink-2 border-ps-border hover:bg-ps-bg hover:text-ps-ink-1"
                 )}
               >
                 <span>{f}</span>
                 <span className={clsx(
                   "text-[10px] px-1.5 py-0.5 rounded-full font-semibold",
-                  filterType === f ? "bg-white/20 text-white" : "bg-ps-bg text-ps-ink-2"
+                  filterType === f ? "bg-black/25 text-white" : "bg-ps-bg text-ps-ink-2"
                 )}>
                   {count}
                 </span>
@@ -184,7 +184,7 @@ const Directory = () => {
 
       <div className="bg-ps-surface border text-sm border-ps-border rounded-b-2xl overflow-hidden shadow-sm flex-1 mb-8">
         <div className="overflow-x-auto h-full">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[620px]">
             <thead>
               <tr className="bg-ps-bg border-b border-ps-border">
                 <th className="px-6 py-4 font-medium text-ps-ink-2 w-1/3">Name</th>
@@ -210,7 +210,7 @@ const Directory = () => {
                       <div className="min-w-0">
                         <Link 
                           to={`/profile/${row.id}?type=${row.type.toLowerCase()}`}
-                          className="font-medium text-sm text-ps-ink-1 hover:text-ps-accent transition-colors block truncate"
+                          className="font-medium text-sm text-ps-ink-1 py-1 hover:text-ps-accent transition-colors block truncate"
                         >
                           {row.name}
                         </Link>
