@@ -55,15 +55,15 @@ const ForceChangePasswordModal = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/40">
+    <div className="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-ps-surface rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-ps-border"
+        className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-ps-border max-h-[90vh] flex flex-col"
       >
-        <div className="p-8 pb-6 bg-ps-warn/10 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-ps-warn/20 text-ps-warn rounded-full flex items-center justify-center mb-4">
-            <ShieldAlert size={32} />
+        <div className="p-6 sm:p-8 pb-6 bg-ps-warn/10 flex flex-col items-center text-center shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-ps-warn/20 text-ps-warn rounded-full flex items-center justify-center mb-3 sm:mb-4">
+            <ShieldAlert size={28} className="sm:w-8 sm:h-8" />
           </div>
           <h2 className="text-xl font-bold text-ps-ink-1">Action Required</h2>
           <p className="text-sm text-ps-ink-2 mt-2">
@@ -71,7 +71,7 @@ const ForceChangePasswordModal = () => {
           </p>
         </div>
 
-        <div className="p-8 pt-6 space-y-5">
+        <div className="p-6 sm:p-8 pt-6 space-y-5 overflow-y-auto">
           {error && (
             <div className="p-3 bg-ps-danger/10 border border-ps-danger/20 text-ps-danger rounded-xl text-sm flex items-start gap-2">
               <AlertCircle size={16} className="mt-0.5 shrink-0" />

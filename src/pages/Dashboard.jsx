@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGlobalState } from '../context/GlobalStateContext';
 import AdminDashboard from './admin/AdminDashboard';
+import SuperAdminDashboard from './superadmin/SuperAdminDashboard';
 import TeacherDashboard from './teacher/TeacherDashboard';
 import TherapistDashboard from './therapist/TherapistDashboard';
 import ParentDashboard from './parent/ParentDashboard';
@@ -8,7 +9,10 @@ import ParentDashboard from './parent/ParentDashboard';
 const Dashboard = () => {
   const { appRole } = useGlobalState();
 
-  if (appRole === 'admin' || appRole === 'superadmin') {
+  if (appRole === 'superadmin') {
+    return <SuperAdminDashboard />;
+  }
+  if (appRole === 'admin') {
     return <AdminDashboard />;
   }
   if (appRole === 'teacher') {

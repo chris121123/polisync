@@ -63,9 +63,9 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <button 
@@ -74,7 +74,7 @@ const TeacherDashboard = () => {
             >
               <ChevronLeft size={20} />
             </button>
-            <div className="text-center min-w-[140px]">
+            <div className="text-center min-w-[130px] sm:min-w-[140px]">
               <h1 className="text-2xl font-display font-bold text-ps-ink-1">
                 {dayNames[selectedDay - 1]}
               </h1>
@@ -89,7 +89,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        <div className="flex gap-1.5 p-1.5 bg-ps-surface border border-ps-border rounded-2xl">
+        <div className="flex gap-1.5 p-1.5 bg-ps-surface border border-ps-border rounded-2xl overflow-x-auto hide-scrollbar">
           {dayNames.map((day, idx) => {
             const active = selectedDay === idx + 1;
             const current = isToday(idx);
@@ -98,7 +98,7 @@ const TeacherDashboard = () => {
                 key={day}
                 onClick={() => setSelectedDay(idx + 1)}
                 className={clsx(
-                  "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                  "px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0",
                   active ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1",
                   current && !active && "ring-2 ring-ps-accent/20"
                 )}
@@ -111,7 +111,7 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Scheduled Blocks" 
           value={todaySessions.length} 
@@ -140,7 +140,7 @@ const TeacherDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Schedule List */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-3xl shadow-sm border border-ps-border overflow-hidden">
+        <div className="lg:col-span-2 bg-ps-surface rounded-2xl shadow-sm border border-ps-border overflow-hidden">
           <div className="p-6 lg:p-8 border-b border-ps-border flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
@@ -230,7 +230,7 @@ const TeacherDashboard = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-ps-surface rounded-3xl p-6 shadow-sm border border-ps-border">
+          <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-ps-accent-soft text-ps-accent rounded-xl">
                 <BookOpen size={18} />
@@ -256,14 +256,14 @@ const TeacherDashboard = () => {
       <AnimatePresence>
         {showAttendanceModal && (
           <div 
-            className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setShowAttendanceModal(null)}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-ps-surface rounded-2xl shadow-xl max-w-lg w-full p-6 sm:p-8 border border-ps-border space-y-6"
+              className="bg-ps-surface rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 lg:p-8 border border-ps-border space-y-5 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">

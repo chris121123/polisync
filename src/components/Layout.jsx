@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -39,6 +39,16 @@ const Layout = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && isSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobile, isSidebarOpen]);
 
   // Global Ctrl+K shortcut — must live in Layout so it always fires,
   // regardless of whether the search modal is open or closed.
@@ -120,7 +130,7 @@ const Layout = () => {
           {/* AI Search Bar */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 text-ps-ink-2 bg-ps-bg hover:bg-ps-border/40 px-3 sm:px-4 py-2 rounded-xl transition-all w-full max-w-[200px] sm:max-w-sm border border-ps-border touch-manipulation min-w-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
+            className="flex items-center gap-2 text-ps-ink-2 bg-ps-bg hover:bg-ps-border/40 px-3 sm:px-4 py-2 rounded-xl transition-all w-auto sm:w-full max-w-[150px] xs:max-w-[200px] sm:max-w-sm border border-ps-border touch-manipulation min-w-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <Search size={16} className="shrink-0" />
             <span className="text-sm font-medium truncate hidden xs:block">Search...</span>
@@ -151,7 +161,7 @@ const Layout = () => {
               anchorRef={bellRef}
             />
           </div>
-          <div className="text-xs font-medium text-ps-ink-2">
+          <div className="text-xs font-medium text-ps-ink-2 hidden sm:block">
             {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </div>
         </div>
@@ -181,8 +191,25 @@ const Layout = () => {
             ? "w-64 translate-x-0" 
             : "-translate-x-full lg:translate-x-0 lg:w-20 shadow-none"
         )}>
+          {/* Mobile sidebar header */}
+          <div className="flex items-center justify-between p-4 border-b border-ps-border lg:hidden">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-ps-accent dark:bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                <Stethoscope size={18} />
+              </div>
+              <span className="font-semibold text-sm text-ps-ink-1">PoliSync</span>
+            </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              aria-label="Close sidebar"
+              className="p-1.5 rounded-lg hover:bg-ps-bg text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
           {/* Navigation Section */}
-          <nav className={clsx("flex-1 p-4 pt-6 space-y-1 overflow-y-auto", !isSidebarOpen && "px-2 pt-4")}>
+          <nav className={clsx("flex-1 p-4 pt-4 lg:pt-6 space-y-1 overflow-y-auto", !isSidebarOpen && "px-2 pt-4")}>
             {navLinks.map((link, i) => (
               <React.Fragment key={link.to}>
                 {isSidebarOpen && link.section && navLinks[i - 1]?.section !== link.section && (

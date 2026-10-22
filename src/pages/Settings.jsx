@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Moon, 
@@ -13,9 +13,18 @@ import {
   MapPin, 
   Laptop,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Wifi,
+  WifiOff,
+  Loader2,
+  Clock,
+  CalendarDays,
+  Users,
+  FileSearch,
+  StickyNote
 } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { supabase } from '../lib/supabase';
 import clsx from 'clsx';
 import ClearDatabaseModal from '../components/ClearDatabaseModal';
 
@@ -105,11 +114,26 @@ const SlideOverDrawer = ({ isOpen, onClose, title, icon: Icon, children }) => (
 );
 
 const Settings = () => {
-  const { darkMode, setDarkMode, clearDatabase, loading, appRole } = useGlobalState();
+  const { darkMode, setDarkMode, clearDatabase, loading, appRole, schedulingSettings } = useGlobalState();
   const [activeTab, setActiveTab] = useState('appearance');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [connStatus, setConnStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
+
+  // Real Supabase connection ping
+  useEffect(() => {
+    if (!supabase) {
+      setTimeout(() => setConnStatus('error'), 0);
+      return;
+    }
+    supabase
+      .from('profiles')
+      .select('id')
+      .limit(1)
+      .then(({ error }) => setConnStatus(error ? 'error' : 'ok'))
+      .catch(() => setConnStatus('error'));
+  }, []);
 
   const navItems = [
     { id: 'appearance', label: 'Appearance', icon: Sun },
@@ -119,25 +143,27 @@ const Settings = () => {
     ...(appRole === 'superadmin' ? [{ id: 'system', label: 'System & Danger', icon: Database, danger: true }] : [])
   ];
 
+  const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
+
   return (
-    <div className="space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-display font-bold text-ps-ink-1">Settings</h1>
-        <p className="text-ps-ink-2 font-medium">Configure workspace preferences, roles, and administrative options.</p>
+      <div className="pb-4 border-b border-ps-border/60">
+        <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">Settings</h1>
+        <p className="text-xs text-ps-ink-2 font-medium mt-0.5">Configure workspace preferences, roles, and administrative options.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
         
         {/* Left Vertical Categories Navigation */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className="lg:col-span-1 space-y-3">
           <div className="bg-ps-surface p-2 rounded-2xl border border-ps-border space-y-1">
             {navItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={clsx(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all text-left",
+                  "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all text-left",
                   activeTab === item.id 
                     ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-md shadow-ps-accent/20" 
                     : item.danger 
@@ -151,16 +177,26 @@ const Settings = () => {
             ))}
           </div>
 
-          <div className="p-4 bg-ps-surface border border-ps-border rounded-2xl">
+          <div className="p-4 bg-ps-surface border border-ps-border rounded-2xl space-y-1">
             <p className="text-xs font-medium text-ps-ink-2">Environment</p>
-            <p className="text-xs font-medium text-ps-ink-1 mt-1">PoliSync Core v2.4.0</p>
-            <p className="text-xs font-medium text-ps-success mt-0.5">● Connected to Supabase Engine</p>
+            <p className="text-xs font-medium text-ps-ink-1">PoliSync Core {appVersion}</p>
+            <div className="flex items-center gap-1.5">
+              {connStatus === 'idle' && <Loader2 size={10} className="animate-spin text-ps-ink-2" />}
+              {connStatus === 'ok' && <span className="w-1.5 h-1.5 rounded-full bg-ps-success" />}
+              {connStatus === 'error' && <span className="w-1.5 h-1.5 rounded-full bg-ps-danger" />}
+              <p className={clsx(
+                'text-xs font-medium',
+                connStatus === 'ok' ? 'text-ps-success' : connStatus === 'error' ? 'text-ps-danger' : 'text-ps-ink-2'
+              )}>
+                {connStatus === 'idle' ? 'Checking connection...' : connStatus === 'ok' ? 'Supabase connected' : 'Connection unavailable'}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Right Active Content Panel */}
-        <div className="lg:col-span-3">
-          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 border border-ps-border shadow-sm min-h-[500px]">
+        <div className="md:col-span-2 xl:col-span-3">
+          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 border border-ps-border shadow-sm">
             
             {/* 1. Appearance */}
             {activeTab === 'appearance' && (
@@ -194,26 +230,39 @@ const Settings = () => {
               <motion.div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-display font-semibold text-ps-ink-1">Center Registry</h2>
-                  <p className="text-xs text-ps-ink-2 mt-1">Official developmental and clinical facility credentials.</p>
+                  <p className="text-xs text-ps-ink-2 mt-1">Operational parameters from the platform configuration.</p>
                 </div>
 
                 <div className="divide-y divide-ps-border">
                   <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-ps-ink-2">Facility Name</span>
-                    <span className="text-sm font-medium text-ps-ink-1">PoliSync Developmental Center</span>
+                    <span className="text-xs font-medium text-ps-ink-2">Platform</span>
+                    <span className="text-sm font-medium text-ps-ink-1">PoliSync Special Education Center</span>
                   </div>
                   <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-ps-ink-2">Location</span>
-                    <span className="text-sm font-medium text-ps-ink-1 text-right">123 Therapy Lane, QC, Metro Manila</span>
+                    <span className="text-xs font-medium text-ps-ink-2">Operating Hours</span>
+                    <span className="text-sm font-medium text-ps-ink-1">
+                      {schedulingSettings
+                        ? `${schedulingSettings.operating_start_time || '08:00'} – ${schedulingSettings.operating_end_time || '17:00'}`
+                        : 'Not configured'}
+                    </span>
                   </div>
                   <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-ps-ink-2">Hours</span>
-                    <span className="text-sm font-medium text-ps-ink-1">Mon – Fri, 8:00 AM – 5:00 PM</span>
+                    <span className="text-xs font-medium text-ps-ink-2">Schedule Window</span>
+                    <span className="text-sm font-medium text-ps-ink-1">Monday – Friday</span>
                   </div>
                   <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-ps-ink-2">License ID</span>
-                    <span className="text-sm font-medium text-ps-ink-1">SPED-2026-PH-0994</span>
+                    <span className="text-xs font-medium text-ps-ink-2">Max Daily Hours / Student</span>
+                    <span className="text-sm font-medium text-ps-ink-1">
+                      {schedulingSettings?.max_daily_hours_per_student ?? '—'} hrs
+                    </span>
                   </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-ps-bg border border-ps-border flex items-start gap-3">
+                  <Info size={14} className="text-ps-ink-2 shrink-0 mt-0.5" />
+                  <p className="text-xs text-ps-ink-2 leading-relaxed">
+                    Other facility details — name, address, license ID — are managed by your institution administrator and are not stored in PoliSync.
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -223,29 +272,44 @@ const Settings = () => {
               <motion.div className="space-y-6">
                 <div>
                   <h2 className="text-xl font-display font-semibold text-ps-ink-1">Access Roles & Capabilities</h2>
-                  <p className="text-xs text-ps-ink-2 mt-1">Hierarchical permission breakdown across center staff.</p>
+                  <p className="text-xs text-ps-ink-2 mt-1">What each role can access and do in the platform.</p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                  <div className="p-4 rounded-2xl border-l-4 border-l-violet-600 bg-ps-bg/40 space-y-1">
-                    <span className="text-xs font-medium text-violet-700 dark:text-violet-400">Super Administrator</span>
-                    <p className="text-xs text-ps-ink-2">Complete platform sovereignty: user promotion, database resets, and cryptographic audit inspections.</p>
+                  <div className="p-4 rounded-2xl border-l-4 border-l-violet-600 bg-ps-bg/40 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">Super Administrator</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-400 font-medium">superadmin</span>
+                    </div>
+                    <p className="text-xs text-ps-ink-2 leading-relaxed">Platform overview dashboard, user account management (create, delete, activate, change roles), audit trail inspection, platform scheduling configuration, and system settings.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-amber-600 bg-ps-bg/40 space-y-1">
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Center Administrator</span>
-                    <p className="text-xs text-ps-ink-2">Operational oversight: automated schedule generation, conflict arbitration, directory, and room logistics.</p>
+                  <div className="p-4 rounded-2xl border-l-4 border-l-amber-600 bg-ps-bg/40 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Center Administrator</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-600/10 text-amber-700 dark:text-amber-400 font-medium">admin</span>
+                    </div>
+                    <p className="text-xs text-ps-ink-2 leading-relaxed">Clinical operations dashboard, session scheduling (manual and auto-scheduler), staff and student directory, room management, and conflict detection.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-teal-600 bg-ps-bg/40 space-y-1">
-                    <span className="text-xs font-medium text-teal-700 dark:text-teal-400">Clinical Therapist</span>
-                    <p className="text-xs text-ps-ink-2">Clinical execution: daily therapy caseload review, progress note authoring, and qualitative ratings.</p>
+                  <div className="p-4 rounded-2xl border-l-4 border-l-teal-600 bg-ps-bg/40 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">Clinical Therapist</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-teal-600/10 text-teal-700 dark:text-teal-400 font-medium">therapist</span>
+                    </div>
+                    <p className="text-xs text-ps-ink-2 leading-relaxed">Personal therapy caseload dashboard and session notes — view assigned sessions, write progress notes, and record session ratings.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-ps-accent bg-ps-bg/40 space-y-1">
-                    <span className="text-xs font-medium text-ps-accent">Faculty Teacher</span>
-                    <p className="text-xs text-ps-ink-2">Classroom management: daily session tracking and unified multi-student attendance recording.</p>
+                  <div className="p-4 rounded-2xl border-l-4 border-l-indigo-600 bg-ps-bg/40 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-400">Faculty Teacher</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 font-medium">teacher</span>
+                    </div>
+                    <p className="text-xs text-ps-ink-2 leading-relaxed">Classroom dashboard — view assigned teaching sessions, track daily attendance for enrolled students.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-pink-600 bg-ps-bg/40 space-y-1">
-                    <span className="text-xs font-medium text-pink-700 dark:text-pink-400">Parent / Guardian</span>
-                    <p className="text-xs text-ps-ink-2">Client view: real-time verified schedules, program tracking, and requirement uploads for linked children.</p>
+                  <div className="p-4 rounded-2xl border-l-4 border-l-pink-600 bg-ps-bg/40 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-pink-700 dark:text-pink-400">Parent / Guardian</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-pink-600/10 text-pink-700 dark:text-pink-400 font-medium">parent</span>
+                    </div>
+                    <p className="text-xs text-ps-ink-2 leading-relaxed">Child dashboard — view the verified schedule, program enrollment status, and upcoming sessions for linked children.</p>
                   </div>
                 </div>
               </motion.div>

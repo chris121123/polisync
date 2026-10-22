@@ -98,8 +98,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto w-full">
-      <Link to={isAdminOnly ? '/directory' : '/dashboard'} className="inline-flex items-center gap-2 text-sm font-medium text-ps-ink-2 hover:text-ps-accent transition-colors mb-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 animate-page-entry">
+      <Link to={isAdminOnly ? '/directory' : '/dashboard'} className="inline-flex items-center gap-2 text-sm font-medium text-ps-ink-2 hover:text-ps-accent transition-colors">
         <ArrowLeft size={16} /> {isAdminOnly ? 'Back to Directory' : 'Back to Dashboard'}
       </Link>
 

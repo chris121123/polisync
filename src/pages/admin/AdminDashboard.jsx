@@ -64,11 +64,11 @@ const AdminDashboard = () => {
   const todaysSessions = [...sessions].slice(0, 4);
 
   return (
-    <div className="space-y-6 animate-page-entry pb-10">
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* ── Page Header ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-ps-border/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div>
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1">Dashboard</h1>
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">Dashboard</h1>
           <p className="text-xs text-ps-ink-2 font-medium mt-0.5">
             Real-time clinical operations, staff allocation, and facility load overview.
           </p>
@@ -76,7 +76,7 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/schedule')}
-            className="flex items-center gap-2 bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
+            className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
           >
             <CalendarDays size={16} strokeWidth={2} />
             <span>Open Schedule</span>
@@ -85,7 +85,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Metric Cards Grid ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
         <StatCard
           title="Total Students"
           value={students.length}
@@ -124,7 +124,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Live Conflicts & Clinical Triage */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border flex flex-col justify-between">
+        <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border flex flex-col">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -181,11 +181,11 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-ps-border/70 flex items-center justify-between">
+          <div className="pt-4 mt-auto border-t border-ps-border/70 flex items-center justify-between">
             <span className="text-xs text-ps-ink-2 font-medium">Auto-scheduler active</span>
             <button
               onClick={() => navigate('/schedule')}
-              className="flex items-center gap-1.5 text-xs font-semibold text-ps-accent hover:underline decoration-2 underline-offset-4"
+              className="flex items-center gap-1.5 py-1 text-xs font-semibold text-ps-accent hover:underline decoration-2 underline-offset-4"
             >
               Manage in Schedule <ArrowRight size={13} />
             </button>
@@ -213,7 +213,7 @@ const AdminDashboard = () => {
 
           {/* Interactive Histogram */}
           <div className="mt-4">
-            <div className="h-44 flex items-end justify-between gap-2 sm:gap-4 px-2 pb-2 border-b border-ps-border">
+            <div className="h-44 flex items-end justify-between gap-1 sm:gap-4 px-2 pb-2 border-b border-ps-border">
               {hourlyData.map((d, i) => {
                 const heightPercent = d.count > 0 ? (d.count / maxSessionCount) * 100 : 0;
                 const isHovered = hoveredHour === d.hour;
@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                 return (
                   <div 
                     key={i} 
-                    className="flex flex-col items-center flex-1 h-full justify-end group cursor-pointer"
+                    className="flex flex-col items-center flex-1 min-w-0 h-full justify-end group cursor-pointer"
                     onMouseEnter={() => setHoveredHour(d.hour)}
                     onMouseLeave={() => setHoveredHour(null)}
                   >
@@ -251,7 +251,8 @@ const AdminDashboard = () => {
                       "text-xs mt-2 transition-colors",
                       isHovered ? "text-ps-accent font-semibold" : "text-ps-ink-2"
                     )}>
-                      {d.label}
+                      <span className="xs:hidden">{d.hour}</span>
+                      <span className="hidden xs:inline">{d.label}</span>
                     </span>
                   </div>
                 );
@@ -274,14 +275,14 @@ const AdminDashboard = () => {
             <h3 className="text-sm font-display font-semibold text-ps-ink-1">Facility Status</h3>
             <button
               onClick={() => navigate('/rooms')}
-              className="text-xs font-medium text-ps-accent hover:underline flex items-center gap-1"
+              className="py-1 text-xs font-medium text-ps-accent hover:underline flex items-center gap-1"
             >
               View Rooms <ChevronRight size={13} />
             </button>
           </div>
 
           <div className="space-y-2.5">
-            {rooms.slice(0, 5).map((room) => {
+            {rooms.slice(0, 6).map((room) => {
               const roomSessions = sessions.filter(s => s.room === room.name);
               const isOccupied = roomSessions.length > 0;
               const isOverCapacity = room.currentOccupancy && room.maxCapacity && room.currentOccupancy > room.maxCapacity;

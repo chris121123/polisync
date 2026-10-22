@@ -47,20 +47,20 @@ const ParentDashboard = () => {
   }, [activeChild, sessions]);
 
   return (
-    <div className="space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div className="space-y-1">
-          <h1 className="text-3xl font-display font-bold text-ps-ink-1">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-ps-ink-1">
             Hello, {user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-ps-ink-2 font-medium">Tracking your child's developmental progress and schedule.</p>
+          <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">Tracking your child's developmental progress and schedule.</p>
         </div>
       </div>
 
       {/* Child Selector (Pills) */}
       {parentChildren.length > 1 && (
-        <div className="flex gap-2 flex-wrap bg-ps-surface p-1.5 rounded-2xl border border-ps-border w-fit">
+        <div className="flex gap-2 flex-wrap bg-ps-surface p-1.5 rounded-2xl border border-ps-border w-fit max-w-full overflow-x-auto hide-scrollbar">
           {parentChildren.map(child => {
             const isActive = activeChild && String(activeChild.id) === String(child.id);
             return (
@@ -68,7 +68,7 @@ const ParentDashboard = () => {
                 key={child.id}
                 onClick={() => setSelectedChild(child.id)}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                  "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0",
                   isActive 
                     ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
                     : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
@@ -85,15 +85,15 @@ const ParentDashboard = () => {
       {activeChild ? (
         <>
           {/* Child Profile Hero Card */}
-          <div className="bg-ps-surface border border-ps-border rounded-2xl p-8 relative overflow-hidden">
-            <div className="flex flex-col md:flex-row md:items-center gap-8">
-              <div className="w-24 h-24 rounded-full bg-ps-bg flex items-center justify-center text-3xl font-display font-bold ring-2 ring-ps-border shadow-sm shrink-0 text-ps-ink-1">
+          <div className="bg-ps-surface border border-ps-border rounded-2xl p-5 sm:p-8 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-ps-bg flex items-center justify-center text-2xl sm:text-3xl font-display font-bold ring-2 ring-ps-border shadow-sm shrink-0 text-ps-ink-1">
                 {activeChild.name.charAt(0)}
               </div>
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-3 sm:space-y-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-3xl font-display font-bold text-ps-ink-1">{activeChild.name}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-display font-bold text-ps-ink-1">{activeChild.name}</h2>
                     <span className="px-3 py-1 rounded-full bg-ps-bg text-xs font-bold uppercase tracking-wide border border-ps-border text-ps-ink-1">
                       Enrolled
                     </span>
@@ -129,7 +129,7 @@ const ParentDashboard = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-5 gap-4">
               {dayNames.map((day) => (
                 <div key={day} className="flex flex-col gap-3">
                   <div className="flex items-center justify-between px-3 pb-1">
@@ -164,9 +164,9 @@ const ParentDashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Upcoming Timeline */}
-            <div className="bg-ps-surface rounded-3xl p-8 shadow-sm border border-ps-border space-y-6">
+            <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm border border-ps-border space-y-6">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
                   <Calendar size={20} />
@@ -198,7 +198,7 @@ const ParentDashboard = () => {
 
             {/* Programs & Requirements */}
             <div className="space-y-6">
-              <div className="bg-ps-surface rounded-3xl p-8 shadow-sm border border-ps-border">
+              <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm border border-ps-border">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 bg-ps-success/10 text-ps-success rounded-xl">
                     <CheckCircle2 size={20} />
