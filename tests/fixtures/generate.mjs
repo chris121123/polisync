@@ -197,7 +197,6 @@ const localExpected = JSON.parse(firstRun);
 write('scheduler.json', {
   _source: source('src/lib/scheduling/{conflicts,scoring,engine}.js'),
   _note: 'stats.elapsed is removed from localSchedule.expected: it derives from Date.now().',
-  conflicts: { cases: conflicts },
   score: { cases: scores.map((c) => ({ ...c, expected: scoreSchedule(c.assignments, c.unscheduledCount) })) },
   localSchedule: {
     input: localInput,
