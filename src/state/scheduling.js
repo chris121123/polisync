@@ -11,7 +11,6 @@ export const createSchedulingActions = ({
   programs,
   sessions,
   studentAvailability,
-  staffAvailability,
   schedulingSettings,
   setSessions,
   setStudentPrograms,
@@ -57,97 +56,6 @@ export const createSchedulingActions = ({
       console.error(error);
       notify(error.message, 'error');
     }
-  };
-
-  const getAvailableStaffForDate = (date) => {
-    const isEligible = (s) => {
-      const appRole = (s.app_role || '').toLowerCase();
-      const role = (s.role || '').toLowerCase();
-      if (appRole === 'parent' || role === 'parent') return false;
-      if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
-      if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
-      return true;
-    };
-    const eligibleStaff = staff.filter(isEligible);
-    if (!date) return eligibleStaff;
-    const availableIds = staffAvailability
-      .filter(a => a.available_date === date)
-      .map(a => a.staff_id);
-    return eligibleStaff.filter(s => availableIds.includes(s.id));
-  };
-  
-  const findAvailableGaps = (therapistId, roomId, span = 1) => {
-    const gaps = [];
-    const operatingHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8am to 5pm (start hours)
-
-    operatingHours.forEach(hour => {
-      if (hour + span > 17) return; // Beyond 5pm
-
-      // Check therapist availability at this hour
-      const therapistBusy = sessions.some(s => 
-        String(s.therapistId) === String(therapistId) && 
-        Math.max(s.startHour, hour) < Math.min(s.startHour + s.span, hour + span)
-      );
-
-      // Check room availability at this hour
-      const roomBusy = sessions.some(s => 
-        s.room === roomId && 
-        Math.max(s.startHour, hour) < Math.min(s.startHour + s.span, hour + span)
-      );
-
-      if (!therapistBusy && !roomBusy) {
-        gaps.push({ hour, room: roomId });
-      }
-    });
-    return gaps;
-  };
-
-  const enhanceConflictDetection = (newSession) => {
-    const list = [];
-    const newStart = newSession.startHour;
-    const newEnd = newSession.startHour + newSession.span;
-    const newDay = newSession.dayOfWeek ?? 0;
-
-    sessions.forEach(existing => {
-      const existStart = existing.startHour;
-      const existEnd = existing.startHour + existing.span;
-      const existDay = existing.dayOfWeek ?? 0;
-
-      // Same day and time overlap
-      const timeOverlap = Math.max(newStart, existStart) < Math.min(newEnd, existEnd);
-      const sameDay = newDay === existDay;
-
-      if (timeOverlap && sameDay) {
-        // Therapist conflict
-        if (String(newSession.therapistId) === String(existing.therapistId)) {
-          list.push({ type: 'therapist', sessionIds: [newSession.id, existing.id], message: 'Therapist already booked' });
-        }
-        // Room conflict
-        if (newSession.room === existing.room) {
-          list.push({ type: 'room', sessionIds: [newSession.id, existing.id], room: newSession.room, message: `Room "${existing.room}" occupied` });
-        }
-        // Student conflict
-        if (newSession.studentIds?.some(id => existing.studentIds?.includes(id))) {
-          list.push({ type: 'student', sessionIds: [newSession.id, existing.id], message: 'Student has conflicting session' });
-        }
-      }
-    });
-
-    // Check student availability constraints
-    const maxDailyHours = schedulingSettings?.max_daily_hours_per_student || 4;
-
-    newSession.studentIds?.forEach(studentId => {
-      const studentSessions = sessions.filter(s => 
-        s.studentIds?.includes(studentId) && s.dayOfWeek === newDay
-      );
-      const totalHours = studentSessions.reduce((sum, s) => sum + s.span, 0) + newSession.span;
-      
-      if (totalHours > maxDailyHours) {
-        list.push({ type: 'student_limit', message: `Student exceeds daily ${maxDailyHours}h limit` });
-      }
-    });
-
-    return list;
   };
 
   /**
@@ -266,16 +174,9 @@ export const createSchedulingActions = ({
     }
   };
 
-  // Keep legacy name for backward compatibility
-  const autoSchedule = smartSchedule;
-
   return {
     addStaffAvailability,
     removeStaffAvailability,
-    getAvailableStaffForDate,
-    findAvailableGaps,
-    enhanceConflictDetection,
     smartSchedule,
-    autoSchedule,
   };
 };
