@@ -20,7 +20,9 @@ console.info = () => {};
 const { validatePassword, isPasswordValid } = await import('../../src/lib/passwordPolicy.js');
 const { DAY_NAMES, sessionDayIndex, sessionDayName, formatHour, formatTime } = await import('../../src/lib/sessionDay.js');
 const { auditLine } = await import('../../src/lib/auditLog.js');
-const { detectConflicts, scoreSchedule, localSmartSchedule } = await import('../../src/lib/scheduler.js');
+const { detectConflicts } = await import('../../src/lib/scheduling/conflicts.js');
+const { scoreSchedule } = await import('../../src/lib/scheduling/scoring.js');
+const { localSmartSchedule } = await import('../../src/lib/scheduling/engine.js');
 console.error = logError;
 console.info = logInfo;
 
@@ -257,7 +259,7 @@ for (let i = 1; i < runs; i++) {
 const localExpected = JSON.parse(firstRun);
 
 write('scheduler.json', {
-  _source: source('src/lib/scheduler.js'),
+  _source: source('src/lib/scheduling/{conflicts,scoring,engine}.js'),
   _note: 'stats.elapsed is removed from localSchedule.expected: it derives from Date.now().',
   conflicts: { cases: conflicts },
   score: { cases: scores.map((c) => ({ ...c, expected: scoreSchedule(c.assignments, c.unscheduledCount) })) },

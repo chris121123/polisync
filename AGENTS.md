@@ -25,7 +25,7 @@
 ## Supabase
 - Env: copy `.env.example` → `.env`. Notification secrets (`SEMAPHORE_*`, `RESEND_*`) live in Supabase Dashboard → Edge Functions Secrets, not `.env`
 - Migrations: `supabase/migrations/*.sql`. Edge functions: `admin-create-user`, `admin-delete-user`, `auto-scheduler`, `send-notification`
-- Scheduler: `src/lib/scheduler.js` — try `invokeSmartScheduler` (edge) first, fallback `localSmartSchedule`; persist via `sessions` + `student_programs.status='scheduled'`
+- Scheduler: `src/lib/scheduling/engine.js` — try `invokeSmartScheduler` (edge, `client.js`) first, fallback `localSmartSchedule`; persist via `sessions` + `student_programs.status='scheduled'`
 
 ## Conventions
 - Styling: Tailwind 4 utilities; icons `lucide-react` ~18–20px; transitions via `motion` + `AnimatePresence`; toasts via `notify(msg, type)`
