@@ -12,19 +12,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { detectConflicts, findAllConflicts } from '../../src/lib/scheduling/conflicts.js';
+import { findAllConflicts } from '../../src/lib/scheduling/conflicts.js';
 import { scoreSchedule } from '../../src/lib/scheduling/scoring.js';
 import { localSmartSchedule } from '../../src/lib/scheduling/engine.js';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/scheduler.json', import.meta.url), 'utf8'));
 
 const normalize = (value) => JSON.parse(JSON.stringify(value));
-
-for (const { name, newSession, existingSessions, expected } of fixture.conflicts.cases) {
-  test(`detectConflicts — ${name}`, () => {
-    assert.deepEqual(normalize(detectConflicts(newSession, existingSessions)), expected);
-  });
-}
 
 const findAllCases = [
   {

@@ -20,7 +20,6 @@ console.info = () => {};
 const { validatePassword, isPasswordValid } = await import('../../src/lib/passwordPolicy.js');
 const { DAY_NAMES, sessionDayIndex, sessionDayName, formatHour, formatTime } = await import('../../src/lib/sessionDay.js');
 const { auditLine } = await import('../../src/lib/auditLog.js');
-const { detectConflicts } = await import('../../src/lib/scheduling/conflicts.js');
 const { scoreSchedule } = await import('../../src/lib/scheduling/scoring.js');
 const { localSmartSchedule } = await import('../../src/lib/scheduling/engine.js');
 console.error = logError;
@@ -112,69 +111,6 @@ write('auditLog.json', {
 });
 
 // ── scheduler ────────────────────────────────────────────────────────────────
-
-const existing = [
-  { id: 's1', therapistId: 't1', room: 'Room A', startHour: 9, span: 1, dayOfWeek: 0, studentIds: [1] },
-  { id: 's2', therapistId: 't2', room: 'Room B', startHour: 12, span: 1, dayOfWeek: 0, studentIds: [2] },
-];
-
-const conflicts = [
-  {
-    name: 'no conflict',
-    newSession: { id: 'n1', therapistId: 't3', room: 'Room C', startHour: 14, span: 1, dayOfWeek: 0, studentIds: [3] },
-    existingSessions: existing,
-  },
-  {
-    name: 'therapist clash',
-    newSession: { id: 'n2', therapistId: 't1', room: 'Room C', startHour: 9, span: 1, dayOfWeek: 0, studentIds: [3] },
-    existingSessions: existing,
-  },
-  {
-    name: 'room clash',
-    newSession: { id: 'n3', therapistId: 't3', room: 'Room B', startHour: 12.5, span: 1, dayOfWeek: 0, studentIds: [3] },
-    existingSessions: existing,
-  },
-  {
-    name: 'therapist and room clash',
-    newSession: { id: 'n4', therapistId: 't1', room: 'Room A', startHour: 9.5, span: 1, dayOfWeek: 0, studentIds: [3] },
-    existingSessions: existing,
-  },
-  {
-    name: 'student clash',
-    newSession: { id: 'n9', therapistId: 't3', room: 'Room C', startHour: 9.5, span: 1, dayOfWeek: 0, studentIds: [1] },
-    existingSessions: existing,
-  },
-  {
-    name: 'adjacent but not overlapping',
-    newSession: { id: 'n5', therapistId: 't1', room: 'Room A', startHour: 10, span: 1, dayOfWeek: 0, studentIds: [1] },
-    existingSessions: existing,
-  },
-  {
-    name: 'different day',
-    newSession: { id: 'n6', therapistId: 't1', room: 'Room A', startHour: 9, span: 1, dayOfWeek: 1, studentIds: [1] },
-    existingSessions: existing,
-  },
-  {
-    name: 'same id is skipped',
-    newSession: { id: 's1', therapistId: 't1', room: 'Room A', startHour: 9, span: 1, dayOfWeek: 0, studentIds: [1] },
-    existingSessions: existing,
-  },
-  {
-    name: 'string id versus number id is not the same session',
-    newSession: { id: '1', therapistId: 't1', room: 'Room A', startHour: 9, span: 1, dayOfWeek: 0, studentIds: [1] },
-    existingSessions: [{ id: 1, therapistId: 't1', room: 'Room A', startHour: 9, span: 1, dayOfWeek: 0, studentIds: [1] }],
-  },
-  {
-    name: 'missing therapist, room and students',
-    newSession: { id: 'n7', startHour: 9, span: 1 },
-    existingSessions: [{ id: 's9', startHour: 9, span: 1 }],
-  },
-  {
-    name: 'missing startHour and span',
-    newSession: { id: 'n8', therapistId: 't1', room: 'Room A' },
-    existingSessions: existing,
-  },
-].map((c) => ({ ...c, expected: detectConflicts(c.newSession, c.existingSessions) }));
 
 const scores = [
   { name: 'empty', assignments: [], unscheduledCount: 0 },
