@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard';
 import ScheduleCalendar from './pages/ScheduleCalendar/ScheduleCalendar';
 import Directory from './pages/Directory';
 import ProfilePage from './pages/ProfilePage';
-import Rooms from './pages/Rooms';
+import Rooms from './pages/Rooms/Rooms';
 import Login from './pages/Login';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
