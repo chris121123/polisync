@@ -367,7 +367,7 @@ export const GlobalStateProvider = ({ children }) => {
     notifyRoleUsers,
   });
 
-  const { addRoom, updateRoom, deleteRoom } = createRoomActions({ setRooms, notify });
+  const { addRoom } = createRoomActions({ setRooms, notify });
 
   const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
@@ -501,8 +501,6 @@ export const GlobalStateProvider = ({ children }) => {
     deleteSession,
     addPerson,
     addRoom,
-    updateRoom,
-    deleteRoom,
     addSessionNote,
     markAttendance,
     fetchAttendance,
