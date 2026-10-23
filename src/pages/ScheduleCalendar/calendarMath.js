@@ -75,3 +75,10 @@ export const slotHasConflict = (sessions, session, hour) => {
     (String(o.therapistId) === String(s.therapistId) || o.room === s.room)
   );
 };
+
+// UI constants live here, not in the .jsx files: react-refresh rejects non-component exports from them.
+export const TYPE_CONFIG = {
+  sped:       { gradient: 'bg-sped',  light: 'bg-sped/10',  border: 'border-sped/20 dark:border-sped/20',  text: 'text-sped dark:text-sped',  badge: 'bg-sped/10 text-sped',  label: 'SPED'       },
+  rehab:      { gradient: 'bg-rehab',       light: 'bg-rehab/10',     border: 'border-rehab/20 dark:border-rehab/20',     text: 'text-rehab dark:text-ps-ink-1',     badge: 'bg-rehab/10 text-rehab',        label: 'Rehab'      },
+  playschool: { gradient: 'bg-ps-warn dark:bg-amber-700',   light: 'bg-ps-warn/10 dark:bg-amber-900/20',   border: 'border-ps-warn/20 dark:border-amber-800/50',   text: 'text-amber-900 dark:text-amber-100',   badge: 'bg-ps-warn/10 dark:bg-amber-900/40 text-ps-warn dark:text-amber-300',    label: 'Playschool' },
+};
