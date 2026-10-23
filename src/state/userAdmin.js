@@ -181,16 +181,10 @@ export const createUserAdminActions = ({
     }
   };
 
-  const deleteAccount = (userId) => {
-    setStaff(prev => prev.filter(s => s.id !== userId));
-    setUser(null);
-  };
-
   return {
     adminCreateUser,
     updateUserRole,
     adminDeleteUser,
     toggleUserActive,
-    deleteAccount,
   };
 };

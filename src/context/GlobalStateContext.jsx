@@ -355,7 +355,6 @@ export const GlobalStateProvider = ({ children }) => {
     updateUserRole,
     adminDeleteUser,
     toggleUserActive,
-    deleteAccount,
   } = createUserAdminActions({
     user,
     staff,
@@ -491,7 +490,6 @@ export const GlobalStateProvider = ({ children }) => {
     adminCreateUser,
     adminDeleteUser,
     logout,
-    deleteAccount,
     findAvailableGaps,
     enhanceConflictDetection,
     autoSchedule,
