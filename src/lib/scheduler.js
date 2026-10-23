@@ -14,7 +14,7 @@
  *   4. `scoreSchedule()`        — evaluate any schedule's quality
  */
 
-import { supabase } from './supabase';
+import { supabase } from './supabase.js';
 
 // ─── Constants & Config ──────────────────────────────────────────────────────
 
