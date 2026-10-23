@@ -2,17 +2,9 @@ import React, { createContext, useContext, useState, useMemo, useEffect, useCall
 import { supabase } from '../lib/supabase';
 import { invokeSmartScheduler, localSmartSchedule } from '../lib/scheduler';
 import { validatePassword } from '../lib/passwordPolicy';
+import { invokeError } from '../state/errors';
 
 const GlobalStateContext = createContext();
-
-// functions.invoke leaves `data` empty on non-2xx; the real reason is in error.context.
-const invokeError = async (error) => {
-  try {
-    return (await error.context?.json())?.error ?? error.message;
-  } catch {
-    return error.message;
-  }
-};
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalState = () => {
