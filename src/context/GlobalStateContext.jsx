@@ -8,6 +8,7 @@ import { createDirectoryActions } from '../state/directory';
 import { createSessionActions } from '../state/sessions';
 import { createSettingsActions } from '../state/settings';
 import { createAttendanceActions } from '../state/attendance';
+import { createDocumentActions } from '../state/documents';
 import { createSchedulingActions } from '../state/scheduling';
 import { createAuthActions } from '../state/auth';
 
@@ -396,6 +397,12 @@ export const GlobalStateProvider = ({ children }) => {
   } = createAttendanceActions({ user, notify });
 
   const {
+    fetchStudentDocumentRows,
+    createSignedDocumentUrls,
+    saveStudentDocument,
+  } = createDocumentActions();
+
+  const {
     login,
     logout,
     changePassword,
@@ -496,6 +503,9 @@ export const GlobalStateProvider = ({ children }) => {
     fetchParentChildren,
     fetchMyAssignments,
     assignParentToStudent,
+    fetchStudentDocumentRows,
+    createSignedDocumentUrls,
+    saveStudentDocument,
     updateUserRole,
     toggleUserActive,
     markNotificationRead,
