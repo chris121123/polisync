@@ -46,6 +46,72 @@ export const GlobalStateProvider = ({ children }) => {
 
   // --- SUPABASE INTEGRATION ---
 
+  // Core tables are authenticated-only (RLS): load them after an authorized session exists.
+  const loadCoreData = useCallback(async () => {
+    const [
+      roomsRes,
+      staffRes,
+      studentsRes,
+      sessionsRes,
+      staffAvailRes,
+      programsRes,
+      spRes,
+      saRes,
+      settingsRes
+    ] = await Promise.allSettled([
+      supabase.from('rooms').select('*'),
+      supabase.from('profiles').select('*'),
+      supabase.from('students').select('*'),
+      supabase.from('sessions').select('*'),
+      supabase.from('staff_availability').select('*'),
+      supabase.from('programs').select('*').eq('is_active', true),
+      supabase.from('student_programs').select('*'),
+      supabase.from('student_availability').select('*').eq('is_active', true),
+      supabase.from('scheduling_settings').select('*').single()
+    ]);
+
+    if (roomsRes.status === 'fulfilled' && roomsRes.value.data) {
+      setRooms(roomsRes.value.data.map(r => ({ ...r, maxCapacity: r.max_capacity })));
+    }
+    if (staffRes.status === 'fulfilled' && staffRes.value.data) {
+      setStaff(staffRes.value.data);
+    }
+    if (studentsRes.status === 'fulfilled' && studentsRes.value.data) {
+      setStudents(studentsRes.value.data);
+    }
+    if (sessionsRes.status === 'fulfilled' && sessionsRes.value.data) {
+      setSessions(sessionsRes.value.data.map(s => ({
+        id: s.id,
+        title: s.title,
+        therapistId: s.therapist_id,
+        studentIds: s.student_ids || [],
+        room: s.room,
+        startHour: s.start_hour,
+        span: s.span,
+        type: s.type,
+        programId: s.program_id,
+        dayOfWeek: s.day_of_week,
+        sessionDate: s.session_date || null,
+        isConfirmed: s.is_confirmed
+      })));
+    }
+    if (staffAvailRes.status === 'fulfilled' && staffAvailRes.value.data) {
+      setStaffAvailabilityState(staffAvailRes.value.data);
+    }
+    if (programsRes.status === 'fulfilled' && programsRes.value.data) {
+      setPrograms(programsRes.value.data.map(p => ({ ...p, id: Number(p.id) })));
+    }
+    if (spRes.status === 'fulfilled' && spRes.value.data) {
+      setStudentPrograms(spRes.value.data.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
+    }
+    if (saRes.status === 'fulfilled' && saRes.value.data) {
+      setStudentAvailability(saRes.value.data.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
+    }
+    if (settingsRes.status === 'fulfilled' && settingsRes.value.data) {
+      setSchedulingSettings(settingsRes.value.data);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -92,6 +158,8 @@ export const GlobalStateProvider = ({ children }) => {
               setAppRole(finalRole);
             }
 
+            await loadCoreData();
+
             supabase.from('notifications')
               .select('*')
               .eq('user_id', session.user.id)
@@ -102,72 +170,6 @@ export const GlobalStateProvider = ({ children }) => {
           }
         }
         
-        // 2. Fetch all other data concurrently using Promise.allSettled
-        const [
-          roomsRes,
-          staffRes,
-          studentsRes,
-          sessionsRes,
-          staffAvailRes,
-          programsRes,
-          spRes,
-          saRes,
-          settingsRes
-        ] = await Promise.allSettled([
-          supabase.from('rooms').select('*'),
-          supabase.from('profiles').select('*'),
-          supabase.from('students').select('*'),
-          supabase.from('sessions').select('*'),
-          supabase.from('staff_availability').select('*'),
-          supabase.from('programs').select('*').eq('is_active', true),
-          supabase.from('student_programs').select('*'),
-          supabase.from('student_availability').select('*').eq('is_active', true),
-          supabase.from('scheduling_settings').select('*').single()
-        ]);
-
-        if (!mounted) return;
-
-        if (roomsRes.status === 'fulfilled' && roomsRes.value.data) {
-          setRooms(roomsRes.value.data.map(r => ({ ...r, maxCapacity: r.max_capacity })));
-        }
-        if (staffRes.status === 'fulfilled' && staffRes.value.data) {
-          setStaff(staffRes.value.data);
-        }
-        if (studentsRes.status === 'fulfilled' && studentsRes.value.data) {
-          setStudents(studentsRes.value.data);
-        }
-        if (sessionsRes.status === 'fulfilled' && sessionsRes.value.data) {
-          setSessions(sessionsRes.value.data.map(s => ({
-            id: s.id,
-            title: s.title,
-            therapistId: s.therapist_id,
-            studentIds: s.student_ids || [],
-            room: s.room,
-            startHour: s.start_hour,
-            span: s.span,
-            type: s.type,
-            programId: s.program_id,
-            dayOfWeek: s.day_of_week,
-            sessionDate: s.session_date || null,
-            isConfirmed: s.is_confirmed
-          })));
-        }
-        if (staffAvailRes.status === 'fulfilled' && staffAvailRes.value.data) {
-          setStaffAvailabilityState(staffAvailRes.value.data);
-        }
-        if (programsRes.status === 'fulfilled' && programsRes.value.data) {
-          setPrograms(programsRes.value.data.map(p => ({ ...p, id: Number(p.id) })));
-        }
-        if (spRes.status === 'fulfilled' && spRes.value.data) {
-          setStudentPrograms(spRes.value.data.map(sp => ({ ...sp, student_id: Number(sp.student_id), program_id: Number(sp.program_id) })));
-        }
-        if (saRes.status === 'fulfilled' && saRes.value.data) {
-          setStudentAvailability(saRes.value.data.map(sa => ({ ...sa, student_id: Number(sa.student_id) })));
-        }
-        if (settingsRes.status === 'fulfilled' && settingsRes.value.data) {
-          setSchedulingSettings(settingsRes.value.data);
-        }
-
       } catch (error) {
         console.error('Error fetching data during initialization:', error);
       } finally {
@@ -318,7 +320,7 @@ export const GlobalStateProvider = ({ children }) => {
       subscription.unsubscribe();
       channel.unsubscribe();
     };
-  }, []);
+  }, [loadCoreData]);
 
   // --- DERIVED STATE / ACTIONS ---
 
@@ -387,6 +389,8 @@ export const GlobalStateProvider = ({ children }) => {
     const finalRole = roleRes.data.role;
     setAppRole(finalRole);
     setUser({ ...profileRes.data, app_role: finalRole });
+
+    await loadCoreData();
 
     return { ...profileRes.data, app_role: finalRole };
   };
