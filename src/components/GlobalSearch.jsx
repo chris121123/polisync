@@ -3,6 +3,9 @@ import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen,
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
+import {
+  matchesStaff, matchesStudent, matchesSession, matchesRoom, matchesAnyKeyword,
+} from '../lib/search/matchers.js';
 
 const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
   const { staff, students, sessions, rooms, appRole, parentChildren, fetchParentChildren } = useGlobalState();
@@ -62,7 +65,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
       // Parent role: no staff results (limited to own linked children)
       if (!isParent) {
         // Search Staff
-        staff.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery))
+        staff.filter(s => matchesStaff(s, lowerQuery))
           .slice(0, 5)
           .forEach(s => searchResults.push({
             id: `staff-${s.id}`,
@@ -75,7 +78,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
 
       // Search Students (parents: only their linked children)
       const linkedIds = new Set((parentChildren || []).map(c => String(c.id)));
-      students.filter(s => s.name.toLowerCase().includes(lowerQuery) || s.role.toLowerCase().includes(lowerQuery) || (s.diagnosis && s.diagnosis.toLowerCase().includes(lowerQuery)))
+      students.filter(s => matchesStudent(s, lowerQuery))
         .filter(s => !isParent || linkedIds.has(String(s.id)))
         .slice(0, 5)
         .forEach(s => searchResults.push({
@@ -91,7 +94,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
       const isAdminOnly = appRole === 'admin';
 
       // Search Sessions
-      sessions.filter(s => isAdminOnly && s.title.toLowerCase().includes(lowerQuery))
+      sessions.filter(s => isAdminOnly && matchesSession(s, lowerQuery))
         .slice(0, 3)
         .forEach(s => searchResults.push({
           id: `session-${s.id}`,
@@ -102,7 +105,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         }));
 
       // Search Rooms
-      rooms.filter(r => isAdminOnly && (r.name.toLowerCase().includes(lowerQuery) || r.type.toLowerCase().includes(lowerQuery)))
+      rooms.filter(r => isAdminOnly && matchesRoom(r, lowerQuery))
         .slice(0, 4)
         .forEach(r => searchResults.push({
           id: `room-${r.id}`,
@@ -113,7 +116,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         }));
 
       // Settings Search
-      if ("settings".includes(lowerQuery) || "preferences".includes(lowerQuery)) {
+      if (matchesAnyKeyword(lowerQuery, ['settings', 'preferences'])) {
         searchResults.push({
           id: 'nav-settings',
           title: 'System Settings',
@@ -123,7 +126,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         });
       }
 
-      if ("dark mode".includes(lowerQuery) || "theme".includes(lowerQuery) || "appearance".includes(lowerQuery)) {
+      if (matchesAnyKeyword(lowerQuery, ['dark mode', 'theme', 'appearance'])) {
         searchResults.push({
           id: 'nav-appearance',
           title: 'Appearance Settings',
@@ -134,7 +137,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
       }
 
       // Phase 2.5 — superadmin/admin page results
-      if (appRole === 'superadmin' && ("user management".includes(lowerQuery) || "users".includes(lowerQuery) || "accounts".includes(lowerQuery))) {
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['user management', 'users', 'accounts'])) {
         searchResults.push({
           id: 'nav-usermgmt',
           title: 'User Management',
@@ -143,7 +146,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           action: () => navigate('/admin/users'),
         });
       }
-      if (isAdminOnly && ("directory".includes(lowerQuery) || "staff".includes(lowerQuery) || "people".includes(lowerQuery))) {
+      if (isAdminOnly && matchesAnyKeyword(lowerQuery, ['directory', 'staff', 'people'])) {
         searchResults.push({
           id: 'nav-directory',
           title: 'Directory',
