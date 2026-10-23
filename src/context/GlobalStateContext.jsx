@@ -6,6 +6,7 @@ import { findAllConflicts } from '../lib/scheduling/conflicts';
 import { validatePassword } from '../lib/passwordPolicy';
 import { invokeError } from '../state/errors';
 import { createNotificationActions } from '../state/notifications';
+import { createRoomActions } from '../state/rooms';
 
 const GlobalStateContext = createContext();
 
@@ -346,6 +347,8 @@ export const GlobalStateProvider = ({ children }) => {
     dispatchNotification,
   } = createNotificationActions({ setNotifications, user, staff });
 
+  const { addRoom, updateRoom, deleteRoom } = createRoomActions({ setRooms, notify });
+
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -672,53 +675,6 @@ export const GlobalStateProvider = ({ children }) => {
   const deleteAccount = (userId) => {
     setStaff(prev => prev.filter(s => s.id !== userId));
     setUser(null);
-  };
-
-  const addRoom = async (room) => {
-    try {
-      const { data, error } = await supabase.from('rooms').insert([{
-        name: room.name,
-        type: room.type,
-        max_capacity: room.maxCapacity || 5
-      }]).select();
-      if (error) throw error;
-      if (data) {
-        setRooms(prev => [...prev, { ...data[0], maxCapacity: data[0].max_capacity }]);
-        notify(`Room "${room.name}" added successfully`);
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const updateRoom = async (id, updates) => {
-    try {
-      const dbUpdates = {};
-      if (updates.name) dbUpdates.name = updates.name;
-      if (updates.type) dbUpdates.type = updates.type;
-      if (updates.maxCapacity) dbUpdates.max_capacity = updates.maxCapacity;
-
-      const { error } = await supabase.from('rooms').update(dbUpdates).eq('id', id);
-      if (error) throw error;
-      setRooms(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-      notify('Room updated successfully');
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const deleteRoom = async (id) => {
-    try {
-      const { error } = await supabase.from('rooms').delete().eq('id', id);
-      if (error) throw error;
-      setRooms(prev => prev.filter(r => r.id !== id));
-      notify('Room deleted');
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
   };
 
   const addSession = async (session) => {
