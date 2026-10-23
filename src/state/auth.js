@@ -71,6 +71,18 @@ export const createAuthActions = ({
     notify('Password changed successfully!', 'success');
   };
 
+  const requestPasswordReset = async (email) => {
+    if (!supabase) return;
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/login`,
+    });
+  };
+
+  const verifyPassword = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error;
+  };
+
   const isSuperAdmin = () => appRole === 'superadmin';
   const isAdmin = () => appRole === 'admin' || appRole === 'superadmin';
   const isParent = () => appRole === 'parent';
@@ -82,6 +94,8 @@ export const createAuthActions = ({
     login,
     logout,
     changePassword,
+    requestPasswordReset,
+    verifyPassword,
     isSuperAdmin,
     isAdmin,
     isParent,
