@@ -72,10 +72,11 @@ export const createAuthActions = ({
   };
 
   const requestPasswordReset = async (email) => {
-    if (!supabase) return;
+    if (!supabase) return false;
     await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/login`,
     });
+    return true;
   };
 
   const verifyPassword = async (email, password) => {

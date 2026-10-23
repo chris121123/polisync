@@ -54,8 +54,8 @@ const Login = () => {
   const sendResetEmail = async (emailAddr) => {
     if (resetSent) return;
     try {
-      await requestPasswordReset(emailAddr);
-      setResetSent(true);
+      const sent = await requestPasswordReset(emailAddr);
+      if (sent) setResetSent(true);
     } catch (_) {
       // silent — don't reveal whether email exists
     }
