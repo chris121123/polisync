@@ -1,5 +1,7 @@
 // Pure calendar helpers extracted from ScheduleCalendar. No React, no state.
 
+export const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+
 export const formatHour = (h) => {
   if (h === 12) return '12:00 PM';
   if (h > 12)  return `${h - 12}:00 PM`;
