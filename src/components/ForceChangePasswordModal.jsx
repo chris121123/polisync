@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, ShieldAlert, AlertCircle } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { validatePassword } from '../lib/passwordPolicy';
 
 const ForceChangePasswordModal = () => {
   const { user, changePassword, logout } = useGlobalState();
@@ -15,17 +16,13 @@ const ForceChangePasswordModal = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    const failing = validatePassword(newPassword);
+    if (failing.length > 0) {
+      setError(`Password must have: ${failing.map(r => r.label).join(', ')}.`);
       return;
     }
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
-      return;
-    }
-
-    if (newPassword === sessionStorage.getItem('temp_pass')) {
-      setError('New password must be different from the temporary password.');
       return;
     }
 
@@ -45,8 +42,6 @@ const ForceChangePasswordModal = () => {
           navigator.credentials.store(cred).catch(() => { });
         }
       } catch (_err) { /* silently ignore credential save errors */ }
-
-      sessionStorage.removeItem('temp_pass');
     } catch (_err) {
       setError(_err.message || 'Failed to update password. Please try again.');
     } finally {

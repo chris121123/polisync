@@ -10,14 +10,31 @@
  * Body: { dayOfWeek?: number, dryRun?: boolean, config?: Partial<SchedulerConfig> }
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Defence in depth only: curl ignores CORS, so every path below still verifies
+// the caller (ADR-003). Unknown origins get no Allow-Origin header (fail closed).
+function corsHeaders(req: Request) {
+  const allowed = (Deno.env.get('APP_ORIGIN') ?? '').split(',').map(o => o.trim()).filter(Boolean)
+  const origin = req.headers.get('Origin') ?? ''
+  const ok = allowed.includes(origin)
+    || /^http:\/\/localhost:\d+$/.test(origin)
+    || /^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(origin)
+
+  return {
+    ...(ok ? { 'Access-Control-Allow-Origin': origin } : {}),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
 }
+
+const json = (body: unknown, status: number, req: Request) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+  })
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -613,20 +630,73 @@ async function runSmartScheduler(
 
 // ─── Deno Serve Handler ──────────────────────────────────────────────────────
 
+// Out-of-range values are capped or dropped, never rejected: existing callers keep working.
+function clampConfig(config: Partial<SchedulerConfig>): Partial<SchedulerConfig> {
+  const out = { ...config }
+  if (typeof out.maxBacktrackDepth === 'number' && out.maxBacktrackDepth > 5000) out.maxBacktrackDepth = 5000
+  if (typeof out.timeBudgetMs === 'number' && out.timeBudgetMs > 15000) out.timeBudgetMs = 15000
+  if (typeof out.retryAttempts === 'number' && out.retryAttempts > 3) out.retryAttempts = 3
+  const slot = out.slotIncrementHours
+  if (slot !== undefined && ![0.25, 0.5, 1].includes(slot)) {
+    delete out.slotIncrementHours
+  }
+  return out
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders(req) })
+  }
+
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    return json({ success: false, error: 'Missing authorization header' }, 401, req)
   }
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    const body = await req.json().catch(() => ({}))
+    // Verify the caller before the service-role client is built or any row is read
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
+
+    const { data: { user }, error: authError } = await userClient.auth.getUser()
+    if (authError || !user) {
+      return json({ success: false, error: 'Invalid or expired token' }, 401, req)
+    }
+
+    const { data: roleData } = await userClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    const { data: profileData } = await userClient
+      .from('profiles')
+      .select('is_active')
+      .eq('id', user.id)
+      .single()
+
+    const allowedRoles = ['admin', 'superadmin', 'teacher', 'therapist']
+    if (!roleData || !allowedRoles.includes(roleData.role) || profileData?.is_active === false) {
+      return json({ success: false, error: 'Insufficient permissions' }, 403, req)
+    }
+
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    let body: { dayOfWeek?: number; dryRun?: boolean; config?: Partial<SchedulerConfig> }
+    try {
+      body = (await req.json()) ?? {}
+    } catch {
+      return json({ success: false, error: 'Malformed JSON body' }, 400, req)
+    }
+
     const dayOfWeek: number = body.dayOfWeek ?? getCurrentDayOfWeek()
     const dryRun: boolean = body.dryRun ?? false
-    const userConfig: Partial<SchedulerConfig> = body.config ?? {}
+    const userConfig: Partial<SchedulerConfig> =
+      body.config && typeof body.config === 'object' ? clampConfig(body.config) : {}
 
     const { result, logs } = await runSmartScheduler(supabase, dayOfWeek, userConfig)
 
@@ -679,23 +749,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        dryRun,
-        dayOfWeek,
-        score: result.score,
-        scheduled: result.assignments,
-        unscheduled: result.unscheduled,
-        stats: result.stats,
-        logs: logs.filter(l => l.level !== 'debug'),
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    return json({
+      success: true,
+      dryRun,
+      dayOfWeek,
+      score: result.score,
+      scheduled: result.assignments,
+      unscheduled: result.unscheduled,
+      stats: result.stats,
+      logs: logs.filter(l => l.level !== 'debug'),
+    }, 200, req)
   } catch (error) {
-    return new Response(
-      JSON.stringify({ success: false, error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    console.error('Auto scheduler error:', (error as Error).message)
+    return json({ success: false, error: 'Internal error' }, 500, req)
   }
 })

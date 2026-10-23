@@ -1,8 +1,18 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { invokeSmartScheduler, localSmartSchedule } from '../lib/scheduler';
+import { validatePassword } from '../lib/passwordPolicy';
 
 const GlobalStateContext = createContext();
+
+// functions.invoke leaves `data` empty on non-2xx; the real reason is in error.context.
+const invokeError = async (error) => {
+  try {
+    return (await error.context?.json())?.error ?? error.message;
+  } catch {
+    return error.message;
+  }
+};
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalState = () => {
@@ -69,19 +79,27 @@ export const GlobalStateProvider = ({ children }) => {
             supabase.from('user_roles').select('role').eq('user_id', session.user.id).single()
           ]);
           
-          if (mounted) {
-            const finalRole = roleRes.data?.role || profileRes.data?.app_role || 'teacher';
-            if (profileRes.data) setUser({ ...profileRes.data, app_role: finalRole });
-            setAppRole(finalRole);
+          if (!profileRes.data || !roleRes.data?.role || profileRes.data.is_active === false) {
+            await supabase.auth.signOut();
+            if (mounted) {
+              setUser(null);
+              setAppRole(null);
+            }
+          } else {
+            const finalRole = roleRes.data.role;
+            if (mounted) {
+              setUser({ ...profileRes.data, app_role: finalRole });
+              setAppRole(finalRole);
+            }
+
+            supabase.from('notifications')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .order('created_at', { ascending: false })
+              .then(({ data }) => {
+                if (mounted && data) setNotifications(data);
+              });
           }
-          
-          supabase.from('notifications')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .then(({ data }) => {
-              if (mounted && data) setNotifications(data);
-            });
         }
         
         // 2. Fetch all other data concurrently using Promise.allSettled
@@ -190,6 +208,10 @@ export const GlobalStateProvider = ({ children }) => {
             console.error('onAuthStateChange notifications fetch error:', err);
           }
         }, 1500); // wait for initializeSession to settle
+      } else if (event === 'PASSWORD_RECOVERY') {
+        // The recovery link lands on /login, outside Layout, so the flag must also live in the DB.
+        await supabase.from('profiles').update({ must_change_password: true }).eq('id', session.user.id);
+        setUser(prev => prev ? { ...prev, must_change_password: true } : prev);
       }
     });
 
@@ -347,42 +369,26 @@ export const GlobalStateProvider = ({ children }) => {
       throw error;
     }
 
-    let { data: profile } = await supabase.from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
+    const [profileRes, roleRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', data.user.id).single(),
+      supabase.from('user_roles').select('role').eq('user_id', data.user.id).single(),
+    ]);
 
-    // Auto-create profile if it doesn't exist yet (e.g. user created before migration)
-    if (!profile) {
-      const fallback = {
-        id: data.user.id,
-        name: data.user.email.split('@')[0],
-        role: 'Staff',
-        department: 'General',
-        type: 'Staff',
-        status: 'Active',
-        email: data.user.email,
-        app_role: 'teacher',
-      };
-      const { data: created } = await supabase.from('profiles').insert([fallback]).select().single();
-      profile = created || fallback;
-
-      // Also ensure a user_roles row exists
-      await supabase.from('user_roles').insert([{ user_id: data.user.id, role: 'teacher' }]);
+    if (!profileRes.data || !roleRes.data?.role) {
+      await supabase.auth.signOut();
+      throw new Error('Your account is not provisioned. Contact an administrator.');
     }
 
-    setUser(profile);
+    if (profileRes.data.is_active === false) {
+      await supabase.auth.signOut();
+      throw new Error('Your account has been deactivated. Contact an administrator.');
+    }
 
-    const { data: roleData } = await supabase.from('user_roles')
-      .select('role')
-      .eq('user_id', data.user.id)
-      .single();
-
-    const finalRole = roleData?.role || profile.app_role || 'teacher';
+    const finalRole = roleRes.data.role;
     setAppRole(finalRole);
-    setUser({ ...profile, app_role: finalRole });
+    setUser({ ...profileRes.data, app_role: finalRole });
 
-    return { ...profile, app_role: finalRole };
+    return { ...profileRes.data, app_role: finalRole };
   };
 
   /**
@@ -402,7 +408,7 @@ export const GlobalStateProvider = ({ children }) => {
         },
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await invokeError(error));
       if (!data?.success) throw new Error(data?.error || 'Failed to create user');
 
       // Optimistically add the new user to the staff list for instant UI
@@ -446,9 +452,6 @@ export const GlobalStateProvider = ({ children }) => {
         type: 'info',
       });
 
-      // Background: set must_change_password flag (non-blocking)
-      supabase.from('profiles').update({ must_change_password: true }).eq('email', userData.email).then(() => {});
-
       return data;
     } catch (error) {
       notify(error.message, 'error');
@@ -466,6 +469,13 @@ export const GlobalStateProvider = ({ children }) => {
   };
 
   const changePassword = async (newPassword) => {
+    const failing = validatePassword(newPassword);
+    if (failing.length > 0) {
+      const message = `Password must have: ${failing.map(r => r.label).join(', ')}.`;
+      notify(message, 'error');
+      throw new Error(message);
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     
@@ -575,10 +585,7 @@ export const GlobalStateProvider = ({ children }) => {
 
   const updateUserRole = async (targetUserId, newRole) => {
     try {
-      const { error } = await supabase.from('user_roles').upsert([{
-        user_id: targetUserId,
-        role: newRole,
-      }], { onConflict: 'user_id' });
+      const { error } = await supabase.rpc('set_user_role', { p_target: targetUserId, p_role: newRole });
       if (error) throw error;
 
       // Map app role to display role (Job Title)
@@ -590,13 +597,6 @@ export const GlobalStateProvider = ({ children }) => {
         parent: 'Parent',
       };
       const displayRole = roleDisplayMap[newRole] || 'Staff';
-
-      // Update both app_role and the legacy/display 'role' in profiles
-      const { error: profileError } = await supabase.from('profiles')
-        .update({ app_role: newRole, role: displayRole })
-        .eq('id', targetUserId);
-        
-      if (profileError) console.error("Profile role sync failed:", profileError);
 
       // Optimistically update the local staff list for instant UI feedback
       setStaff(prev => prev.map(s => s.id === targetUserId ? { ...s, app_role: newRole, role: displayRole } : s));
@@ -644,16 +644,8 @@ export const GlobalStateProvider = ({ children }) => {
         body: { userId }
       });
 
-      if (error) throw error;
+      if (error) throw new Error(await invokeError(error));
       if (data?.error) throw new Error(data.error);
-
-      // Background: audit log (non-blocking)
-      supabase.from('audit_logs').insert([{
-        action: 'user_deleted',
-        performed_by: user?.id,
-        target_user_id: userId,
-        details: { message: 'Admin deleted user' },
-      }]).then(() => {});
 
     } catch (error) {
       // Rollback: re-fetch staff if the server-side delete actually failed
@@ -670,18 +662,8 @@ export const GlobalStateProvider = ({ children }) => {
    */
   const toggleUserActive = async (targetUserId, isActive) => {
     try {
-      const { error } = await supabase.from('profiles')
-        .update({ is_active: isActive })
-        .eq('id', targetUserId);
+      const { error } = await supabase.rpc('set_user_active', { p_target: targetUserId, p_active: isActive });
       if (error) throw error;
-
-      // Log to audit_logs
-      await supabase.from('audit_logs').insert([{
-        action: isActive ? 'user_activated' : 'user_deactivated',
-        performed_by: user?.id,
-        target_user_id: targetUserId,
-        details: { is_active: isActive },
-      }]);
 
       setStaff(prev => prev.map(s =>
         s.id === targetUserId ? { ...s, is_active: isActive } : s
@@ -849,7 +831,7 @@ export const GlobalStateProvider = ({ children }) => {
       const user = staff.find(s => String(s.id) === String(recipientId));
       if (!user) return;
       
-      await supabase.functions.invoke('send-notification', {
+      const { error } = await supabase.functions.invoke('send-notification', {
         body: {
           type: 'both',
           recipient: { phone: user.phone || '', email: user.email || '' },
@@ -857,6 +839,7 @@ export const GlobalStateProvider = ({ children }) => {
           subject: 'Polisync Schedule Update'
         }
       });
+      if (error) throw new Error(await invokeError(error));
     } catch (err) {
       console.error('Notification dispatch failed', err);
     }

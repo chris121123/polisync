@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Stethoscope, Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
@@ -81,10 +81,6 @@ const Login = () => {
         setFailedAttempts(0);
         setIsLockedOut(false);
 
-        if (loggedInUser.must_change_password) {
-          sessionStorage.setItem('temp_pass', trimmedPassword);
-        }
-        
         const roleRoutes = {
           superadmin: '/dashboard',
           admin: '/dashboard',
@@ -332,9 +328,15 @@ const Login = () => {
           </form>
 
           {/* Trust Badge at bottom */}
-          <div className="pt-6 border-t border-ps-border flex items-center justify-center gap-2 text-xs text-ps-ink-2 font-medium">
-            <ShieldCheck size={14} className="text-ps-success" />
-            <span>Secure access • Role-based • SPED Center</span>
+          <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3 text-xs text-ps-ink-2 font-medium">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-ps-success" />
+              <span>Secure access • Role-based • SPED Center</span>
+            </div>
+            <nav aria-label="About PoliSync" className="flex items-center gap-4">
+              <Link to="/about" className="hover:text-ps-accent hover:underline">About this system</Link>
+              <Link to="/faq" className="hover:text-ps-accent hover:underline">FAQ</Link>
+            </nav>
           </div>
         </motion.div>
       </div>

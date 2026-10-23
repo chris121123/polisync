@@ -10,7 +10,7 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 
 export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeColor }) => {
   return (
-    <div className="bg-ps-surface rounded-2xl p-5 shadow-sm border border-ps-border flex flex-col justify-between transition-all hover:border-ps-border/80">
+    <div className="bg-ps-surface rounded-2xl p-5 shadow-md border border-ps-border flex flex-col justify-between transition-all hover:border-ps-border/80">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-ps-bg text-ps-ink-2 border border-ps-border">
@@ -124,7 +124,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Live Conflicts & Clinical Triage */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border flex flex-col">
+        <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border flex flex-col">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Clinical Load Chart (Sessions by Hour) */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Room Facility Status Summary */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
+        <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-display font-semibold text-ps-ink-1">Facility Status</h3>
             <button
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Live Today's Schedule Overview */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
+        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-display font-semibold text-ps-ink-1">Upcoming Program Sessions</h3>

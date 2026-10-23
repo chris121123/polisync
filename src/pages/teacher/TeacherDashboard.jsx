@@ -140,7 +140,7 @@ const TeacherDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Schedule List */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl shadow-sm border border-ps-border overflow-hidden">
+        <div className="lg:col-span-2 bg-ps-surface rounded-2xl shadow-md border border-ps-border overflow-hidden">
           <div className="p-6 lg:p-8 border-b border-ps-border flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
@@ -230,7 +230,7 @@ const TeacherDashboard = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
+          <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-ps-accent-soft text-ps-accent rounded-xl">
                 <BookOpen size={18} />

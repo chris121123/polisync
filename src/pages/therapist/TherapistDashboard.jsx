@@ -108,7 +108,7 @@ const TherapistDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Sessions Panel */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 shadow-sm border border-ps-border">
+          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 shadow-md border border-ps-border">
             {/* Header & Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-ps-border">
               <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ const TherapistDashboard = () => {
         {/* Sidebar panels */}
         <div className="space-y-6">
           {/* Assigned Programs */}
-          <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border space-y-4">
+          <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-ps-accent-soft text-ps-accent rounded-xl">
                 <BookOpen size={18} />

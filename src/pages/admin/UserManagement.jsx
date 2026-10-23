@@ -16,6 +16,7 @@ import {
   ToggleLeft,
   ToggleRight,
   AlertCircle,
+  Check,
   CheckCircle2,
   MoreVertical,
   Trash2,
@@ -31,6 +32,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
+import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
 
 const EMPTY_CONFIG = {
@@ -191,8 +193,8 @@ const UserManagement = () => {
     }
     if (!newUser.password) {
       newErrors.password = 'Temporary password is required';
-    } else if (newUser.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!isPasswordValid(newUser.password)) {
+      newErrors.password = 'Password does not meet the requirements below';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -211,7 +213,7 @@ const UserManagement = () => {
     }
     if (field === 'password') {
       if (!newUser.password) newErrors.password = 'Temporary password is required';
-      else if (newUser.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+      else if (!isPasswordValid(newUser.password)) newErrors.password = 'Password does not meet the requirements below';
       else delete newErrors.password;
     }
     setErrors(newErrors);
@@ -1021,11 +1023,12 @@ const UserManagement = () => {
 
               {/* Password */}
               <div>
-                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Temporary Password</label>
+                <label htmlFor="temp_password_input" className="block text-xs font-medium text-ps-ink-1 mb-1.5">Temporary Password</label>
                 <div className="relative">
                   <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
                   <input
                     id="temp_password_input"
+                    aria-describedby="temp_password_rules"
                     type="text"
                     style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
                     autoComplete="new-password"
@@ -1053,6 +1056,17 @@ const UserManagement = () => {
                 </div>
                 {errors.password && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
                 {!errors.password && <p className="text-xs text-ps-ink-2 mt-1">User will be prompted to change password on initial login.</p>}
+                <ul id="temp_password_rules" className="mt-2 space-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
+                    return (
+                      <li key={rule.id} className={clsx('flex items-center gap-1.5 text-xs', met ? 'text-ps-success' : 'text-ps-ink-2')}>
+                        {met ? <Check size={12} /> : <X size={12} />}
+                        {rule.label}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
 
               {/* Role + Department */}
@@ -1116,7 +1130,7 @@ const UserManagement = () => {
                 <button
                   type="button"
                   onClick={handleCreateUser}
-                  disabled={createLoading || !newUser.name || !newUser.email || !newUser.password}
+                  disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
                   className="flex-1 py-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
                 >
                   {createLoading ? (

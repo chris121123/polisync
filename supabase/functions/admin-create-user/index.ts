@@ -14,14 +14,31 @@
  *   - Logs creation to audit_logs
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Defence in depth only: curl ignores CORS, so every path below still verifies
+// the caller (ADR-003). Unknown origins get no Allow-Origin header (fail closed).
+function corsHeaders(req: Request) {
+  const allowed = (Deno.env.get('APP_ORIGIN') ?? '').split(',').map(o => o.trim()).filter(Boolean)
+  const origin = req.headers.get('Origin') ?? ''
+  const ok = allowed.includes(origin)
+    || /^http:\/\/localhost:\d+$/.test(origin)
+    || /^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(origin)
+
+  return {
+    ...(ok ? { 'Access-Control-Allow-Origin': origin } : {}),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  }
 }
+
+const json = (body: unknown, status: number, req: Request) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+  })
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type AppRole = 'admin' | 'parent' | 'teacher' | 'therapist' | 'superadmin'
@@ -40,8 +57,12 @@ interface CreateUserRequest {
 
 async function verifyAdmin(
   supabase: ReturnType<typeof createClient>,
-  authHeader: string,
-): Promise<{ isAdmin: boolean; userId: string | null; error?: string }> {
+  authHeader: string | null,
+): Promise<{ userId: string; role: AppRole } | { status: number; error: string }> {
+  if (!authHeader) {
+    return { status: 401, error: 'Missing authorization header' }
+  }
+
   // Create a client using the user's JWT to verify their identity
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
@@ -53,21 +74,27 @@ async function verifyAdmin(
   const { data: { user }, error: authError } = await userClient.auth.getUser()
   
   if (authError || !user) {
-    return { isAdmin: false, userId: null, error: 'Invalid or expired token' }
+    return { status: 401, error: 'Invalid or expired token' }
   }
 
   // Check admin role from user_roles table using service_role client
-  const { data: roleData, error: roleError } = await supabase
+  const { data: roleData } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', user.id)
     .single()
 
-  if (roleError || (roleData?.role !== 'admin' && roleData?.role !== 'superadmin')) {
-    return { isAdmin: false, userId: user.id, error: 'Insufficient permissions: admin role required' }
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('is_active')
+    .eq('id', user.id)
+    .single()
+
+  if (!roleData || (roleData.role !== 'admin' && roleData.role !== 'superadmin') || profileData?.is_active === false) {
+    return { status: 403, error: 'Insufficient permissions' }
   }
 
-  return { isAdmin: true, userId: user.id }
+  return { userId: user.id, role: roleData.role as AppRole }
 }
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
@@ -75,7 +102,7 @@ async function verifyAdmin(
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders(req) })
   }
 
   try {
@@ -88,46 +115,44 @@ Deno.serve(async (req: Request) => {
     })
 
     // 1. Verify the caller is an admin
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing authorization header' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const caller = await verifyAdmin(supabase, req.headers.get('Authorization'))
+    if ('error' in caller) {
+      return json({ success: false, error: caller.error }, caller.status, req)
     }
-
-    const { isAdmin, userId: adminUserId, error: authError } = await verifyAdmin(supabase, authHeader)
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: authError }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    const { userId: adminUserId, role: callerRole } = caller
 
     // 2. Parse and validate request body
-    const body: CreateUserRequest = await req.json()
+    let body: CreateUserRequest
+    try {
+      body = (await req.json()) ?? {}
+    } catch {
+      return json({ success: false, error: 'Malformed JSON body' }, 400, req)
+    }
     const { email, password, name, role, department, phone } = body
 
     if (!email || !password || !name || !role) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing required fields: email, password, name, role' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return json({ success: false, error: 'Missing required fields: email, password, name, role' }, 422, req)
     }
 
     const validRoles: AppRole[] = ['admin', 'parent', 'teacher', 'therapist', 'superadmin']
     if (!validRoles.includes(role)) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Invalid role. Must be one of: ${validRoles.join(', ')}` }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return json({ success: false, error: `Invalid role. Must be one of: ${validRoles.join(', ')}` }, 422, req)
+    }
+
+    if (role === 'superadmin' && callerRole !== 'superadmin') {
+      return json({ success: false, error: 'Only a superadmin can create a superadmin' }, 403, req)
     }
 
     if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return json({ success: false, error: 'Password must be at least 8 characters' }, 422, req)
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return json({ success: false, error: 'Password must contain at least one uppercase letter' }, 422, req)
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return json({ success: false, error: 'Password must contain at least one number' }, 422, req)
     }
 
     // 3. Create user via Supabase Admin API (service_role only)
@@ -139,10 +164,8 @@ Deno.serve(async (req: Request) => {
     })
 
     if (createError) {
-      return new Response(
-        JSON.stringify({ success: false, error: createError.message }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      const alreadyRegistered = /already registered|already been registered|already exists/i.test(createError.message)
+      return json({ success: false, error: createError.message }, alreadyRegistered ? 409 : 400, req)
     }
 
     const newUserId = authData.user.id
@@ -162,7 +185,7 @@ Deno.serve(async (req: Request) => {
       name,
       role: roleDisplayMap[role] || 'Staff',
       department: department || 'General',
-      type: 'Staff',
+      type: role === 'parent' ? 'Parent' : 'Staff',
       status: 'Active',
       email,
       phone: phone || null,
@@ -176,10 +199,7 @@ Deno.serve(async (req: Request) => {
     if (profileError) {
       // Rollback: delete the auth user if profile creation fails
       await supabase.auth.admin.deleteUser(newUserId)
-      return new Response(
-        JSON.stringify({ success: false, error: `Profile creation failed: ${profileError.message}` }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return json({ success: false, error: `Profile creation failed: ${profileError.message}` }, 500, req)
     }
 
     // 5. Create user_roles row
@@ -189,39 +209,41 @@ Deno.serve(async (req: Request) => {
     }])
 
     if (roleError) {
-      console.error('Role creation error (non-fatal):', roleError.message)
+      // A profile without a role row is a ghost account: roll both back.
+      console.error('Role creation failed, rolling back:', roleError.message)
+      const { error: profileDeleteError } = await supabase.from('profiles').delete().eq('id', newUserId)
+      if (profileDeleteError) console.error('Profile rollback failed:', profileDeleteError.message)
+      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(newUserId)
+      if (authDeleteError) console.error('Auth user rollback failed:', authDeleteError.message)
+      return json({ success: false, error: 'Role assignment failed; user rolled back' }, 500, req)
     }
 
     // 6. Log the creation event
-    await supabase.from('audit_logs').insert([{
+    const { error: auditError } = await supabase.from('audit_logs').insert([{
       action: 'user_created',
       performed_by: adminUserId,
       target_user_id: newUserId,
       details: { email, name, role, department: department || 'General' },
     }])
+    if (auditError) console.error('Audit log insert failed:', auditError.message)
 
     // 7. Return success
-    return new Response(
-      JSON.stringify({
-        success: true,
-        user: {
-          id: newUserId,
-          email,
-          name,
-          role,
-          department: department || 'General',
-          must_change_password: true,
-        },
-        message: `User "${name}" created successfully with role "${role}"`,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return json({
+      success: true,
+      ...(auditError ? { auditLogged: false } : {}),
+      user: {
+        id: newUserId,
+        email,
+        name,
+        role,
+        department: department || 'General',
+        must_change_password: true,
+      },
+      message: `User "${name}" created successfully with role "${role}"`,
+    }, 200, req)
 
   } catch (error) {
-    console.error('Admin create user error:', error)
-    return new Response(
-      JSON.stringify({ success: false, error: (error as Error).message }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.error('Admin create user error:', (error as Error).message)
+    return json({ success: false, error: 'Internal error' }, 500, req)
   }
 })

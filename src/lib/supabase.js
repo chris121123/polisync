@@ -24,6 +24,8 @@ export const supabase = (supabaseUrl && isValidUrl(supabaseUrl) && supabaseAnonK
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // Session lives in sessionStorage, not localStorage: nothing survives the browser closing
+        storage: window.sessionStorage,
         // Bypass navigator.locks deadlock on mobile browsers / non-HTTPS remote IPs (Tailscale)
         lock: async (_name, _acquireTimeout, fn) => {
           return await fn();

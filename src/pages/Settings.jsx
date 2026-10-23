@@ -286,7 +286,7 @@ const Settings = () => {
                   <div className="p-4 rounded-2xl border-l-4 border-l-amber-600 bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Center Administrator</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-600/10 text-amber-700 dark:text-amber-400 font-medium">admin</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-600/10 text-amber-800 dark:text-amber-400 font-medium">admin</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Clinical operations dashboard, session scheduling (manual and auto-scheduler), staff and student directory, room management, and conflict detection.</p>
                   </div>

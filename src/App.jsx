@@ -7,6 +7,8 @@ import Directory from './pages/Directory';
 import ProfilePage from './pages/ProfilePage';
 import Rooms from './pages/Rooms';
 import Login from './pages/Login';
+import About from './pages/About';
+import FAQ from './pages/FAQ';
 import Settings from './pages/Settings';
 import ParentDashboard from './pages/parent/ParentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -62,6 +64,8 @@ function App() {
       <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route path="/signup" element={<Navigate to="/login" replace />} />
 
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

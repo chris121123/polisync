@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Upload, FileText, Loader2, X, Check, CloudUpload, Info } from 'lucide-react';
+import { Upload, FileText, Loader2, X, Check, CloudUpload, Info, ChevronRight } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -9,6 +9,7 @@ const RequirementsUpload = ({ studentId }) => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState([]);
+  const [signedUrls, setSignedUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -21,11 +22,19 @@ const RequirementsUpload = ({ studentId }) => {
       .select('*')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error) notify('Could not load documents', 'error');
-        setDocuments(data || []);
+        const rows = data || [];
+        setDocuments(rows);
         setLoading(false);
+        // One batch call for the rows on screen. Legacy rows hold dead public URLs, skip them.
+        const paths = rows.map(r => r.file_url).filter(p => p && !/^https?:/i.test(p));
+        if (paths.length === 0) return;
+        // shortcut: signed links live 10 minutes, reload the page to re-sign a long-open tab.
+        const { data: signed } = await supabase.storage.from('requirements').createSignedUrls(paths, 600);
+        if (cancelled || !signed) return;
+        setSignedUrls(Object.fromEntries(signed.map(s => [s.path, s.signedUrl])));
       })
       .catch(() => {
         if (cancelled) return;
@@ -54,21 +63,19 @@ const RequirementsUpload = ({ studentId }) => {
     if (files.length === 0 || !studentId) return;
     setUploading(true);
     let successCount = 0;
-    for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${studentId}_${Date.now()}.${fileExt}`;
-      const filePath = `documents/${fileName}`;
+    for (const [i, file] of files.entries()) {
+      const ext = (file.name.split('.').pop() || 'bin').replace(/[^a-z0-9]/gi, '').toLowerCase();
+      const filePath = `documents/${studentId}/${Date.now()}-${i}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('requirements').upload(filePath, file);
       if (uploadError) {
         notify(`Upload failed: ${uploadError.message}`, 'error');
         continue;
       }
-      const { data: { publicUrl } } = supabase.storage.from('requirements').getPublicUrl(filePath);
       const { error: dbError } = await supabase.from('student_documents').insert([{
         student_id: studentId,
         uploaded_by: user.id,
         file_name: file.name,
-        file_url: publicUrl,
+        file_url: filePath,
         document_type: 'General'
       }]);
       if (dbError) notify(`Record failed: ${dbError.message}`, 'error');
@@ -166,12 +173,16 @@ const RequirementsUpload = ({ studentId }) => {
           </div>
         ) : documents.length > 0 ? (
           <div className="grid grid-cols-1 gap-2.5">
-            {documents.map((doc) => (
+            {documents.map((doc) => {
+              // Legacy rows hold a dead public URL; anything else is a storage path needing a signed URL.
+              const href = /^https?:/i.test(doc.file_url || '') ? null : signedUrls[doc.file_url];
+              return (
               <a 
                 key={doc.id} 
-                href={doc.file_url} 
+                href={href || undefined} 
                 target="_blank" 
                 rel="noreferrer"
+                aria-disabled={href ? undefined : true}
                 className="flex items-center gap-4 p-3.5 rounded-2xl border border-ps-border hover:border-ps-accent hover:bg-ps-accent-soft/30 transition-all group"
               >
                 <div className="w-10 h-10 rounded-xl bg-ps-bg flex items-center justify-center text-ps-success shadow-sm group-hover:bg-ps-surface transition-colors">
@@ -185,7 +196,8 @@ const RequirementsUpload = ({ studentId }) => {
                 </div>
                 <ChevronRight size={16} className="text-ps-ink-2 group-hover:translate-x-1 transition-transform" />
               </a>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="py-8 text-center bg-ps-bg/30 rounded-2xl border-2 border-dashed border-ps-border">

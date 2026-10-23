@@ -166,7 +166,7 @@ const ParentDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {/* Upcoming Timeline */}
-            <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm border border-ps-border space-y-6">
+            <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-md border border-ps-border space-y-6">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
                   <Calendar size={20} />
@@ -198,7 +198,7 @@ const ParentDashboard = () => {
 
             {/* Programs & Requirements */}
             <div className="space-y-6">
-              <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm border border-ps-border">
+              <div className="bg-ps-surface rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-md border border-ps-border">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 bg-ps-success/10 text-ps-success rounded-xl">
                     <CheckCircle2 size={20} />
@@ -229,7 +229,7 @@ const ParentDashboard = () => {
         </>
       ) : (
         /* No children state */
-        <div className="bg-ps-surface rounded-[40px] p-16 shadow-sm border border-ps-border flex flex-col items-center justify-center text-center space-y-6">
+        <div className="bg-ps-surface rounded-[40px] p-16 shadow-md border border-ps-border flex flex-col items-center justify-center text-center space-y-6">
           <div className="w-24 h-24 bg-ps-bg text-ps-ink-2/20 rounded-full flex items-center justify-center relative">
             <User size={48} />
             <PlusCircle size={24} className="absolute bottom-1 right-1 text-ps-accent bg-ps-surface rounded-full" />
