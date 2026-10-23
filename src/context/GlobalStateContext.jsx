@@ -7,6 +7,7 @@ import { validatePassword } from '../lib/passwordPolicy';
 import { invokeError } from '../state/errors';
 import { createNotificationActions } from '../state/notifications';
 import { createRoomActions } from '../state/rooms';
+import { createDirectoryActions } from '../state/directory';
 
 const GlobalStateContext = createContext();
 
@@ -348,6 +349,8 @@ export const GlobalStateProvider = ({ children }) => {
   } = createNotificationActions({ setNotifications, user, staff });
 
   const { addRoom, updateRoom, deleteRoom } = createRoomActions({ setRooms, notify });
+
+  const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -1048,48 +1051,6 @@ export const GlobalStateProvider = ({ children }) => {
 
   // Keep legacy name for backward compatibility
   const autoSchedule = smartSchedule;
-
-  const addPerson = async (person) => {
-    try {
-      if (person.type === 'Staff') {
-        const { data, error } = await supabase.from('profiles').insert([{
-          name: person.name,
-          role: person.role,
-          department: person.department,
-          type: person.type,
-          status: person.status,
-          email: person.email,
-          phone: person.phone,
-          joined: person.joined
-        }]).select();
-        if (error) throw error;
-        if (data) {
-          setStaff(prev => [...prev, data[0]]);
-          notify(`${person.name} added to staff`);
-        }
-      } else {
-        const { data, error } = await supabase.from('students').insert([{
-          name: person.name,
-          role: person.role,
-          department: person.department,
-          type: person.type,
-          status: person.status,
-          email: person.email,
-          phone: person.phone,
-          joined: person.joined,
-          diagnosis: person.diagnosis || ''
-        }]).select();
-        if (error) throw error;
-        if (data) {
-          setStudents(prev => [...prev, data[0]]);
-          notify(`${person.name} enrolled successfully`);
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
 
   const value = {
     staff,
