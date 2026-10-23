@@ -498,8 +498,6 @@ export const GlobalStateProvider = ({ children }) => {
     assignParentToStudent,
     updateUserRole,
     toggleUserActive,
-    createNotification,
-    notifyRoleUsers,
     markNotificationRead,
     markAllNotificationsRead,
     deleteNotification,
