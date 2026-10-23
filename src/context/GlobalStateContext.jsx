@@ -393,7 +393,6 @@ export const GlobalStateProvider = ({ children }) => {
     markAttendance,
     fetchAttendance,
     assignParentToStudent,
-    assignTeacherToProgram,
   } = createAttendanceActions({ user, notify });
 
   const {
@@ -505,7 +504,6 @@ export const GlobalStateProvider = ({ children }) => {
     fetchParentChildren,
     fetchMyAssignments,
     assignParentToStudent,
-    assignTeacherToProgram,
     updateUserRole,
     toggleUserActive,
     createNotification,

@@ -59,24 +59,10 @@ export const createAttendanceActions = ({ user, notify }) => {
     }
   };
 
-  const assignTeacherToProgram = async (teacherId, programId) => {
-    try {
-      const { error } = await supabase.from('teacher_program_assignments').insert([{
-        teacher_id: teacherId,
-        program_id: programId,
-      }]);
-      if (error) throw error;
-      notify('Teacher assigned to program');
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
   return {
     addSessionNote,
     markAttendance,
     fetchAttendance,
     assignParentToStudent,
-    assignTeacherToProgram,
   };
 };
