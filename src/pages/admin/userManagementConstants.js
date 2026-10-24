@@ -26,7 +26,7 @@ export const getAuditBadge = (action) => {
 };
 
 export const ROLE_PILL_COLORS = {
-  all: 'bg-ps-accent dark:bg-indigo-600 text-white',
+  all: 'bg-ps-accent text-white',
   superadmin: 'bg-violet-600 text-white',
   admin: 'bg-amber-600 text-white',
   teacher: 'bg-indigo-600 text-white',

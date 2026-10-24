@@ -64,7 +64,7 @@ const FAQ = () => {
       <header className="bg-ps-surface border-b border-ps-border">
         <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-ps-accent dark:bg-indigo-600 text-white flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-ps-accent text-white flex items-center justify-center shrink-0">
               <Stethoscope size={18} />
             </div>
             <span className="font-display font-semibold text-base">PoliSync</span>

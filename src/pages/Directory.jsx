@@ -135,7 +135,7 @@ const Directory = () => {
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all"
+          className="flex items-center gap-2 bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all"
         >
           <Plus size={16} strokeWidth={2.5}/> Add New Record
         </button>
@@ -165,7 +165,7 @@ const Directory = () => {
                 className={clsx(
                   "px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-1.5",
                   filterType === f 
-                    ? "bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent shadow-sm" 
+                    ? "bg-ps-accent text-white border-ps-accent shadow-sm" 
                     : "bg-ps-surface text-ps-ink-2 border-ps-border hover:bg-ps-bg hover:text-ps-ink-1"
                 )}
               >

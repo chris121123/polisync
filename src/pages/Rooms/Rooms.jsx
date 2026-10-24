@@ -130,7 +130,7 @@ const Rooms = () => {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button 
               onClick={() => { setIsAddModalOpen(true); setFormErrors({}); }}
-              className="flex-1 md:flex-none bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+              className="flex-1 md:flex-none bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <Plus size={16} strokeWidth={2.5}/> Add New Room
             </button>
@@ -285,7 +285,7 @@ const Rooms = () => {
                   <button 
                     type="submit"
                     disabled={!newRoom.name || !newRoom.maxCapacity}
-                    className="flex-1 py-3 bg-ps-accent dark:bg-indigo-600 text-white rounded-xl text-xs font-medium  shadow-sm hover:opacity-90 disabled:opacity-50 disabled:hover:bg-ps-accent disabled:cursor-default transition-all"
+                    className="flex-1 py-3 bg-ps-accent text-white rounded-xl text-xs font-medium  shadow-sm hover:opacity-90 disabled:opacity-50 disabled:hover:bg-ps-accent disabled:cursor-default transition-all"
                   >
                     Create Room
                   </button>

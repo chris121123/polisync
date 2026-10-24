@@ -62,7 +62,7 @@ const SessionNotes = () => {
                 onClick={() => setFilter(type)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all shrink-0 ${
                   filter === type
-                    ? 'bg-ps-accent dark:bg-indigo-600 text-white'
+                    ? 'bg-ps-accent text-white'
                     : 'bg-ps-bg text-ps-ink-2 hover:bg-ps-border'
                 }`}
               >

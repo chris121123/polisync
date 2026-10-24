@@ -83,7 +83,7 @@ const Layout = () => {
 
   const getNavStyle = (link, isActive) => {
     if (!isActive) return 'text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
-    return 'bg-ps-accent dark:bg-indigo-600 text-white font-medium';
+    return 'bg-ps-accent text-white font-medium';
   };
 
   const navLinks = [
@@ -117,7 +117,7 @@ const Layout = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-ps-accent dark:bg-indigo-600 flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
                 <Stethoscope size={18} />
               </div>
               <div className="hidden sm:block">
@@ -194,7 +194,7 @@ const Layout = () => {
           {/* Mobile sidebar header */}
           <div className="flex items-center justify-between p-4 border-b border-ps-border lg:hidden">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-ps-accent dark:bg-indigo-600 flex items-center justify-center text-white shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
                 <Stethoscope size={18} />
               </div>
               <span className="font-semibold text-sm text-ps-ink-1">PoliSync</span>

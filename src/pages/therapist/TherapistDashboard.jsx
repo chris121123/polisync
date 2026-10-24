@@ -137,7 +137,7 @@ const TherapistDashboard = () => {
                     className={clsx(
                       "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0",
                       isActive 
-                        ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
+                        ? "bg-ps-accent text-white shadow-sm" 
                         : "bg-ps-bg text-ps-ink-2 hover:bg-ps-border hover:text-ps-ink-1"
                     )}
                   >
@@ -345,7 +345,7 @@ const TherapistDashboard = () => {
                 <button
                   onClick={handleAddNote}
                   disabled={!noteContent.trim()}
-                  className="flex-1 py-3.5 bg-ps-accent dark:bg-indigo-600 hover:bg-ps-accent/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="flex-1 py-3.5 bg-ps-accent hover:bg-ps-accent/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
                 >
                   Save Progress Note
                 </button>

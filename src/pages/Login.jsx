@@ -121,7 +121,7 @@ const Login = () => {
     <div className="min-h-screen w-full flex bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors">
       
       {/* ── Left Decorative Brand Panel (Desktop) ────────────────────── */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-ps-accent dark:bg-indigo-600 p-12 text-white flex-col justify-between overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-ps-accent p-12 text-white flex-col justify-between overflow-hidden">
         {/* Top Header inside Brand Panel */}
         <div className="relative z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
@@ -154,7 +154,7 @@ const Login = () => {
         >
           {/* Mobile Header Logo */}
           <div className="flex flex-col items-center lg:items-start space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-ps-accent dark:bg-indigo-600 flex items-center justify-center text-white mb-2 shadow-sm shadow-ps-accent/25 lg:hidden">
+            <div className="w-12 h-12 rounded-2xl bg-ps-accent flex items-center justify-center text-white mb-2 shadow-sm shadow-ps-accent/25 lg:hidden">
               <Stethoscope size={24} />
             </div>
             <h2 className="font-display font-semibold text-3xl text-ps-ink-1">
@@ -309,7 +309,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || isLockedOut}
-              className="w-full py-3.5 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+              className="w-full py-3.5 bg-ps-accent hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

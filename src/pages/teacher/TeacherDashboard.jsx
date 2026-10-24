@@ -99,7 +99,7 @@ const TeacherDashboard = () => {
                 onClick={() => setSelectedDay(idx + 1)}
                 className={clsx(
                   "px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0",
-                  active ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1",
+                  active ? "bg-ps-accent text-white shadow-sm" : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1",
                   current && !active && "ring-2 ring-ps-accent/20"
                 )}
               >
@@ -208,7 +208,7 @@ const TeacherDashboard = () => {
 
                 <button
                   onClick={() => openAttendanceModal(session.id)}
-                  className="px-4 py-2.5 bg-ps-accent dark:bg-indigo-600 hover:bg-ps-accent/90 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 shrink-0"
+                  className="px-4 py-2.5 bg-ps-accent hover:bg-ps-accent/90 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 shrink-0"
                 >
                   <UserCheck size={16} />
                   Mark Attendance
@@ -316,7 +316,7 @@ const TeacherDashboard = () => {
                             { id: 'present', icon: Check, label: 'P', color: 'bg-ps-success' },
                             { id: 'absent', icon: X, label: 'A', color: 'bg-ps-danger' },
                             { id: 'late', icon: Clock, label: 'L', color: 'bg-ps-warn' },
-                            { id: 'excused', icon: FileText, label: 'E', color: 'bg-ps-accent dark:bg-indigo-600' }
+                            { id: 'excused', icon: FileText, label: 'E', color: 'bg-ps-accent' }
                           ].map(status => (
                             <button
                               key={status.id}
@@ -341,7 +341,7 @@ const TeacherDashboard = () => {
 
               <button
                 onClick={() => setShowAttendanceModal(null)}
-                className="w-full py-3.5 bg-ps-accent dark:bg-indigo-600 text-white font-bold rounded-xl hover:opacity-90 transition-colors"
+                className="w-full py-3.5 bg-ps-accent text-white font-bold rounded-xl hover:opacity-90 transition-colors"
               >
                 Done
               </button>

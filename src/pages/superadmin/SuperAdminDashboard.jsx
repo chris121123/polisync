@@ -133,7 +133,7 @@ const SuperAdminDashboard = () => {
         </div>
         <button
           onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
-          className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm self-start sm:self-auto"
+          className="flex items-center gap-2 bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm self-start sm:self-auto"
         >
           <UserPlus size={16} strokeWidth={2} />
           <span>Create User</span>
@@ -380,7 +380,7 @@ const SuperAdminDashboard = () => {
               className={clsx(
                 'flex flex-col items-start p-4 rounded-xl border text-left transition-all hover:shadow-sm active:scale-95 gap-2',
                 accent
-                  ? 'bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent dark:border-indigo-600'
+                  ? 'bg-ps-accent text-white border-ps-accent'
                   : 'bg-ps-bg border-ps-border hover:border-ps-accent/30 text-ps-ink-1'
               )}
             >

@@ -76,7 +76,7 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/schedule')}
-            className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
+            className="flex items-center gap-2 bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
           >
             <CalendarDays size={16} strokeWidth={2} />
             <span>Open Schedule</span>

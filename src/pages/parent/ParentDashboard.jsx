@@ -70,7 +70,7 @@ const ParentDashboard = () => {
                 className={clsx(
                   "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0",
                   isActive 
-                    ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
+                    ? "bg-ps-accent text-white shadow-sm" 
                     : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
                 )}
               >
@@ -240,7 +240,7 @@ const ParentDashboard = () => {
               Your account isn't linked to any students yet. This usually happens while our administration processes your registration.
             </p>
           </div>
-          <button className="px-6 py-3 bg-ps-accent dark:bg-indigo-600 text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+          <button className="px-6 py-3 bg-ps-accent text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
             Contact Support
           </button>
         </div>
