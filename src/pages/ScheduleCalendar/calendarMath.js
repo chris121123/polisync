@@ -33,6 +33,18 @@ export const weekDatesFor = (weekStart) => Array.from({ length: 5 }, (_, i) => {
   return d;
 });
 
+// Next n weekdays from `from`, today included when it is Mon-Fri; weekends roll to Monday.
+export const upcomingWeekdays = (n = 5, from = new Date()) => {
+  const days = [];
+  const d = new Date(from);
+  while (days.length < n) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+};
+
 export const filterSessionsForView = ({ sessions, filterType, calendarView, selectedDateISO, selectedDayOfWeek }) => {
   let filtered = sessions.filter(s => filterType === 'all' || s.type === filterType);
   if (calendarView === 'daily') {
