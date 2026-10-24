@@ -440,9 +440,7 @@ const UserManagement = () => {
                     <td className="px-6 py-4">
                       <span className={clsx(
                         "text-xs font-medium px-2.5 py-1 rounded-full",
-                        member.app_role === 'superadmin'
-                          ? "bg-ps-accent-soft text-ps-accent"
-                          : "bg-ps-bg text-ps-ink-2 border border-ps-border"
+                        ROLE_PILL_COLORS[member.app_role || 'teacher']
                       )}>
                         {member.app_role || 'teacher'}
                       </span>

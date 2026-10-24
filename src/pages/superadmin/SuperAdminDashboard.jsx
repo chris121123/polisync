@@ -24,23 +24,7 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import { StatCard } from '../admin/AdminDashboard';
-
-// ── Role accent map ────────────────────────────────────────────────────
-const ROLE_COLORS = {
-  superadmin: { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-600/10', dot: 'bg-violet-600 dark:bg-violet-400' },
-  admin:      { text: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-600/10',   dot: 'bg-amber-600 dark:bg-amber-400' },
-  teacher:    { text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-600/10',  dot: 'bg-indigo-600 dark:bg-indigo-400' },
-  therapist:  { text: 'text-teal-600 dark:text-teal-400',     bg: 'bg-teal-600/10',    dot: 'bg-teal-600 dark:bg-teal-400' },
-  parent:     { text: 'text-pink-600 dark:text-pink-400',     bg: 'bg-pink-600/10',    dot: 'bg-pink-600 dark:bg-pink-400' },
-};
-
-const ROLE_LABELS = {
-  superadmin: 'Super Admin',
-  admin: 'Admin',
-  teacher: 'Teacher',
-  therapist: 'Therapist',
-  parent: 'Parent',
-};
+import { ROLE_COLORS, ROLE_LABELS } from '../../lib/rolePalette';
 
 const EDGE_FUNCTIONS = [
   'admin-create-user',

@@ -27,10 +27,10 @@ export const getAuditBadge = (action) => {
 
 export const ROLE_PILL_COLORS = {
   all: 'bg-ps-primary text-white',
-  superadmin: 'bg-violet-600 text-white',
-  admin: 'bg-amber-600 text-white',
-  teacher: 'bg-indigo-600 text-white',
-  therapist: 'bg-teal-600 text-white',
-  parent: 'bg-pink-600 text-white',
+  superadmin: 'bg-role-superadmin/10 text-role-superadmin border border-role-superadmin/30',
+  admin: 'bg-role-admin/10 text-role-admin border border-role-admin/30',
+  teacher: 'bg-role-teacher/10 text-role-teacher border border-role-teacher/30',
+  therapist: 'bg-role-therapist/10 text-role-therapist border border-role-therapist/30',
+  parent: 'bg-role-parent/10 text-role-parent border border-role-parent/30',
 };
 export const ROLE_PILL_INACTIVE = 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
