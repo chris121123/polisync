@@ -50,6 +50,7 @@ const Login = () => {
     }
 
     setFieldErrors(newErrors);
+    return field === 'email' ? !newErrors.email : !newErrors.password;
   };
 
   const sendResetEmail = async (emailAddr) => {
@@ -60,6 +61,12 @@ const Login = () => {
     } catch (_) {
       // silent — don't reveal whether email exists
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (resetSent) return;
+    if (!validateField('email')) return;
+    await sendResetEmail(email);
   };
 
   const handleSubmit = async (e) => {
@@ -338,6 +345,23 @@ const Login = () => {
                 </>
               )}
             </button>
+
+            {/* Forgot Password */}
+            {resetSent ? (
+              <div className="text-xs text-ps-success font-medium bg-ps-success/10 p-3 rounded-xl border border-ps-success/20 flex items-center gap-2">
+                <ShieldCheck size={16} className="text-ps-success shrink-0" />
+                <span>A recovery email has been sent to <strong>{email.trim()}</strong>.</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading || isLockedOut}
+                className="w-full inline-flex items-center justify-center min-h-[44px] rounded-lg text-xs font-medium text-ps-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+              >
+                Forgot password?
+              </button>
+            )}
           </form>
 
           {/* Trust Badge at bottom */}
