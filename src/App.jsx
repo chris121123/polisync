@@ -8,6 +8,8 @@ import ProfilePage from './pages/ProfilePage';
 import Rooms from './pages/Rooms/Rooms';
 import Login from './pages/auth/Login';
 import RolePicker from './pages/auth/RolePicker';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import Settings from './pages/Settings';
@@ -66,6 +68,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<RolePicker />} />
         <Route path="/login/:role" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/about" element={<About />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/signup" element={<Navigate to="/login" replace />} />

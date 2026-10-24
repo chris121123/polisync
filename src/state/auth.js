@@ -74,8 +74,20 @@ export const createAuthActions = ({
   const requestPasswordReset = async (email) => {
     if (!supabase) return false;
     await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
+    return true;
+  };
+
+  const completePasswordReset = async (newPassword) => {
+    const failing = validatePassword(newPassword);
+    if (failing.length > 0) throw new Error(`Password must have: ${failing.map(r => r.label).join(', ')}.`);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) throw new Error('This reset link is invalid or has expired.');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    await supabase.from('profiles').update({ must_change_password: false }).eq('id', authUser.id);
+    await supabase.auth.signOut();
     return true;
   };
 
@@ -96,6 +108,7 @@ export const createAuthActions = ({
     logout,
     changePassword,
     requestPasswordReset,
+    completePasswordReset,
     verifyPassword,
     isSuperAdmin,
     isAdmin,
