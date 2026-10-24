@@ -51,7 +51,7 @@ const ParentDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-ps-ink-1">
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
             Hello, {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">Tracking your child's developmental progress and schedule.</p>
