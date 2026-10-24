@@ -22,6 +22,13 @@
   --color-ps-warn: #92400e;
   --color-ps-danger: #b91c1c;
 
+  /* Role inks — measured AA on their own 10% tint (ADR-017: source is src/lib/rolePalette.js) */
+  --color-role-superadmin: #1D4ED8;
+  --color-role-admin: #7A4C1F;
+  --color-role-teacher: #2F5F27;
+  --color-role-therapist: #025C8C;
+  --color-role-parent: #8A2457;
+
   /* Preserve legacy colors for compatibility but update to match feel */
   --color-rehab: #0ea5e9;
   --color-sped: #a855f7;
@@ -78,6 +85,11 @@
   --color-ps-success: #10b981;
   --color-ps-warn: #f59e0b;
   --color-ps-danger: #ef4444;
+  --color-role-superadmin: #6E93F5;
+  --color-role-admin: #C98A4B;
+  --color-role-teacher: #4ADE80;
+  --color-role-therapist: #7DD3FC;
+  --color-role-parent: #F472B6;
 }
 
 /* Base styles */
@@ -102,19 +114,6 @@ h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
 }
-
-/* Role Accents */
-.role-superadmin { @apply text-violet-600 dark:text-violet-400; }
-.role-admin      { @apply text-amber-600 dark:text-amber-400; }
-.role-teacher    { @apply text-indigo-600 dark:text-indigo-400; }
-.role-therapist  { @apply text-teal-600 dark:text-teal-400; }
-.role-parent     { @apply text-pink-600 dark:text-pink-400; }
-
-.bg-role-superadmin { @apply bg-violet-600; }
-.bg-role-admin      { @apply bg-amber-600; }
-.bg-role-teacher    { @apply bg-indigo-600; }
-.bg-role-therapist  { @apply bg-teal-600; }
-.bg-role-parent     { @apply bg-pink-600; }
 
 /* Interactive Micro-Animations */
 button, a, [role="button"] {
