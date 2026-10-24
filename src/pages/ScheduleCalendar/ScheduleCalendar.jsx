@@ -11,7 +11,7 @@ import {
   HOURS, formatHour, formatDateISO, getWeekStart, weekDatesFor,
   filterSessionsForView, groupSessionsByDay, slotHasConflict as slotHasConflictAt, TYPE_CONFIG,
 } from './calendarMath.js';
-import { isTherapistOrTeacher } from './staff.js';
+import { countAvailableStaff } from './staff.js';
 import { NowIndicator, SessionCard, WeeklySessionCard } from './SessionCard.jsx';
 import { AddSessionModal } from './AddSessionModal.jsx';
 import { ManageAvailabilityModal } from './ManageAvailabilityModal.jsx';
@@ -21,7 +21,7 @@ const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ScheduleCalendar = () => {
-  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify, staffAvailability, addStaffAvailability, removeStaffAvailability } = useGlobalState();
+  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify, staffAvailability } = useGlobalState();
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -60,10 +60,10 @@ const ScheduleCalendar = () => {
   const weekDates = weekDatesFor(weekStart);
 
   // Count available staff for selected date (excluding parents/admins)
-  const availableStaffCount = useMemo(() => {
-    const eligibleIds = new Set((staff || []).filter(isTherapistOrTeacher).map(s => s.id));
-    return staffAvailability?.filter(a => a.available_date === selectedDateISO && eligibleIds.has(a.staff_id)).length || 0;
-  }, [staff, staffAvailability, selectedDateISO]);
+  const availableStaffCount = useMemo(
+    () => countAvailableStaff(staff, staffAvailability, selectedDateISO),
+    [staff, staffAvailability, selectedDateISO]
+  );
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -827,9 +827,6 @@ const ScheduleCalendar = () => {
         onClose={() => setIsAvailabilityModalOpen(false)}
         staff={staff}
         staffAvailability={staffAvailability}
-        addStaffAvailability={addStaffAvailability}
-        removeStaffAvailability={removeStaffAvailability}
-        notify={notify}
       />
     </div>
   );

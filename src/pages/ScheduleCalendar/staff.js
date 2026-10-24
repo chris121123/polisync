@@ -17,3 +17,11 @@ export const isTherapistOrTeacher = (s) => {
   // Fallback if app_role is not populated
   return Boolean(s.role);
 };
+
+// Availability rows for a date, limited to therapists and teachers.
+// UNIQUE(staff_id, available_date) on the table, so no dedupe needed.
+export const countAvailableStaff = (staff, staffAvailability, dateISO) => {
+  if (!staff?.length || !staffAvailability?.length || !dateISO) return 0;
+  const eligibleIds = new Set(staff.filter(isTherapistOrTeacher).map(s => s.id));
+  return staffAvailability.filter(a => a.available_date === dateISO && eligibleIds.has(a.staff_id)).length;
+};

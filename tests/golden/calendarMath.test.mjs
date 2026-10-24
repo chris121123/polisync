@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  formatHour, getSessionDay, formatDateISO, getWeekStart, weekDatesFor,
+  formatHour, getSessionDay, formatDateISO, getWeekStart, weekDatesFor, upcomingWeekdays,
   filterSessionsForView, groupSessionsByDay, slotHasConflict,
 } from '../../src/pages/ScheduleCalendar/calendarMath.js';
 
@@ -45,6 +45,36 @@ test('weekDatesFor returns Monday to Friday', () => {
   ]);
   // The time of day of the week start is preserved.
   assert.equal(week[4].getHours(), 7);
+});
+
+test('upcomingWeekdays starts today on a weekday and skips the weekend', () => {
+  const friday = new Date(2026, 9, 23, 7, 30);
+  const days = upcomingWeekdays(5, friday);
+  assert.deepEqual(days.map(formatDateISO), [
+    '2026-10-23', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29',
+  ]);
+  assert.equal(days[1].getDay(), 1); // Monday
+  // `from` is not mutated.
+  assert.equal(formatDateISO(friday), '2026-10-23');
+});
+
+test('upcomingWeekdays starts on Monday from a weekend', () => {
+  const saturday = upcomingWeekdays(5, new Date(2026, 9, 24));
+  const sunday = upcomingWeekdays(5, new Date(2026, 9, 25));
+  assert.deepEqual(saturday.map(formatDateISO), [
+    '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30',
+  ]);
+  assert.deepEqual(sunday.map(formatDateISO), saturday.map(formatDateISO));
+});
+
+test('upcomingWeekdays keeps a mid-week start first and returns n days', () => {
+  const days = upcomingWeekdays(5, new Date(2026, 9, 21));
+  assert.equal(days[0].getDay(), 3); // Wednesday first
+  assert.deepEqual(days.map(formatDateISO), [
+    '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-26', '2026-10-27',
+  ]);
+  assert.equal(upcomingWeekdays().length, 5);
+  assert.equal(upcomingWeekdays(0).length, 0);
 });
 
 // id 1 has a sessionDate, 3/4/6 a dayOfWeek, 2 another sessionDate, 5 no date at all.
