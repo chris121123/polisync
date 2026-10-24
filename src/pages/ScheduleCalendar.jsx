@@ -1,23 +1,699 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock,
-  Users, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
+  Users, User, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
   LayoutGrid, List, BookOpen, MapPin, RefreshCw, TrendingUp, UserCheck
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGlobalState } from '../../context/GlobalStateContext';
-import {
-  HOURS, formatHour, formatDateISO, getWeekStart, weekDatesFor,
-  filterSessionsForView, groupSessionsByDay, slotHasConflict as slotHasConflictAt, TYPE_CONFIG,
-} from './calendarMath.js';
-import { isTherapistOrTeacher } from './staff.js';
-import { NowIndicator, SessionCard, WeeklySessionCard } from './SessionCard.jsx';
-import { AddSessionModal } from './AddSessionModal.jsx';
-import { ManageAvailabilityModal } from './ManageAvailabilityModal.jsx';
+import { useGlobalState } from '../context/GlobalStateContext';
 
+const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+const getRoomColor = () => ({
+  bg: 'bg-ps-bg',
+  border: 'border-ps-border',
+  text: 'text-ps-ink-1',
+  dot: 'bg-ps-accent',
+  header: 'bg-ps-surface',
+});
+
+const TYPE_CONFIG = {
+  sped:       { gradient: 'bg-sped',  light: 'bg-sped/10',  border: 'border-sped/20 dark:border-sped/20',  text: 'text-sped dark:text-sped',  badge: 'bg-sped/10 text-sped',  label: 'SPED'       },
+  rehab:      { gradient: 'bg-rehab',       light: 'bg-rehab/10',     border: 'border-rehab/20 dark:border-rehab/20',     text: 'text-rehab dark:text-ps-ink-1',     badge: 'bg-rehab/10 text-rehab',        label: 'Rehab'      },
+  playschool: { gradient: 'bg-ps-warn dark:bg-amber-700',   light: 'bg-ps-warn/10 dark:bg-amber-900/20',   border: 'border-ps-warn/20 dark:border-amber-800/50',   text: 'text-amber-900 dark:text-amber-100',   badge: 'bg-ps-warn/10 dark:bg-amber-900/40 text-ps-warn dark:text-amber-300',    label: 'Playschool' },
+};
+
+const formatHour = (h) => {
+  if (h === 12) return '12:00 PM';
+  if (h > 12)  return `${h - 12}:00 PM`;
+  return `${h}:00 AM`;
+};
+
+// Assign sessions to weekdays deterministically based on session id
+const getSessionDay = (session) => session.id % 5;
+
+// Helper to filter eligible therapists and teachers (exclude parents, admins, superadmins)
+const isTherapistOrTeacher = (s) => {
+  if (!s) return false;
+  const appRole = (s.app_role || '').toLowerCase();
+  const role = (s.role || '').toLowerCase();
+
+  // Explicitly exclude parent and admin roles
+  if (appRole === 'parent' || role === 'parent') return false;
+  if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
+  if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
+
+  // If app_role is defined, must be therapist or teacher
+  if (appRole) {
+    return ['therapist', 'teacher'].includes(appRole);
+  }
+
+  // Fallback if app_role is not populated
+  return Boolean(s.role);
+};
+
+// ─── Current-time indicator ──────────────────────────────────────────────────
+const NowIndicator = ({ rowHeight = 96 }) => {
+  const [top, setTop] = useState(null);
+
+  useEffect(() => {
+    const calc = () => {
+      const now = new Date();
+      const h = now.getHours() + now.getMinutes() / 60;
+      if (h >= 8 && h <= 18) setTop((h - 8) * rowHeight);
+      else setTop(null);
+    };
+    calc();
+    const id = setInterval(calc, 60_000);
+    return () => clearInterval(id);
+  }, [rowHeight]);
+
+  if (top === null) return null;
+
+  return (
+    <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top }}>
+      <div className="flex items-center gap-0">
+        <div className="w-2.5 h-2.5 rounded-full bg-ps-danger shadow-sm shrink-0 -ml-1" />
+        <div className="flex-1 h-0.5 bg-ps-danger/80" />
+      </div>
+    </div>
+  );
+};
+
+// ─── Session Card (Daily View) ───────────────────────────────────────────────
+const SessionCard = ({ session, staffList, isSelected, hasConflict, conflict, onClick, onDragEnd }) => {
+  const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
+  const provider = staffList.find(s => String(s.id) === String(session.therapistId));
+  const studentCount = session.studentIds?.length || 0;
+
+  const conflictLabel = conflict?.type === 'therapist' 
+    ? 'Staff Clash' 
+    : (conflict?.type === 'room' ? 'Room Overlap' : 'Conflict');
+
+  return (
+    <motion.div
+      layoutId={`session-${session.id}`}
+      onClick={onClick}
+      drag
+      dragSnapToOrigin={true}
+      dragMomentum={false}
+      onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
+      whileHover={{ scale: 1.01, zIndex: 30 }}
+      whileDrag={{ scale: 1.03, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
+      className={clsx(
+        'absolute left-1.5 right-1.5 rounded-xl cursor-grab transition-all duration-200 select-none overflow-hidden',
+        'bg-ps-surface border shadow-xs hover:shadow-md',
+        isSelected ? 'ring-2 ring-ps-accent ring-offset-1 z-20 border-transparent' : 'border-ps-border hover:border-ps-accent/40 z-10',
+        hasConflict ? 'border-ps-danger/50 ring-1 ring-ps-danger/50 bg-ps-danger/5' : ''
+      )}
+      style={{
+        top: `${(session.startHour - 8) * 96 + 2}px`,
+        height: `${session.span * 96 - 4}px`,
+      }}
+    >
+      {/* 3.5px solid left accent strip */}
+      <div className={clsx(
+        'absolute left-0 top-0 bottom-0 w-1',
+        hasConflict ? 'bg-ps-danger' : cfg.gradient
+      )} />
+
+      <div className="relative z-10 p-2.5 pl-3.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
+        
+        {/* Top line: Title & Badges */}
+        <div>
+          <div className="flex items-start justify-between gap-1.5 min-w-0">
+            <p className={clsx(
+              'font-semibold text-xs leading-snug line-clamp-1 truncate',
+              hasConflict ? 'text-ps-danger font-bold' : 'text-ps-ink-1'
+            )}>
+              {session.title}
+            </p>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {hasConflict ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-ps-danger/15 text-ps-danger border border-ps-danger/30">
+                  <AlertCircle size={10} className="shrink-0" />
+                  <span>{conflictLabel}</span>
+                </span>
+              ) : (
+                <span className={clsx('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-md shrink-0', cfg.badge)}>
+                  {cfg.label}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Time range */}
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-ps-ink-2 mt-1">
+            <Clock size={11} className="shrink-0 opacity-70" />
+            <span>{formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}</span>
+          </div>
+        </div>
+
+        {/* Bottom line: Provider and Student count */}
+        <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-ps-border/50 text-ps-ink-2 mt-auto">
+          <div className="flex items-center gap-1 truncate font-medium text-ps-ink-1 min-w-0">
+            <User size={11} className="shrink-0 text-ps-ink-2" />
+            <span className="truncate">{provider ? provider.name : 'Unassigned'}</span>
+          </div>
+          {studentCount > 0 && (
+            <div className="flex items-center gap-1 shrink-0 text-ps-ink-2 font-medium">
+              <Users size={11} className="shrink-0" />
+              <span>{studentCount}</span>
+            </div>
+          )}
+        </div>
+
+      </div>
+    </motion.div>
+  );
+};
+
+// ─── Weekly Session Card (compact) ───────────────────────────────────────────
+const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict, conflict, onClick, onDragEnd }) => {
+  const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
+  const provider = staffList.find(s => String(s.id) === String(session.therapistId));
+
+  const conflictLabel = conflict?.type === 'therapist' 
+    ? 'Clash' 
+    : (conflict?.type === 'room' ? 'Overlap' : 'Conflict');
+
+  return (
+    <motion.div
+      onClick={onClick}
+      drag
+      dragSnapToOrigin={true}
+      dragMomentum={false}
+      onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
+      whileHover={{ scale: 1.02, zIndex: 30 }}
+      whileDrag={{ scale: 1.04, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
+      className={clsx(
+        'absolute left-1 right-1 rounded-lg cursor-grab select-none overflow-hidden transition-all duration-200',
+        'bg-ps-surface border shadow-xs hover:shadow-md',
+        isSelected ? 'ring-2 ring-ps-accent z-20 border-transparent' : 'border-ps-border z-10',
+        hasConflict ? 'border-ps-danger/60 ring-1 ring-ps-danger/60 bg-ps-danger/5' : ''
+      )}
+      style={{
+        top: `${(session.startHour - 8) * 64 + 2}px`,
+        height: `${session.span * 64 - 4}px`,
+      }}
+    >
+      <div className={clsx(
+        'absolute left-0 top-0 bottom-0 w-1',
+        hasConflict ? 'bg-ps-danger' : cfg.gradient
+      )} />
+
+      <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
+        <div>
+          <div className="flex items-center justify-between gap-1">
+            <p className={clsx(
+              'font-semibold text-xs leading-tight truncate',
+              hasConflict ? 'text-ps-danger' : 'text-ps-ink-1'
+            )}>
+              {session.title}
+            </p>
+            {hasConflict ? (
+              <span className="text-[9px] font-semibold px-1 rounded bg-ps-danger/15 text-ps-danger">
+                {conflictLabel}
+              </span>
+            ) : (
+              <span className={clsx('text-[9px] font-semibold uppercase px-1 rounded shrink-0', cfg.badge)}>
+                {cfg.label}
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] font-medium text-ps-ink-2 mt-0.5 flex items-center gap-1">
+            <Clock size={9} className="opacity-70" />
+            {formatHour(session.startHour).replace(':00', '')}–{formatHour(session.startHour + session.span).replace(':00', '')}
+          </p>
+        </div>
+
+        {provider && (
+          <p className="text-[10px] font-medium text-ps-ink-1 truncate pt-0.5 border-t border-ps-border/40 flex items-center gap-1">
+            <User size={9} className="shrink-0 text-ps-ink-2" />
+            <span className="truncate">{provider.name}</span>
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+// ─── Manage Staff Availability Modal ──────────────────────────────────────────
+const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailability, addStaffAvailability, removeStaffAvailability, notify }) => {
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  });
+
+  if (!isOpen) return null;
+
+  const therapistsAndTeachers = staff.filter(isTherapistOrTeacher);
+
+  const availableIdsForDate = staffAvailability
+    .filter(a => a.available_date === selectedDate)
+    .map(a => a.staff_id);
+
+  const availableStaffForDate = therapistsAndTeachers.filter(s => availableIdsForDate.includes(s.id));
+
+  const handleToggle = async (staffId) => {
+    if (availableIdsForDate.includes(staffId)) {
+      await removeStaffAvailability(staffId, selectedDate);
+    } else {
+      await addStaffAvailability(staffId, selectedDate);
+    }
+  };
+
+  const handleSelectAll = async () => {
+    const allSelected = therapistsAndTeachers.length > 0 && therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id));
+    if (allSelected) {
+      // Deselect all
+      for (const s of therapistsAndTeachers) {
+        if (availableIdsForDate.includes(s.id)) {
+          await removeStaffAvailability(s.id, selectedDate);
+        }
+      }
+    } else {
+      // Select all
+      for (const s of therapistsAndTeachers) {
+        if (!availableIdsForDate.includes(s.id)) {
+          await addStaffAvailability(s.id, selectedDate);
+        }
+      }
+    }
+  };
+
+  const dateObj = new Date(selectedDate + 'T00:00:00');
+  const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: '100%' }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: '100%' }}
+        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 md:p-6 bg-ps-success dark:bg-emerald-700 relative shrink-0">
+          <div className="relative flex justify-between items-start">
+            <div>
+              <p className="text-white text-xs md:text-xs font-medium  mb-1">Staff Availability</p>
+              <h3 className="text-white text-lg md:text-xl font-semibold">Manage Schedule</h3>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-ps-surface/30 text-white transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
+          {/* Date Picker */}
+          <div>
+            <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Select Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-success focus:ring-2 focus:ring-ps-success/20 text-sm font-semibold transition-all"
+            />
+            <p className="text-xs text-ps-ink-2 font-medium mt-1">{dayLabel}</p>
+          </div>
+
+          {/* Available Count */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-ps-ink-2">
+              <span className="text-ps-success font-medium">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
+            </p>
+            <button
+              onClick={handleSelectAll}
+              className="text-xs font-medium text-ps-success hover:text-ps-success transition-colors px-3 py-1.5 rounded-lg hover:bg-ps-success/10"
+            >
+              {therapistsAndTeachers.length > 0 && therapistsAndTeachers.every(s => availableIdsForDate.includes(s.id)) ? 'Deselect All' : 'Select All'}
+            </button>
+          </div>
+
+          {/* Staff Checklist */}
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {therapistsAndTeachers.map(person => {
+              const isAvailable = availableIdsForDate.includes(person.id);
+              return (
+                <button
+                  key={person.id}
+                  onClick={() => handleToggle(person.id)}
+                  className={clsx(
+                    'w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left',
+                    isAvailable
+                      ? 'border-ps-success/20 bg-ps-success/10'
+                      : 'border-ps-border bg-ps-surface hover:border-ps-border'
+                  )}
+                >
+                  <div className={clsx(
+                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                    isAvailable ? 'bg-ps-success dark:bg-emerald-700 text-white' : 'bg-ps-bg text-ps-ink-2'
+                  )}>
+                    {isAvailable ? <CheckCircle2 size={16} /> : <UserCheck size={16} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={clsx('text-sm font-semibold truncate', isAvailable ? 'text-ps-success' : 'text-ps-ink-2')}>
+                      {person.name}
+                    </p>
+                    <p className="text-xs font-medium text-ps-ink-2 truncate">{person.role} · {person.department || 'General'}</p>
+                  </div>
+                  {isAvailable && (
+                    <span className="text-xs font-medium px-2 py-1 rounded-lg bg-ps-success/10 text-ps-success shrink-0">
+                      Available
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-4 md:px-6 pb-4 md:pb-6">
+          <button
+            onClick={() => { notify(`Availability saved for ${dayLabel}`); onClose(); }}
+            className="w-full py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <CheckCircle2 size={16} /> Done
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// ─── Add Session Modal ────────────────────────────────────────────────────────
+const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability, onOpenAvailability }) => {
+  const [step, setStep] = useState(1);
+
+  // Helper: get today's date in local timezone as YYYY-MM-DD
+  const getLocalToday = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
+  const [formData, setFormData] = useState({
+    title: '', therapistId: '', room: rooms[0]?.name || '',
+    startHour: 9, span: 1, type: 'sped', studentIds: [],
+    sessionDate: getLocalToday()
+  });
+
+  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: getLocalToday() }); };
+
+  // Filter staff by availability on the selected date
+  const availableStaff = useMemo(() => {
+    if (!formData.sessionDate) {
+      return []; // Must choose a date first to see available staff
+    }
+    
+    // If we have no availability records at all or none for this date, nobody is available
+    if (!staffAvailability || staffAvailability.length === 0) {
+      return [];
+    }
+
+    const availableIds = staffAvailability
+      .filter(a => a.available_date === formData.sessionDate)
+      .map(a => a.staff_id);
+      
+    if (availableIds.length === 0) return [];
+    
+    return staff.filter(s => isTherapistOrTeacher(s) && availableIds.includes(s.id));
+  }, [staff, staffAvailability, formData.sessionDate]);
+
+  const conflictMessage = useMemo(() => {
+    if (step !== 2) return null;
+    const { startHour, span, room, therapistId } = formData;
+    const end = startHour + span;
+
+    for (const s of sessions) {
+      const sEnd = s.startHour + s.span;
+      const overlaps = Math.max(startHour, s.startHour) < Math.min(end, sEnd);
+      if (overlaps) {
+        if (s.room === room) return `Room "${room}" is already booked during this time.`;
+        if (String(s.therapistId) === String(therapistId)) return `Provider is already booked during this time.`;
+      }
+    }
+    return null;
+  }, [formData, sessions, step]);
+
+  if (!isOpen) return null;
+
+  const typeCfg = TYPE_CONFIG[formData.type];
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
+      onClick={() => { reset(); onClose(); }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: "100%" }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: "100%" }}
+        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* header */}
+        <div className={clsx('p-4 md:p-6 relative shrink-0', formData.type === 'rehab' ? 'bg-sky-700' : formData.type === 'sped' ? 'bg-purple-700' : typeCfg.gradient)}>
+          <div className="relative flex justify-between items-start">
+            <div>
+              <p className="text-white text-xs md:text-xs font-medium  mb-1">New Session</p>
+              <h3 className="text-white text-lg md:text-xl font-semibold">{formData.title || 'Untitled Session'}</h3>
+            </div>
+            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="relative flex gap-2 mt-4">
+            {[1, 2].map(s => (
+              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-ps-surface' : 'bg-white/30')} />
+            ))}
+          </div>
+        </div>
+
+        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
+          {step === 1 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Title *</label>
+                <input
+                  autoFocus
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
+                  placeholder="e.g., SPED Group B Morning"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Category</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
+                    <button
+                      key={key}
+                      onClick={() => setFormData({ ...formData, type: key })}
+                      className={clsx(
+                        'py-3 rounded-xl text-xs font-medium border-2 transition-all',
+                        formData.type === key
+                          ? `bg-ps-accent dark:bg-indigo-600 text-white border-transparent shadow-md`
+                          : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
+                      )}
+                    >
+                      {cfg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Session Date */}
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Date *</label>
+                <input
+                  type="date"
+                  value={formData.sessionDate}
+                  min={getLocalToday()}
+                  onChange={e => {
+                    setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
+                  }}
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
+                />
+                {formData.sessionDate && (
+                  <p className="text-xs text-ps-ink-2 font-medium mt-1">
+                    {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    {availableStaff.length > 0 && (
+                      <span className="text-ps-success ml-2">· {availableStaff.length} staff available</span>
+                    )}
+                  </p>
+                )}
+                {formData.sessionDate && !availableStaff.length && (
+                  <p className="text-xs text-ps-warn bg-ps-warn/10 dark:text-ps-warn font-medium mt-1 flex items-center gap-1 px-2 py-1 rounded-lg">
+                    <AlertCircle size={10} /> No staff marked available for this date —
+                    <button onClick={onOpenAvailability} className="ml-1 underline font-medium">Open Availability</button> to mark staff first.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Provider / Therapist *</label>
+                <p className="text-xs text-ps-ink-2 font-medium mb-2 -mt-1">
+                  The staff member (therapist or teacher) responsible for conducting this session.
+                </p>
+                <select
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
+                  value={formData.therapistId}
+                  onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
+                >
+                  <option value="">{availableStaff.length === 0 ? 'No staff available for this date' : 'Select staff member…'}</option>
+                  {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
+                </select>
+                {formData.sessionDate && availableStaff.length > 0 && (
+                  <p className="text-xs text-ps-success font-medium mt-1 flex items-center gap-1">
+                    <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Assign Students</label>
+                <select
+                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
+                  onChange={e => {
+                    const sid = e.target.value;
+                    if (sid && !formData.studentIds.includes(sid)) {
+                      setFormData({ ...formData, studentIds: [...formData.studentIds, sid] });
+                    }
+                  }}
+                  value=""
+                >
+                  <option value="" disabled hidden>— Add a student —</option>
+                  {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.studentIds.map(sid => {
+                    const student = students.find(s => String(s.id) === String(sid));
+                    return (
+                      <span key={sid} className="px-2 py-1 bg-ps-accent-soft text-ps-accent text-xs font-medium rounded-lg flex items-center gap-1">
+                        {student?.name}
+                        <button onClick={() => setFormData({ ...formData, studentIds: formData.studentIds.filter(id => id !== sid) })}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 2 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Venue / Room</label>
+                <div className="grid grid-cols-2 max-h-[160px] overflow-y-auto pr-2 gap-2 pb-2">
+                  {rooms.map((r, idx) => {
+                    const rc = getRoomColor(idx);
+                    return (
+                      <button
+                        key={r.name}
+                        onClick={() => setFormData({ ...formData, room: r.name })}
+                        className={clsx(
+                          'px-4 py-3 rounded-xl text-xs font-medium border-2 flex items-center justify-between gap-2 transition-all',
+                          formData.room === r.name ? `${rc.bg} ${rc.border} ${rc.text} shadow-sm` : 'bg-ps-bg text-ps-ink-2 border-ps-border'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={clsx('w-2.5 h-2.5 rounded-full shrink-0', rc.dot)} />
+                          <span className="truncate">{r.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Start Time</label>
+                  <select
+                    className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
+                    value={formData.startHour}
+                    onChange={e => setFormData({ ...formData, startHour: parseInt(e.target.value) })}
+                  >
+                    {HOURS.slice(0, -1).map(h => <option key={h} value={h}>{formatHour(h)}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Duration</label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[1, 2, 3].map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setFormData({ ...formData, span: d })}
+                        className={clsx(
+                          'py-3 rounded-xl text-xs font-medium border-2 transition-all',
+                          formData.span === d ? 'bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent shadow-md' : 'bg-ps-bg text-ps-ink-2 border-ps-border'
+                        )}
+                      >
+                        {d}h
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {conflictMessage && (
+                  <div className="mt-4 p-3 bg-ps-danger/10 border border-ps-danger/20 rounded-xl flex items-start gap-2">
+                    <AlertCircle size={14} className="text-ps-danger shrink-0 mt-0.5" />
+                    <p className="text-xs font-semibold text-ps-danger">{conflictMessage}</p>
+                  </div>
+                )}
+              </div>
+              {/* Preview */}
+              <div className={clsx('p-4 rounded-xl border-2 flex items-center gap-3', typeCfg.light, typeCfg.border)}>
+                <div className={clsx('w-1 self-stretch rounded-full', typeCfg.gradient)} />
+                <div>
+                  <p className={clsx('font-semibold text-sm', typeCfg.text)}>{formData.title || '(untitled)'}</p>
+                  <p className="text-xs text-ps-ink-2 mt-0.5">
+                    {formData.room} · {formatHour(formData.startHour)} – {formatHour(formData.startHour + formData.span)} · {typeCfg.label}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="px-6 pb-6 flex gap-3">
+          {step === 2 && (
+            <button onClick={() => setStep(1)} className="px-6 py-3 text-sm font-medium text-ps-ink-2 hover:bg-ps-bg rounded-xl transition-colors border border-ps-border">
+              Back
+            </button>
+          )}
+          {step === 1 ? (
+            <button
+              onClick={() => setStep(2)}
+              disabled={!formData.title || !formData.therapistId}
+              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm"
+            >
+              Next: Choose Slot →
+            </button>
+          ) : (
+            <button
+              onClick={() => { onAdd(formData); reset(); onClose(); }}
+              disabled={!!conflictMessage}
+              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-sm flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={16} /> Create Session
+            </button>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ScheduleCalendar = () => {
@@ -36,6 +712,12 @@ const ScheduleCalendar = () => {
   // ── Selected Date State ──
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
+  const formatDateISO = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const selectedDateISO = formatDateISO(selectedDate);
 
   const navigateDate = (offset) => {
@@ -56,8 +738,21 @@ const ScheduleCalendar = () => {
 
   const goToToday = () => setSelectedDate(new Date());
 
+  // Get the Monday of the selected week
+  const getWeekStart = (d) => {
+    const day = d.getDay(); // 0=Sun, 1=Mon...
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust for Sunday
+    const mon = new Date(d);
+    mon.setDate(diff);
+    return mon;
+  };
+
   const weekStart = getWeekStart(selectedDate);
-  const weekDates = weekDatesFor(weekStart);
+  const weekDates = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
 
   // Count available staff for selected date (excluding parents/admins)
   const availableStaffCount = useMemo(() => {
@@ -98,19 +793,37 @@ const ScheduleCalendar = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, []);
 
-  const selectedDayOfWeek = selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1;
-
   // Filter sessions by type AND by selected date
-  const filteredSessions = useMemo(
-    () => filterSessionsForView({ sessions, filterType, calendarView, selectedDateISO, selectedDayOfWeek }),
-    [sessions, filterType, calendarView, selectedDateISO, selectedDayOfWeek]
-  );
+  const filteredSessions = useMemo(() => {
+    let filtered = sessions.filter(s => filterType === 'all' || s.type === filterType);
+    if (calendarView === 'daily') {
+      // Show sessions matching the selected date, or sessions with no date (legacy)
+      filtered = filtered.filter(s => {
+        if (s.sessionDate) return s.sessionDate === selectedDateISO;
+        // Legacy fallback: match by day_of_week
+        const dow = selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1;
+        return s.dayOfWeek === dow || s.dayOfWeek === undefined || s.dayOfWeek === null;
+      });
+    }
+    return filtered;
+  }, [sessions, filterType, calendarView, selectedDateISO, selectedDate]);
 
   // Group sessions by weekday for weekly view
-  const sessionsByDay = useMemo(
-    () => groupSessionsByDay(sessions, filterType, weekDates),
-    [sessions, filterType, weekDates]
-  );
+  const sessionsByDay = useMemo(() => {
+    const grouped = [[], [], [], [], []];
+    const typeFiltered = sessions.filter(s => filterType === 'all' || s.type === filterType);
+    typeFiltered.forEach(s => {
+      if (s.sessionDate) {
+        // Match sessions to weekDates
+        const idx = weekDates.findIndex(d => formatDateISO(d) === s.sessionDate);
+        if (idx >= 0) grouped[idx].push(s);
+      } else {
+        const day = getSessionDay(s);
+        grouped[day].push(s);
+      }
+    });
+    return grouped;
+  }, [sessions, filterType, weekDates]);
 
   // Stats for the selected date
   const totalStudents = new Set(filteredSessions.flatMap(s => s.studentIds)).size;
@@ -123,7 +836,20 @@ const ScheduleCalendar = () => {
     }
   };
 
-  const slotHasConflict = (hour) => slotHasConflictAt(sessions, selectedSession, hour);
+  // True when moving the selected session to `hour` would double-book the
+  // same therapist or room (same overlap logic as AddSessionModal.conflictMessage).
+  const slotHasConflict = (hour) => {
+    const s = selectedSession;
+    if (!s) return true;
+    const end = hour + s.span;
+    const dayOf = s => s.sessionDate || s.dayOfWeek;
+    return sessions.some(o =>
+      o.id !== s.id &&
+      dayOf(o) === dayOf(s) &&
+      Math.max(hour, o.startHour) < Math.min(end, o.startHour + o.span) &&
+      (String(o.therapistId) === String(s.therapistId) || o.room === s.room)
+    );
+  };
 
   const handleDragEnd = (sessionId, e, info, isWeekly = false) => {
     const session = sessions.find(s => s.id === sessionId);

@@ -143,7 +143,6 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: 'Only a superadmin can create a superadmin' }, 403, req)
     }
 
-    // Copy of src/lib/passwordPolicy.js (3 rules: length 8, uppercase, number); the two are kept in sync by hand.
     if (password.length < 8) {
       return json({ success: false, error: 'Password must be at least 8 characters' }, 422, req)
     }

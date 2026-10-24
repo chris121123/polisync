@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Stethoscope, Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { supabase } from '../lib/supabase';
 
 const MAX_ATTEMPTS = 5;
 
@@ -11,7 +12,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const { login, requestPasswordReset } = useGlobalState();
+  const { login } = useGlobalState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -52,10 +53,12 @@ const Login = () => {
   };
 
   const sendResetEmail = async (emailAddr) => {
-    if (resetSent) return;
+    if (!supabase || resetSent) return;
     try {
-      const sent = await requestPasswordReset(emailAddr);
-      if (sent) setResetSent(true);
+      await supabase.auth.resetPasswordForEmail(emailAddr.trim(), {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      setResetSent(true);
     } catch (_) {
       // silent — don't reveal whether email exists
     }

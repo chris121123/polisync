@@ -1,8 +1,69 @@
-// Local solver: pure, no network. Imports only the sibling pure modules.
+/**
+ * Smart Scheduler — Client-Side Module
+ *
+ * Mirrors the Edge Function logic for:
+ *   - Local dry-run previews (no network round-trip)
+ *   - Conflict detection used by ScheduleCalendar.jsx
+ *   - Invoking the server-side smart scheduler via Edge Function
+ *
+ * The core algorithm lives in the Edge Function for production use.
+ * This file provides:
+ *   1. `invokeSmartScheduler()` — calls the Edge Function
+ *   2. `localSmartSchedule()`   — runs a lighter version locally
+ *   3. `detectConflicts()`      — real-time conflict detection for the UI
+ *   4. `scoreSchedule()`        — evaluate any schedule's quality
+ */
 
-import { getCurrentDayOfWeek, hasTimeOverlap, timeToHour } from './time.js';
-import { DEFAULT_CONFIG } from './config.js';
-import { orderByHeuristic, scoreSchedule } from './scoring.js';
+import { supabase } from './supabase';
+
+// ─── Constants & Config ──────────────────────────────────────────────────────
+
+const DEFAULT_CONFIG = {
+  maxBacktrackDepth: 300,     // Lower than server for responsiveness
+  timeBudgetMs: 4000,
+  retryAttempts: 2,
+  minBreakMinutes: 15,
+  operatingStartHour: 8,
+  operatingEndHour: 17,
+  maxDailyHoursPerStudent: 4,
+  slotIncrementHours: 0.5,
+};
+
+// ─── 1. Edge Function Invocation ─────────────────────────────────────────────
+
+/**
+ * Calls the Supabase Edge Function `auto-scheduler` for production-grade
+ * scheduling with full backtracking and multi-attempt retry.
+ *
+ * @param {Object} options
+ * @param {number} [options.dayOfWeek] - 0=Mon, 4=Fri
+ * @param {boolean} [options.dryRun=false] - Preview without persisting
+ * @param {Object} [options.config] - Override scheduler config
+ * @returns {Promise<Object>} Schedule result with score, assignments, unscheduled
+ */
+export async function invokeSmartScheduler(options = {}) {
+  if (!supabase) {
+    return { success: false, error: 'Supabase not configured' };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('auto-scheduler', {
+      body: {
+        dayOfWeek: options.dayOfWeek ?? getCurrentDayOfWeek(),
+        dryRun: options.dryRun ?? false,
+        config: options.config ?? {},
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Smart scheduler invocation failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ─── 2. Local Smart Schedule (Lightweight) ───────────────────────────────────
 
 /**
  * Runs a local version of the smart scheduler using data already in memory.
@@ -99,6 +160,133 @@ export function localSmartSchedule({
   };
 }
 
+// ─── 3. Conflict Detection ───────────────────────────────────────────────────
+
+/**
+ * Detect all conflicts for a given session against existing sessions.
+ * Used by the UI for real-time conflict highlighting.
+ *
+ * @param {Object} newSession - The session to check
+ * @param {Array} existingSessions - All current sessions
+ * @returns {Array} List of conflict objects
+ */
+export function detectConflicts(newSession, existingSessions) {
+  const conflicts = [];
+  const newStart = newSession.startHour ?? newSession.start_hour;
+  const newSpan = newSession.span;
+  const newEnd = newStart + newSpan;
+  const newDay = newSession.dayOfWeek ?? newSession.day_of_week ?? 0;
+
+  for (const session of existingSessions) {
+    if (session.id === newSession.id) continue;
+
+    const existStart = session.startHour ?? session.start_hour;
+    const existSpan = session.span;
+    const existEnd = existStart + existSpan;
+    const existDay = session.dayOfWeek ?? session.day_of_week ?? 0;
+
+    if (newDay !== existDay) continue;
+
+    const overlap = Math.max(newStart, existStart) < Math.min(newEnd, existEnd);
+    if (!overlap) continue;
+
+    // Therapist conflict
+    const newTherapist = String(newSession.therapistId ?? newSession.therapist_id);
+    const existTherapist = String(session.therapistId ?? session.therapist_id);
+    if (newTherapist && existTherapist && newTherapist === existTherapist) {
+      conflicts.push({
+        type: 'therapist',
+        sessionIds: [newSession.id, session.id],
+        therapistId: newTherapist,
+        message: `Therapist double-booked at ${formatHour(Math.max(newStart, existStart))}`,
+      });
+    }
+
+    // Room conflict
+    const newRoom = newSession.room;
+    const existRoom = session.room;
+    if (newRoom && existRoom && newRoom === existRoom) {
+      conflicts.push({
+        type: 'room',
+        sessionIds: [newSession.id, session.id],
+        room: newRoom,
+        message: `Room "${newRoom}" double-booked`,
+      });
+    }
+
+    // Student conflict
+    const newStudents = newSession.studentIds ?? newSession.student_ids ?? [];
+    const existStudents = session.studentIds ?? session.student_ids ?? [];
+    const overlapping = newStudents.filter(id => existStudents.includes(id));
+    if (overlapping.length > 0) {
+      conflicts.push({
+        type: 'student',
+        sessionIds: [newSession.id, session.id],
+        studentIds: overlapping,
+        message: 'Student has conflicting session',
+      });
+    }
+  }
+
+  return conflicts;
+}
+
+// ─── 4. Scoring ──────────────────────────────────────────────────────────────
+
+/**
+ * Score a complete schedule. Higher is better.
+ */
+export function scoreSchedule(assignments, unscheduledCount = 0) {
+  let score = 0;
+
+  score += assignments.length * 10;
+  score -= unscheduledCount * 5;
+
+  // Group by student
+  const byStudent = new Map();
+  for (const a of assignments) {
+    const sid = a.studentId ?? a.student_id;
+    if (!byStudent.has(sid)) byStudent.set(sid, []);
+    byStudent.get(sid).push(a);
+  }
+
+  for (const [, group] of byStudent) {
+    const sorted = [...group].sort((a, b) => (a.startHour ?? a.start_hour) - (b.startHour ?? b.start_hour));
+    for (let i = 1; i < sorted.length; i++) {
+      const prevEnd = (sorted[i - 1].startHour ?? sorted[i - 1].start_hour) + (sorted[i - 1].duration ?? sorted[i - 1].span);
+      const gap = (sorted[i].startHour ?? sorted[i].start_hour) - prevEnd;
+      if (gap > 1.5) score -= 2;
+    }
+  }
+
+  for (const a of assignments) {
+    if ((a.startHour ?? a.start_hour) < 12) score += 3;
+  }
+
+  return score;
+}
+
+// ─── Internal helpers ────────────────────────────────────────────────────────
+
+function getCurrentDayOfWeek() {
+  const d = new Date().getDay();
+  return d === 0 ? 4 : d - 1;
+}
+
+function timeToHour(time) {
+  if (typeof time !== 'string') return 8;
+  const [h, m] = time.split(':').map(Number);
+  return h + (m || 0) / 60;
+}
+
+function formatHour(h) {
+  const hour = Math.floor(h);
+  const min = Math.round((h - hour) * 60);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${display}:${String(min).padStart(2, '0')} ${suffix}`;
+}
+
 function buildStudentAvailMap(studentAvailability) {
   const map = new Map();
   for (const sa of (studentAvailability || [])) {
@@ -111,6 +299,26 @@ function buildStudentAvailMap(studentAvailability) {
     });
   }
   return map;
+}
+
+function orderByHeuristic(pending, programs, studentAvailMap) {
+  return [...pending].sort((a, b) => {
+    const progA = programs.find(p => p.id === a.program_id);
+    const progB = programs.find(p => p.id === b.program_id);
+    const durA = a.preferred_duration_hours || progA?.default_duration_hours || 1;
+    const durB = b.preferred_duration_hours || progB?.default_duration_hours || 1;
+    const availA = (studentAvailMap.get(a.student_id) || []).reduce((s, w) => s + (w.endHour - w.startHour), 0) || 99;
+    const availB = (studentAvailMap.get(b.student_id) || []).reduce((s, w) => s + (w.endHour - w.startHour), 0) || 99;
+
+    // Most constrained first: fewest availability hours, then longest duration
+    const scoreA = (1 / availA) * 40 + durA * 10 + (11 - a.priority) * 5;
+    const scoreB = (1 / availB) * 40 + durB * 10 + (11 - b.priority) * 5;
+    return scoreB - scoreA;
+  });
+}
+
+function hasTimeOverlap(s1Start, s1End, s2Start, s2End) {
+  return Math.max(s1Start, s2Start) < Math.min(s1End, s2End);
 }
 
 function checkConflictLocal(candidate, existingSessions, assignments, studentAvail, config, dayOfWeek, studentAssignments) {
@@ -261,3 +469,5 @@ function solveBacktrack(ordered, index, currentAssignments, programs, teachers, 
   counters.depth++;
   solveBacktrack(ordered, index + 1, currentAssignments, programs, teachers, rooms, existingSessions, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters);
 }
+
+export default { invokeSmartScheduler, localSmartSchedule, detectConflicts, scoreSchedule };
