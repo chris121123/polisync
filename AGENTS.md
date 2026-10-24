@@ -8,7 +8,7 @@
 ## Stack / Entrypoints
 - React 19 JS (not TS), Vite 8, React Router 7, Tailwind 4 via `@tailwindcss/vite`, Framer Motion, `lucide-react`, `date-fns`, `clsx` + `tailwind-merge`
 - `src/main.jsx` → `GlobalStateProvider` → `src/App.jsx` → `Layout` (protected `/` shell)
-- `/login` public; `/signup` redirects to `/login`. SPA deploy: `netlify.toml` redirects `/*` → `/index.html`, publish `dist/`
+- `/login` public; `/signup` redirects to `/login`. SPA deploy: `vercel.json` / `netlify.toml` rewrite `/*` → `/index.html`, publish `dist/`
 
 ## State (do not bypass)
 - Single source of truth: `src/context/GlobalStateContext.jsx` via `useGlobalState()` hook
