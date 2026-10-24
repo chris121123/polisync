@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Stethoscope, Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
 
 const MAX_ATTEMPTS = 5;
@@ -118,45 +118,43 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors">
-      
-      {/* ── Left Decorative Brand Panel (Desktop) ────────────────────── */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-ps-accent p-12 text-white flex-col justify-between overflow-hidden">
-        {/* Top Header inside Brand Panel */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-            <Stethoscope size={22} className="text-white" />
-          </div>
-          <span className="font-display font-semibold text-xl tracking-tight">PoliSync</span>
-        </div>
+    <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-ps-bg font-sans text-ps-ink-1 transition-colors">
 
-        {/* Center Content */}
-        <div className="relative z-10 max-w-lg my-auto space-y-8">
-          <div className="space-y-4">
-            <h1 className="font-display font-bold text-4xl xl:text-5xl leading-tight">
-              PoliSync is scheduling and student-record software for special-education and therapy centers.
-            </h1>
+      {/* ── Left: Building + Brand Panel ─────────────────────────────── */}
+      <div className="relative h-[40vh] md:h-full md:w-1/2 shrink-0 overflow-hidden">
+        <img
+          src="/brand/building.jpg"
+          alt="Polikids Center for Development building"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.85)] via-[rgba(14,19,34,.6)] to-[rgba(37,99,235,.35)]"
+        ></div>
+        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
+          <div className="rounded-2xl bg-white/95 p-3 shadow-sm">
+            <img
+              src="/brand/polikids-logo.jpg"
+              alt="Polikids Center for Development logo"
+              className="h-14 w-14"
+            />
           </div>
-        </div>
-
-        {/* Bottom Tagline / Trust */}
-        <div className="relative z-10 text-xs text-white/80 font-medium">
-          © {new Date().getFullYear()} PoliSync Healthcare Solutions • Designed for Specialized Learning
+          <div>
+            <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
+            <p className="text-sm font-medium text-ps-sky">Center for Development</p>
+          </div>
         </div>
       </div>
 
       {/* ── Right Form Container ───────────────────────────────────────── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12 min-h-screen overflow-y-auto">
-        <motion.div 
+      <div className="flex-1 md:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12 md:overflow-y-auto">
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="max-w-md w-full space-y-6 sm:space-y-8 my-auto py-6"
+          className="bg-white/95 dark:bg-ps-surface/95 backdrop-blur rounded-2xl max-w-md w-full space-y-6 sm:space-y-8 my-auto p-6 sm:p-8"
         >
-          {/* Mobile Header Logo */}
-          <div className="flex flex-col items-center lg:items-start space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-ps-accent flex items-center justify-center text-white mb-2 shadow-sm shadow-ps-accent/25 lg:hidden">
-              <Stethoscope size={24} />
-            </div>
+          {/* Form Header */}
+          <div className="flex flex-col items-start space-y-2">
             <h2 className="font-display font-semibold text-3xl text-ps-ink-1">
               Sign In
             </h2>
@@ -194,14 +192,14 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => sendResetEmail(email)}
-                    className="text-xs font-medium text-ps-danger hover:underline inline-flex items-center gap-1"
+                    className="inline-flex items-center min-h-[44px] text-xs font-medium text-ps-danger hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
                   >
                     Send password reset email to {email.trim()} →
                   </button>
                   <button
                     type="button"
                     onClick={() => { setIsLockedOut(false); setFailedAttempts(0); setError(''); }}
-                    className="text-xs font-semibold text-ps-accent hover:underline text-left"
+                    className="min-h-[44px] text-xs font-semibold text-ps-accent hover:underline text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
                   >
                     Reset attempt counter
                   </button>
@@ -309,7 +307,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || isLockedOut}
-              className="w-full py-3.5 bg-ps-accent hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+              className="w-full py-3.5 bg-ps-accent hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -331,8 +329,8 @@ const Login = () => {
               <span>Secure access • Role-based • SPED Center</span>
             </div>
             <nav aria-label="About PoliSync" className="flex items-center gap-4">
-              <Link to="/about" className="hover:text-ps-accent hover:underline">About this system</Link>
-              <Link to="/faq" className="hover:text-ps-accent hover:underline">FAQ</Link>
+              <Link to="/about" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">About this system</Link>
+              <Link to="/faq" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">FAQ</Link>
             </nav>
           </div>
         </motion.div>
