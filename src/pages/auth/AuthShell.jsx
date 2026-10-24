@@ -10,13 +10,13 @@ const AuthShell = ({ children }) => (
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
+        className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.82)] via-[rgba(14,19,34,.58)] to-[rgba(37,99,235,.3)]"
       ></div>
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-t from-[rgba(14,19,34,.6)] via-[rgba(14,19,34,.15)] to-transparent"
       ></div>
-      <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
+      <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 md:gap-16 p-6 text-center md:items-start md:justify-start md:p-12 md:text-left">
         {/* full logo: source JPG is square, its own white bg blends with the card */}
         <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-sm">
           <img
@@ -28,7 +28,7 @@ const AuthShell = ({ children }) => (
         <div className="space-y-3 w-full max-w-2xl">
           <h1 className="font-display font-semibold text-3xl sm:text-4xl md:text-4xl lg:text-5xl tracking-tight text-white">PoliSync</h1>
           <p className="text-sm sm:text-base md:text-lg font-medium text-ps-sky">One secure hub for every session at Polikids.</p>
-          <p className="hidden md:block text-base lg:text-lg text-white/75 leading-relaxed">Schedule therapy and classroom sessions with automatic conflict checks, record attendance and notes, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
+          <p className="hidden md:block text-base md:text-lg lg:text-xl text-white/90 leading-relaxed">Schedule therapy and classroom sessions with automatic conflict checks, record attendance and notes, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
         </div>
       </div>
     </div>
