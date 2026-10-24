@@ -132,12 +132,15 @@ const Login = () => {
           className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.85)] via-[rgba(14,19,34,.6)] to-[rgba(37,99,235,.35)]"
         ></div>
         <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
-          <div className="rounded-2xl bg-white/95 p-3 shadow-sm">
-            <img
-              src="/brand/polikids-logo.jpg"
-              alt="Polikids Center for Development logo"
-              className="h-14 w-14"
-            />
+          {/* crown-only crop: the source is square with the wordmark below y=60% */}
+          <div className="rounded-2xl bg-white p-3 shadow-sm">
+            <div className="w-14 h-14 overflow-hidden flex items-center justify-center">
+              <img
+                src="/brand/polikids-logo.jpg"
+                alt="Polikids Center for Development logo"
+                className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]"
+              />
+            </div>
           </div>
           <div>
             <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>

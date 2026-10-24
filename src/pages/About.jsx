@@ -88,8 +88,9 @@ const About = () => (
     <header className="bg-ps-surface border-b border-ps-border">
       <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-ps-primary text-white flex items-center justify-center shrink-0">
-            <Stethoscope size={18} />
+          {/* crown-only crop: the source is square with the wordmark below y=60% */}
+          <div className="w-8 h-8 rounded-lg bg-white border border-ps-border overflow-hidden shrink-0 flex items-center justify-center">
+            <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]" />
           </div>
           <span className="font-display font-semibold text-base">PoliSync</span>
         </div>

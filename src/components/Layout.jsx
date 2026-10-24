@@ -117,8 +117,9 @@ const Layout = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0">
-                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="h-full w-full object-cover object-top" />
+              {/* crown-only crop: the source is square with the wordmark below y=60% */}
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]" />
               </div>
               <div className="hidden sm:block">
                 <h1 className="font-semibold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
@@ -194,8 +195,9 @@ const Layout = () => {
           {/* Mobile sidebar header */}
           <div className="flex items-center justify-between p-4 border-b border-ps-border lg:hidden">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0">
-                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="h-full w-full object-cover object-top" />
+              {/* crown-only crop: the source is square with the wordmark below y=60% */}
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]" />
               </div>
               <div className="leading-tight">
                 <span className="block font-semibold text-sm text-ps-ink-1">PoliSync</span>
