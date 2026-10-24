@@ -101,6 +101,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Chrome autofill repaints the field; keep the token surface and ink instead. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ps-ink-1);
+  -webkit-box-shadow: 0 0 0 100px var(--ps-surface) inset;
+  transition: background-color 9999s ease-out;
+}
+
 .hide-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
