@@ -372,7 +372,7 @@ export const GlobalStateProvider = ({ children }) => {
 
   const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
-  const { addSession, moveSession, deleteSession } = createSessionActions({
+  const { addSession, moveSession, deleteSession, fetchSessionNotes } = createSessionActions({
     sessions,
     setSessions,
     notify,
@@ -524,6 +524,7 @@ export const GlobalStateProvider = ({ children }) => {
     clearDatabase,
     fetchRecentAudit,
     saveSchedulingSettings,
+    fetchSessionNotes,
   };
 
   return (

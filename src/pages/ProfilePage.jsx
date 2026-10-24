@@ -4,12 +4,11 @@ import { ArrowLeft, User, Users, Mail, Phone, Calendar, FileText, CheckCircle2, 
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
-import { supabase } from '../lib/supabase';
 
 const ProfilePage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
-  const { staff, students, sessions, appRole, parentChildren, fetchParentChildren } = useGlobalState();
+  const { staff, students, sessions, appRole, parentChildren, fetchParentChildren, fetchStudentDocumentRows } = useGlobalState();
   const isAdminOnly = appRole === 'admin';
   const [studentDocs, setStudentDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
@@ -27,15 +26,13 @@ const ProfilePage = () => {
     if (type === 'student' && id && ['admin', 'superadmin', 'teacher', 'therapist'].includes(appRole)) {
       (async () => {
         setDocsLoading(true);
-        const { data } = await supabase
-          .from('student_documents')
-          .select('*')
-          .eq('student_id', id)
-          .order('created_at', { ascending: false });
+        const { data } = await fetchStudentDocumentRows(id);
         if (data) setStudentDocs(data);
         setDocsLoading(false);
       })();
     }
+    // Factory actions are state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, type, appRole]);
   
   const profile = type === 'staff' 

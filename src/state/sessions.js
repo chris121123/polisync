@@ -130,5 +130,13 @@ export const createSessionActions = ({
     }
   };
 
-  return { addSession, moveSession, deleteSession };
+  const fetchSessionNotes = async () => {
+    const { data } = await supabase
+      .from('session_notes')
+      .select('*, sessions(*), students(*)')
+      .order('created_at', { ascending: false });
+    return data;
+  };
+
+  return { addSession, moveSession, deleteSession, fetchSessionNotes };
 };
