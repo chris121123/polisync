@@ -179,7 +179,7 @@ const ScheduleCalendar = () => {
           <div className="px-6 py-3.5 sm:py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-ps-accent dark:bg-indigo-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-ps-primary flex items-center justify-center">
                   <CalendarIcon size={18} className="text-white" />
                 </div>
                 <div>
@@ -295,7 +295,7 @@ const ScheduleCalendar = () => {
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
-                className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
+                className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
               >
                 <Plus size={16} strokeWidth={2.5} /> Add Session
               </button>
@@ -401,7 +401,7 @@ const ScheduleCalendar = () => {
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={clsx(
                           'w-2 h-2 rounded-full shrink-0',
-                          roomSessions > 0 ? 'bg-ps-accent' : 'bg-ps-ink-2/40'
+                          roomSessions > 0 ? 'bg-ps-primary' : 'bg-ps-ink-2/40'
                         )} />
                         <span className="text-xs font-semibold text-ps-ink-1 truncate capitalize">{roomName}</span>
                       </div>
@@ -501,7 +501,7 @@ const ScheduleCalendar = () => {
                       <div className="flex items-center gap-2">
                         <div className={clsx(
                           'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium',
-                          isToday ? 'bg-ps-accent dark:bg-indigo-600 text-white shadow-sm' : 'bg-ps-bg text-ps-ink-2'
+                          isToday ? 'bg-ps-primary text-white shadow-sm' : 'bg-ps-bg text-ps-ink-2'
                         )}>
                           {dateNum}
                         </div>
@@ -779,7 +779,7 @@ const ScheduleCalendar = () => {
                                       <span className="text-ps-success text-xs mx-1">→</span>
                                       <span className="font-medium text-ps-success text-sm">{formatHour(newHour + selectedSession.span)}</span>
                                     </div>
-                                    <span className="text-xs font-medium px-2.5 py-1 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg transition-colors">
+                                    <span className="text-xs font-medium px-2.5 py-1 bg-ps-primary text-white rounded-lg transition-colors">
                                       Move
                                     </span>
                                   </div>

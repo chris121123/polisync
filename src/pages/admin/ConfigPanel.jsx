@@ -119,7 +119,7 @@ export const ConfigPanel = ({
         <button
           type="submit"
           disabled={configLoading}
-          className="px-5 py-2.5 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
+          className="px-5 py-2.5 bg-ps-primary text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
         >
           {configLoading ? 'Saving...' : 'Save Configuration'}
         </button>

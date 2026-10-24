@@ -133,7 +133,7 @@ const SuperAdminDashboard = () => {
         </div>
         <button
           onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
-          className="flex items-center gap-2 bg-ps-accent dark:bg-indigo-600 hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm self-start sm:self-auto"
+          className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm self-start sm:self-auto"
         >
           <UserPlus size={16} strokeWidth={2} />
           <span>Create User</span>
@@ -258,7 +258,7 @@ const SuperAdminDashboard = () => {
                   <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-ps-bg/60 transition-colors">
                     <div className={clsx(
                       'w-2 h-2 rounded-full shrink-0 mt-1.5',
-                      isDestructive ? 'bg-ps-danger' : isCreative ? 'bg-ps-success' : 'bg-ps-accent'
+                      isDestructive ? 'bg-ps-danger' : isCreative ? 'bg-ps-success' : 'bg-ps-primary'
                     )} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-ps-ink-1">
@@ -380,7 +380,7 @@ const SuperAdminDashboard = () => {
               className={clsx(
                 'flex flex-col items-start p-4 rounded-xl border text-left transition-all hover:shadow-sm active:scale-95 gap-2',
                 accent
-                  ? 'bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent dark:border-indigo-600'
+                  ? 'bg-ps-primary text-white border-ps-accent'
                   : 'bg-ps-bg border-ps-border hover:border-ps-accent/30 text-ps-ink-1'
               )}
             >

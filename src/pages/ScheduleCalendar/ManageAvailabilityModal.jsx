@@ -143,7 +143,7 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
         <div className="px-4 md:px-6 pb-4 md:pb-6">
           <button
             onClick={() => { notify(`Availability saved for ${dayLabel}`); onClose(); }}
-            className="w-full py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2"
+            className="w-full py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center justify-center gap-2"
           >
             <CheckCircle2 size={16} /> Done
           </button>

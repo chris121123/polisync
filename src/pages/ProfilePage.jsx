@@ -65,7 +65,7 @@ const ProfilePage = () => {
       </div>
       <h2 className="text-xl font-semibold text-ps-ink-1 mb-1">Profile Not Found</h2>
       <p className="text-sm text-ps-ink-2 mb-6">The requested profile does not exist or has been removed.</p>
-      <Link to={isAdminOnly ? '/directory' : '/dashboard'} className="px-4 py-2 bg-ps-accent dark:bg-indigo-600 text-white rounded-xl text-sm font-medium hover:opacity-90 transition-colors">
+      <Link to={isAdminOnly ? '/directory' : '/dashboard'} className="px-4 py-2 bg-ps-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-colors">
         {isAdminOnly ? 'Return to Directory' : 'Back to Dashboard'}
       </Link>
     </div>

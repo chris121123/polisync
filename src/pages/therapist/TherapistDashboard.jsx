@@ -69,7 +69,7 @@ const TherapistDashboard = () => {
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-ps-ink-1">
               My Caseload
             </h1>
-            <div className="h-1 w-full bg-ps-accent rounded-full mt-1 opacity-80" />
+            <div className="h-1 w-full bg-ps-primary rounded-full mt-1 opacity-80" />
           </div>
           <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">
             Clinical management and developmental notes for your weekly students.
@@ -137,7 +137,7 @@ const TherapistDashboard = () => {
                     className={clsx(
                       "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0",
                       isActive 
-                        ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
+                        ? "bg-ps-primary text-white shadow-sm" 
                         : "bg-ps-bg text-ps-ink-2 hover:bg-ps-border hover:text-ps-ink-1"
                     )}
                   >
@@ -199,7 +199,7 @@ const TherapistDashboard = () => {
                               const student = getStudent(sid);
                               return student ? (
                                 <div key={sid} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ps-surface border border-ps-border text-xs font-medium text-ps-ink-1">
-                                  <div className="w-4 h-4 rounded-full bg-ps-accent/10 text-ps-accent text-xs font-bold flex items-center justify-center">
+                                  <div className="w-4 h-4 rounded-full bg-ps-primary/10 text-ps-accent text-xs font-bold flex items-center justify-center">
                                     {student.name.charAt(0)}
                                   </div>
                                   <span>{student.name}</span>
@@ -345,7 +345,7 @@ const TherapistDashboard = () => {
                 <button
                   onClick={handleAddNote}
                   disabled={!noteContent.trim()}
-                  className="flex-1 py-3.5 bg-ps-accent dark:bg-indigo-600 hover:bg-ps-accent/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="flex-1 py-3.5 bg-ps-primary hover:bg-ps-primary/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
                 >
                   Save Progress Note
                 </button>

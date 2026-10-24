@@ -50,7 +50,7 @@ export const AuditPanel = ({
               className={clsx(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent',
                 auditCategory === id
-                  ? 'bg-ps-accent dark:bg-indigo-600 text-white'
+                  ? 'bg-ps-primary text-white'
                   : 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1'
               )}
             >

@@ -9,7 +9,7 @@ const getRoomColor = () => ({
   bg: 'bg-ps-bg',
   border: 'border-ps-border',
   text: 'text-ps-ink-1',
-  dot: 'bg-ps-accent',
+  dot: 'bg-ps-primary',
   header: 'bg-ps-surface',
 });
 
@@ -127,7 +127,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                       className={clsx(
                         'py-3 rounded-xl text-xs font-medium border-2 transition-all',
                         formData.type === key
-                          ? `bg-ps-accent dark:bg-indigo-600 text-white border-transparent shadow-md`
+                          ? `bg-ps-primary text-white border-transparent shadow-md`
                           : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
                       )}
                     >
@@ -259,7 +259,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                         onClick={() => setFormData({ ...formData, span: d })}
                         className={clsx(
                           'py-3 rounded-xl text-xs font-medium border-2 transition-all',
-                          formData.span === d ? 'bg-ps-accent dark:bg-indigo-600 text-white border-ps-accent shadow-md' : 'bg-ps-bg text-ps-ink-2 border-ps-border'
+                          formData.span === d ? 'bg-ps-primary text-white border-ps-accent shadow-md' : 'bg-ps-bg text-ps-ink-2 border-ps-border'
                         )}
                       >
                         {d}h
@@ -298,7 +298,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             <button
               onClick={() => setStep(2)}
               disabled={!formData.title || !formData.therapistId}
-              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm"
+              className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm"
             >
               Next: Choose Slot →
             </button>
@@ -306,7 +306,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             <button
               onClick={() => { onAdd(formData); reset(); onClose(); }}
               disabled={!!conflictMessage}
-              className="flex-1 py-3 text-sm font-medium bg-ps-accent dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-sm flex items-center justify-center gap-2"
+              className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-sm flex items-center justify-center gap-2"
             >
               <CheckCircle2 size={16} /> Create Session
             </button>

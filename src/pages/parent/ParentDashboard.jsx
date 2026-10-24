@@ -70,11 +70,11 @@ const ParentDashboard = () => {
                 className={clsx(
                   "flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0",
                   isActive 
-                    ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-sm" 
+                    ? "bg-ps-primary text-white shadow-sm" 
                     : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
                 )}
               >
-                <div className={clsx("w-2 h-2 rounded-full", isActive ? "bg-white" : "bg-ps-accent")} />
+                <div className={clsx("w-2 h-2 rounded-full", isActive ? "bg-white" : "bg-ps-primary")} />
                 {child.name}
               </button>
             );
@@ -125,7 +125,7 @@ const ParentDashboard = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-display font-bold text-ps-ink-1">Weekly Schedule</h2>
               <div className="flex items-center gap-2 text-xs font-bold text-ps-ink-2">
-                <div className="w-2 h-2 rounded-full bg-ps-accent" /> Active session day
+                <div className="w-2 h-2 rounded-full bg-ps-primary" /> Active session day
               </div>
             </div>
             
@@ -134,7 +134,7 @@ const ParentDashboard = () => {
                 <div key={day} className="flex flex-col gap-3">
                   <div className="flex items-center justify-between px-3 pb-1">
                     <span className="text-xs font-bold text-ps-ink-2 uppercase tracking-wide">{day.slice(0, 3)}</span>
-                    {weekSchedule[day]?.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-ps-accent" />}
+                    {weekSchedule[day]?.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-ps-primary" />}
                   </div>
                   <div className={clsx(
                     "rounded-2xl p-3 space-y-3 min-h-[220px] transition-colors",
@@ -240,7 +240,7 @@ const ParentDashboard = () => {
               Your account isn't linked to any students yet. This usually happens while our administration processes your registration.
             </p>
           </div>
-          <button className="px-6 py-3 bg-ps-accent dark:bg-indigo-600 text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+          <button className="px-6 py-3 bg-ps-primary text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
             Contact Support
           </button>
         </div>

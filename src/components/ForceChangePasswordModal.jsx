@@ -117,7 +117,7 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={handleSubmit}
               disabled={loading || !newPassword || !confirmPassword}
-              className="w-full py-3 bg-ps-warn dark:bg-amber-700 hover:bg-ps-warn/90 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-ps-warn text-white font-bold rounded-xl transition-colors flex justify-center items-center h-[48px] focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="w-full py-3 bg-ps-warn hover:bg-ps-warn/90 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-ps-warn text-white font-bold rounded-xl transition-colors flex justify-center items-center h-[48px] focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

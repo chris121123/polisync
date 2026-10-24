@@ -62,7 +62,7 @@ const SessionNotes = () => {
                 onClick={() => setFilter(type)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all shrink-0 ${
                   filter === type
-                    ? 'bg-ps-accent dark:bg-indigo-600 text-white'
+                    ? 'bg-ps-primary text-white'
                     : 'bg-ps-bg text-ps-ink-2 hover:bg-ps-border'
                 }`}
               >
@@ -79,7 +79,7 @@ const SessionNotes = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-sm font-bold text-ps-ink-1">{note.students?.name || 'Student'}</span>
-                    <span className="text-xs px-2 py-0.5 bg-ps-accent-soft dark:bg-ps-accent/10 text-ps-accent rounded-full capitalize">
+                    <span className="text-xs px-2 py-0.5 bg-ps-accent-soft dark:bg-ps-primary/10 text-ps-accent rounded-full capitalize">
                       {note.note_type}
                     </span>
                     <span className="text-xs text-ps-ink-2 flex items-center gap-1">

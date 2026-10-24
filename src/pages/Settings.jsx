@@ -43,7 +43,7 @@ const ThemeCard = ({ type, active, onClick, icon: Icon, description }) => {
         <div className="flex items-center gap-2.5">
           <div className={clsx(
             "p-2 rounded-xl transition-colors",
-            active ? "bg-ps-accent dark:bg-indigo-600 text-white" : "bg-ps-bg text-ps-ink-2"
+            active ? "bg-ps-primary text-white" : "bg-ps-bg text-ps-ink-2"
           )}>
             <Icon size={16} />
           </div>
@@ -101,7 +101,7 @@ const SlideOverDrawer = ({ isOpen, onClose, title, icon: Icon, children }) => (
             <div className="p-6 border-t border-ps-border bg-ps-bg/30">
               <button 
                 onClick={onClose}
-                className="w-full py-3 bg-ps-accent dark:bg-indigo-600 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+                className="w-full py-3 bg-ps-primary text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
               >
                 Close Drawer
               </button>
@@ -165,7 +165,7 @@ const Settings = () => {
                 className={clsx(
                   "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all text-left",
                   activeTab === item.id 
-                    ? "bg-ps-accent dark:bg-indigo-600 text-white shadow-md shadow-ps-accent/20" 
+                    ? "bg-ps-primary text-white shadow-md shadow-ps-accent/20" 
                     : item.danger 
                       ? "text-ps-danger hover:bg-ps-danger/10" 
                       : "text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"

@@ -43,7 +43,7 @@ export const RoomCard = ({ room, cfg, isSelected, setSelectedRoomId }) => (
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${Math.min((room.currentOccupancy / room.maxCapacity) * 100, 100)}%` }}
-          className={clsx("h-full rounded-full transition-all duration-1000", room.status === 'Over Capacity' ? "bg-ps-danger" : (room.currentOccupancy / room.maxCapacity > 0.8 ? "bg-ps-warn" : "bg-ps-accent"))}
+          className={clsx("h-full rounded-full transition-all duration-1000", room.status === 'Over Capacity' ? "bg-ps-danger" : (room.currentOccupancy / room.maxCapacity > 0.8 ? "bg-ps-warn" : "bg-ps-primary"))}
         />
       </div>
 
@@ -63,7 +63,7 @@ export const RoomCard = ({ room, cfg, isSelected, setSelectedRoomId }) => (
           </div>
           {room.therapist && (
             <div className="text-xs font-medium text-ps-ink-2 flex items-center gap-1">
-               <span className="w-1.5 h-1.5 rounded-full bg-ps-accent " />
+               <span className="w-1.5 h-1.5 rounded-full bg-ps-primary " />
                {room.therapist.split(' ')[0]}
             </div>
           )}
