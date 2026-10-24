@@ -1,0 +1,31 @@
+{
+  "worktree": {
+    "setup": "npm install && node -e \"require('fs').copyFileSync('C:/Users/beng/Documents/code_ni_chris/CAPSTONE_SYSTEM/polisync/.env','.env')\""
+  },
+  "scripts": {
+    "dev": {
+      "type": "service",
+      "command": "npm run dev"
+    },
+    "test": {
+      "command": "npm run test:golden"
+    },
+    "lint": {
+      "command": "npm run lint"
+    },
+    "build": {
+      "command": "npm run build"
+    }
+  },
+  "metadataGeneration": {
+    "branchName": {
+      "instructions": "kebab-case; prefix feat/ or fix/ when it will become a PR"
+    },
+    "commitMessage": {
+      "instructions": "Conventional Commits with a scope, e.g. fix(auth): stop crash on empty roster"
+    },
+    "pullRequest": {
+      "instructions": "Lead with a one-paragraph summary, include a Test plan section"
+    }
+  }
+}
