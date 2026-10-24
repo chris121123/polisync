@@ -356,6 +356,7 @@ export const GlobalStateProvider = ({ children }) => {
     updateUserRole,
     adminDeleteUser,
     toggleUserActive,
+    fetchRecentAudit,
   } = createUserAdminActions({
     user,
     staff,
@@ -380,7 +381,7 @@ export const GlobalStateProvider = ({ children }) => {
     notifyRoleUsers,
   });
 
-  const { clearDatabase } = createSettingsActions({
+  const { clearDatabase, saveSchedulingSettings } = createSettingsActions({
     setLoading,
     setSessions,
     setStudents,
@@ -520,7 +521,9 @@ export const GlobalStateProvider = ({ children }) => {
     toast,
     notify,
     loading,
-    clearDatabase
+    clearDatabase,
+    fetchRecentAudit,
+    saveSchedulingSettings,
   };
 
   return (

@@ -32,5 +32,22 @@ export const createSettingsActions = ({ setLoading, setSessions, setStudents, se
     }
   };
 
-  return { clearDatabase };
+  const saveSchedulingSettings = async (values, id) => {
+    if (!supabase) return { error: new Error('Database connection unavailable') };
+    const { error } = await supabase
+      .from('scheduling_settings')
+      .update({
+        operating_start_time: values.operating_start_time,
+        operating_end_time: values.operating_end_time,
+        allow_overbook: values.allow_overbook,
+        max_daily_hours_per_student: Number(values.max_daily_hours_per_student),
+        auto_schedule_enabled: values.auto_schedule_enabled,
+        min_break_minutes: Number(values.min_break_minutes),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id || 1);
+    return { error };
+  };
+
+  return { clearDatabase, saveSchedulingSettings };
 };

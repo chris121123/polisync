@@ -181,10 +181,21 @@ export const createUserAdminActions = ({
     }
   };
 
+  /** Admin-only: most recent audit rows, newest first. */
+  const fetchRecentAudit = async (limit = 30) => {
+    if (!supabase) return { data: null, error: null };
+    return supabase
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+  };
+
   return {
     adminCreateUser,
     updateUserRole,
     adminDeleteUser,
     toggleUserActive,
+    fetchRecentAudit,
   };
 };

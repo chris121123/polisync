@@ -53,7 +53,7 @@ function useConnectionStatus() {
 
 // ── Main Component ─────────────────────────────────────────────────────
 const SuperAdminDashboard = () => {
-  const { staff, user } = useGlobalState();
+  const { staff, user, fetchRecentAudit } = useGlobalState();
   const navigate = useNavigate();
   const connStatus = useConnectionStatus();
 
@@ -61,26 +61,23 @@ const SuperAdminDashboard = () => {
   const [auditLoading, setAuditLoading] = useState(true);
 
   // Fetch last 10 audit events on mount
-  const fetchRecentAudit = useCallback(async () => {
+  const loadRecentAudit = useCallback(async () => {
     setAuditLoading(true);
     try {
-      if (!supabase) return;
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await fetchRecentAudit(10);
       if (!error && data) setAuditLogs(data);
     } catch {
       // non-blocking
     } finally {
       setAuditLoading(false);
     }
+    // Factory actions are state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    fetchRecentAudit();
-  }, [fetchRecentAudit]);
+    loadRecentAudit();
+  }, [loadRecentAudit]);
 
   // ── Derived account metrics ──────────────────────────────────────────
   const totalAccounts = staff.length;
