@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { useGlobalState } from '../context/GlobalStateContext';
-import { parseDemoAccounts, DEMO_ROLE_LABELS } from '../lib/demoAccounts';
+import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalStateContext';
+import { parseDemoAccounts, DEMO_ROLE_LABELS } from '../../lib/demoAccounts';
+import AuthShell from './AuthShell';
+import { AUTH_ROLES } from './roles';
 
 const MAX_ATTEMPTS = 5;
 
 const Login = () => {
+  const { role } = useParams();
+  const activeRole = AUTH_ROLES.find(r => r.id === role);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const { login, requestPasswordReset } = useGlobalState();
+  const { login, logout, requestPasswordReset } = useGlobalState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -77,6 +81,12 @@ const Login = () => {
     try {
       const loggedInUser = await login(emailValue, passwordValue);
       if (loggedInUser) {
+        if (loggedInUser.app_role !== role) {
+          await logout();
+          setError('These credentials do not match the selected role.');
+          return;
+        }
+
         setFailedAttempts(0);
         setIsLockedOut(false);
 
@@ -135,40 +145,10 @@ const Login = () => {
     await performLogin(account.email, account.password);
   };
 
+  if (!activeRole) return <Navigate to="/login" replace />;
+
   return (
-    <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-ps-bg font-sans text-ps-ink-1 transition-colors">
-
-      {/* ── Left: Building + Brand Panel ─────────────────────────────── */}
-      <div className="relative h-[40vh] md:h-full md:w-1/2 shrink-0 overflow-hidden">
-        <img
-          src="/brand/building.jpg"
-          alt="Polikids Center for Development building"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
-        ></div>
-        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
-          {/* crown-only crop: the source is square with the wordmark below y=60% */}
-          <div className="rounded-2xl bg-white p-3 shadow-sm">
-            <div className="w-14 h-14 overflow-hidden flex items-center justify-center">
-              <img
-                src="/brand/polikids-logo.jpg"
-                alt="Polikids Center for Development logo"
-                className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]"
-              />
-            </div>
-          </div>
-          <div>
-            <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
-            <p className="text-sm font-medium text-ps-sky">Center for Development</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Right Form Container ───────────────────────────────────────── */}
-      <div className="flex-1 md:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12 md:overflow-y-auto">
+    <AuthShell>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -176,11 +156,17 @@ const Login = () => {
         >
           {/* Form Header */}
           <div className="flex flex-col items-start space-y-2">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-medium text-ps-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+            >
+              <ArrowLeft size={14} /> Choose a different role
+            </Link>
             <h2 className="font-display font-semibold text-3xl text-ps-ink-1">
-              Sign In
+              Sign in
             </h2>
             <p className="text-ps-ink-2 text-sm">
-              Enter your center credentials to access your dashboard.
+              Signing in as {activeRole.label}.
             </p>
           </div>
 
@@ -417,9 +403,7 @@ const Login = () => {
             </nav>
           </div>
         </motion.div>
-      </div>
-
-    </div>
+    </AuthShell>
   );
 };
 
