@@ -23,6 +23,7 @@ const RolePicker = () => {
   const { login } = useGlobalState();
   const [demoError, setDemoError] = useState('');
   const [demoLoading, setDemoLoading] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
   const demoAccounts = parseDemoAccounts(import.meta.env.VITE_DEMO_ACCOUNTS)
     .filter((account) => DEMO_ROLES.includes(account.role));
 
@@ -76,24 +77,32 @@ const RolePicker = () => {
 
         {demoAccounts.length > 0 && (
           <div className="space-y-3">
-            <div className="text-center space-y-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-ps-ink-2">Demo accounts</h3>
-              <p className="text-xs text-ps-ink-2">Tap a role to sign in.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.role}
-                  type="button"
-                  onClick={() => handleDemoLogin(account)}
-                  disabled={demoLoading}
-                  className="min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-xs font-medium text-ps-ink-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
-                >
-                  {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
-                </button>
-              ))}
-            </div>
-            {demoError && (
+            <button
+              type="button"
+              onClick={() => setShowDemo((s) => !s)}
+              aria-expanded={showDemo}
+              aria-controls="demo-accounts-grid"
+              className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+            >
+              <span className="block text-xs font-semibold uppercase tracking-wide text-ps-ink-2">Demo accounts</span>
+              <span className="block text-xs text-ps-ink-2">{showDemo ? 'Tap a role to sign in.' : 'Tap to show demo accounts.'}</span>
+            </button>
+            {showDemo && (
+              <div id="demo-accounts-grid" className="grid grid-cols-2 gap-2">
+                {demoAccounts.map((account) => (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleDemoLogin(account)}
+                    disabled={demoLoading}
+                    className="min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-xs font-medium text-ps-ink-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  >
+                    {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
+                  </button>
+                ))}
+              </div>
+            )}
+            {showDemo && demoError && (
               <p className="text-xs text-ps-danger font-medium text-center">{demoError}</p>
             )}
           </div>
