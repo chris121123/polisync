@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
-import { useGlobalState } from '../context/GlobalStateContext';
+import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalStateContext';
+import AuthShell from './AuthShell';
+import { AUTH_ROLES } from './roles';
 
 const MAX_ATTEMPTS = 5;
 
 const Login = () => {
+  const { role } = useParams();
+  const activeRole = AUTH_ROLES.find(r => r.id === role);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const { login, requestPasswordReset } = useGlobalState();
+  const { login, logout, requestPasswordReset } = useGlobalState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -49,6 +54,7 @@ const Login = () => {
     }
 
     setFieldErrors(newErrors);
+    return field === 'email' ? !newErrors.email : !newErrors.password;
   };
 
   const sendResetEmail = async (emailAddr) => {
@@ -61,20 +67,18 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isLockedOut) return;
-    if (!validateForm()) return;
-    
-    setError('');
+  const performLogin = async (emailValue, passwordValue) => {
     setLoading(true);
     
     try {
-      const trimmedEmail = email.trim();
-      const trimmedPassword = password.trim();
-
-      const loggedInUser = await login(trimmedEmail, trimmedPassword);
+      const loggedInUser = await login(emailValue, passwordValue);
       if (loggedInUser) {
+        if (loggedInUser.app_role !== role) {
+          await logout();
+          setError('These credentials do not match the selected role.');
+          return;
+        }
+
         setFailedAttempts(0);
         setIsLockedOut(false);
 
@@ -117,40 +121,18 @@ const Login = () => {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLockedOut) return;
+    if (!validateForm()) return;
+    setError('');
+    await performLogin(email.trim(), password);
+  };
+
+  if (!activeRole) return <Navigate to="/login" replace />;
+
   return (
-    <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-ps-bg font-sans text-ps-ink-1 transition-colors">
-
-      {/* ── Left: Building + Brand Panel ─────────────────────────────── */}
-      <div className="relative h-[40vh] md:h-full md:w-1/2 shrink-0 overflow-hidden">
-        <img
-          src="/brand/building.jpg"
-          alt="Polikids Center for Development building"
-          className="absolute inset-0 h-full w-full object-cover object-center"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
-        ></div>
-        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
-          {/* crown-only crop: the source is square with the wordmark below y=60% */}
-          <div className="rounded-2xl bg-white p-3 shadow-sm">
-            <div className="w-14 h-14 overflow-hidden flex items-center justify-center">
-              <img
-                src="/brand/polikids-logo.jpg"
-                alt="Polikids Center for Development logo"
-                className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]"
-              />
-            </div>
-          </div>
-          <div>
-            <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
-            <p className="text-sm font-medium text-ps-sky">Center for Development</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Right Form Container ───────────────────────────────────────── */}
-      <div className="flex-1 md:w-1/2 flex items-center justify-center p-4 sm:p-8 md:p-12 md:overflow-y-auto">
+    <AuthShell>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -158,11 +140,17 @@ const Login = () => {
         >
           {/* Form Header */}
           <div className="flex flex-col items-start space-y-2">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-medium text-ps-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+            >
+              <ArrowLeft size={14} /> Choose a different role
+            </Link>
             <h2 className="font-display font-semibold text-3xl text-ps-ink-1">
-              Sign In
+              Sign in
             </h2>
             <p className="text-ps-ink-2 text-sm">
-              Enter your center credentials to access your dashboard.
+              Signing in as {activeRole.label}.
             </p>
           </div>
 
@@ -227,12 +215,15 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-ps-ink-2">
+              <label htmlFor="login-email" className="block text-xs font-medium text-ps-ink-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   value={email}
                   disabled={isLockedOut}
@@ -258,13 +249,16 @@ const Login = () => {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-ps-ink-2">
+              <label htmlFor="login-password" className="block text-xs font-medium text-ps-ink-2">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
                 <input
-                  type="password"
+                  id="login-password"
+                  name="password"
+                  autoComplete="current-password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   disabled={isLockedOut}
                   onChange={(e) => {
@@ -273,17 +267,32 @@ const Login = () => {
                   }}
                   onBlur={() => validateField('password')}
                   placeholder="••••••••"
-                  className={`w-full pl-11 pr-4 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
+                  className={`w-full pl-11 pr-12 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
                     fieldErrors.password
                       ? 'border-ps-danger ring-2 ring-ps-danger/20'
                       : 'border-ps-border focus:border-ps-accent focus:ring-4 focus:ring-ps-accent/10'
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  // keeps focus and caret in the input instead of firing its blur validation
+                  onMouseDown={(e) => e.preventDefault()}
+                  disabled={isLockedOut}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-ps-ink-2 hover:text-ps-ink-1 disabled:opacity-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               {fieldErrors.password && (
                 <p className="text-xs text-ps-danger font-medium flex items-center gap-1 mt-1">
                   <AlertCircle size={12} /> {fieldErrors.password}
                 </p>
+              )}
+              {password.length > 0 && password !== password.trim() && (
+                <p className="text-xs text-ps-warn font-medium">Spaces at the start or end count as part of your password.</p>
               )}
             </div>
 
@@ -323,6 +332,14 @@ const Login = () => {
                 </>
               )}
             </button>
+
+            {/* Forgot Password */}
+            <Link
+              to="/forgot-password"
+              className="w-full inline-flex items-center justify-center min-h-[44px] rounded-lg text-xs font-medium text-ps-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+            >
+              Forgot password?
+            </Link>
           </form>
 
           {/* Trust Badge at bottom */}
@@ -337,9 +354,7 @@ const Login = () => {
             </nav>
           </div>
         </motion.div>
-      </div>
-
-    </div>
+    </AuthShell>
   );
 };
 
