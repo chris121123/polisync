@@ -25,10 +25,10 @@ const AuthShell = ({ children }) => (
             className="aspect-square object-contain w-20 sm:w-32"
           />
         </div>
-        <div className="space-y-2 max-w-sm">
-          <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
-          <p className="text-sm font-medium text-ps-sky">One secure hub for every session at Polikids.</p>
-          <p className="hidden md:block text-sm text-white/75 leading-relaxed">Schedule therapy and classroom sessions with automatic conflict checks, record attendance and notes, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
+        <div className="space-y-3 w-full max-w-2xl">
+          <h1 className="font-display font-semibold text-3xl sm:text-4xl md:text-4xl lg:text-5xl tracking-tight text-white">PoliSync</h1>
+          <p className="text-sm sm:text-base md:text-lg font-medium text-ps-sky">One secure hub for every session at Polikids.</p>
+          <p className="hidden md:block text-base lg:text-lg text-white/75 leading-relaxed">Schedule therapy and classroom sessions with automatic conflict checks, record attendance and notes, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
         </div>
       </div>
     </div>
