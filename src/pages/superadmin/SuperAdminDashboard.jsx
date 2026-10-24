@@ -304,7 +304,7 @@ const SuperAdminDashboard = () => {
               <CheckCircle2 size={14} className="text-ps-success" />
             </div>
             <p className="text-xs text-ps-ink-2 truncate">{user?.email || '—'}</p>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 dark:text-violet-400">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-role-superadmin">
               <Shield size={11} /> Super Administrator
             </span>
           </div>

@@ -276,38 +276,38 @@ const Settings = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                  <div className="p-4 rounded-2xl border-l-4 border-l-violet-600 bg-ps-bg/40 space-y-2">
+                  <div className="p-4 rounded-2xl border-l-4 border-l-role-superadmin bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-violet-700 dark:text-violet-400">Super Administrator</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-violet-600/10 text-violet-700 dark:text-violet-400 font-medium">superadmin</span>
+                      <span className="text-xs font-semibold text-role-superadmin">Super Administrator</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-role-superadmin/10 text-role-superadmin font-medium">superadmin</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Platform overview dashboard, user account management (create, delete, activate, change roles), audit trail inspection, platform scheduling configuration, and system settings.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-amber-600 bg-ps-bg/40 space-y-2">
+                  <div className="p-4 rounded-2xl border-l-4 border-l-role-admin bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Center Administrator</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-600/10 text-amber-800 dark:text-amber-400 font-medium">admin</span>
+                      <span className="text-xs font-semibold text-role-admin">Center Administrator</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-role-admin/10 text-role-admin font-medium">admin</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Clinical operations dashboard, session scheduling (manual and auto-scheduler), staff and student directory, room management, and conflict detection.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-teal-600 bg-ps-bg/40 space-y-2">
+                  <div className="p-4 rounded-2xl border-l-4 border-l-role-therapist bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-teal-700 dark:text-teal-400">Clinical Therapist</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-teal-600/10 text-teal-700 dark:text-teal-400 font-medium">therapist</span>
+                      <span className="text-xs font-semibold text-role-therapist">Clinical Therapist</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-role-therapist/10 text-role-therapist font-medium">therapist</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Personal therapy caseload dashboard and session notes — view assigned sessions, write progress notes, and record session ratings.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-indigo-600 bg-ps-bg/40 space-y-2">
+                  <div className="p-4 rounded-2xl border-l-4 border-l-role-teacher bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-400">Faculty Teacher</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 font-medium">teacher</span>
+                      <span className="text-xs font-semibold text-role-teacher">Faculty Teacher</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-role-teacher/10 text-role-teacher font-medium">teacher</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Classroom dashboard — view assigned teaching sessions, track daily attendance for enrolled students.</p>
                   </div>
-                  <div className="p-4 rounded-2xl border-l-4 border-l-pink-600 bg-ps-bg/40 space-y-2">
+                  <div className="p-4 rounded-2xl border-l-4 border-l-role-parent bg-ps-bg/40 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-pink-700 dark:text-pink-400">Parent / Guardian</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-pink-600/10 text-pink-700 dark:text-pink-400 font-medium">parent</span>
+                      <span className="text-xs font-semibold text-role-parent">Parent / Guardian</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-role-parent/10 text-role-parent font-medium">parent</span>
                     </div>
                     <p className="text-xs text-ps-ink-2 leading-relaxed">Child dashboard — view the verified schedule, program enrollment status, and upcoming sessions for linked children.</p>
                   </div>
