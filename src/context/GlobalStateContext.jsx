@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { invokeSmartScheduler, localSmartSchedule } from '../lib/scheduler';
-import { validatePassword } from '../lib/passwordPolicy';
+import { findAllConflicts } from '../lib/scheduling/conflicts';
+import { createNotificationActions } from '../state/notifications';
+import { createUserAdminActions } from '../state/userAdmin';
+import { createRoomActions } from '../state/rooms';
+import { createDirectoryActions } from '../state/directory';
+import { createSessionActions } from '../state/sessions';
+import { createSettingsActions } from '../state/settings';
+import { createAttendanceActions } from '../state/attendance';
+import { createDocumentActions } from '../state/documents';
+import { createSchedulingActions } from '../state/scheduling';
+import { createAuthActions } from '../state/auth';
 
 const GlobalStateContext = createContext();
-
-// functions.invoke leaves `data` empty on non-2xx; the real reason is in error.context.
-const invokeError = async (error) => {
-  try {
-    return (await error.context?.json())?.error ?? error.message;
-  } catch {
-    return error.message;
-  }
-};
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalState = () => {
@@ -325,30 +325,7 @@ export const GlobalStateProvider = ({ children }) => {
   // --- DERIVED STATE / ACTIONS ---
 
   // Check for conflicts
-  const conflicts = useMemo(() => {
-    const list = [];
-    sessions.forEach((s1, i) => {
-      sessions.forEach((s2, j) => {
-        if (i >= j) return;
-        // Check time overlap
-        const s1End = s1.startHour + s1.span;
-        const s2End = s2.startHour + s2.span;
-        const overlap = Math.max(s1.startHour, s2.startHour) < Math.min(s1End, s2End);
-
-        if (overlap) {
-          // Therapist conflict
-          if (s1.therapistId === s2.therapistId) {
-            list.push({ type: 'therapist', sessionIds: [s1.id, s2.id], therapistId: s1.therapistId, startHour: Math.max(s1.startHour, s2.startHour) });
-          }
-          // Room conflict
-          if (s1.room === s2.room) {
-            list.push({ type: 'room', sessionIds: [s1.id, s2.id], room: s1.room, startHour: Math.max(s1.startHour, s2.startHour) });
-          }
-        }
-      });
-    });
-    return list;
-  }, [sessions]);
+  const conflicts = useMemo(() => findAllConflicts(sessions), [sessions]);
 
   const [user, setUser] = useState(null);
   const [appRole, setAppRole] = useState(null);
@@ -365,138 +342,89 @@ export const GlobalStateProvider = ({ children }) => {
     localStorage.setItem('polisync_dark_mode', String(val));
   };
 
-  const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      throw error;
-    }
+  const {
+    createNotification,
+    notifyRoleUsers,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification,
+    dispatchNotification,
+  } = createNotificationActions({ setNotifications, user, staff });
 
-    const [profileRes, roleRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', data.user.id).single(),
-      supabase.from('user_roles').select('role').eq('user_id', data.user.id).single(),
-    ]);
+  const {
+    adminCreateUser,
+    updateUserRole,
+    adminDeleteUser,
+    toggleUserActive,
+  } = createUserAdminActions({
+    user,
+    staff,
+    setStaff,
+    setUser,
+    setAppRole,
+    notify,
+    createNotification,
+    notifyRoleUsers,
+  });
 
-    if (!profileRes.data || !roleRes.data?.role) {
-      await supabase.auth.signOut();
-      throw new Error('Your account is not provisioned. Contact an administrator.');
-    }
+  const { addRoom } = createRoomActions({ setRooms, notify });
 
-    if (profileRes.data.is_active === false) {
-      await supabase.auth.signOut();
-      throw new Error('Your account has been deactivated. Contact an administrator.');
-    }
+  const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
-    const finalRole = roleRes.data.role;
-    setAppRole(finalRole);
-    setUser({ ...profileRes.data, app_role: finalRole });
+  const { addSession, moveSession, deleteSession } = createSessionActions({
+    sessions,
+    setSessions,
+    notify,
+    dispatchNotification,
+    createNotification,
+    notifyRoleUsers,
+  });
 
-    await loadCoreData();
+  const { clearDatabase } = createSettingsActions({
+    setLoading,
+    setSessions,
+    setStudents,
+    setRooms,
+    setStaff,
+    user,
+  });
 
-    return { ...profileRes.data, app_role: finalRole };
-  };
+  const {
+    addSessionNote,
+    markAttendance,
+    fetchAttendance,
+    assignParentToStudent,
+  } = createAttendanceActions({ user, notify });
 
-  /**
-   * Admin-only: Create a new user account via the Edge Function.
-   * The Edge Function uses the service_role key securely on the server.
-   */
-  const adminCreateUser = async (userData) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-create-user', {
-        body: {
-          email: userData.email,
-          password: userData.password,
-          name: userData.name,
-          role: userData.role,
-          department: userData.department || 'General',
-          phone: userData.phone || '',
-        },
-      });
+  const {
+    fetchStudentDocumentRows,
+    createSignedDocumentUrls,
+    saveStudentDocument,
+  } = createDocumentActions();
 
-      if (error) throw new Error(await invokeError(error));
-      if (!data?.success) throw new Error(data?.error || 'Failed to create user');
-
-      // Optimistically add the new user to the staff list for instant UI
-      const roleDisplayMap = {
-        admin: 'Administrator',
-        teacher: 'Teacher',
-        therapist: 'Therapist',
-        parent: 'Parent',
-      };
-      const newStaffEntry = {
-        id: data.user?.id,
-        name: userData.name,
-        email: userData.email,
-        role: roleDisplayMap[userData.role] || 'Staff',
-        app_role: userData.role,
-        department: userData.department || 'General',
-        phone: userData.phone || '',
-        type: 'Staff',
-        status: 'Active',
-        is_active: true,
-        must_change_password: true,
-      };
-      setStaff(prev => [...prev, newStaffEntry]);
-
-      notify(`User "${userData.name}" created successfully`, 'success');
-
-      // Send in-app notification to the new user about their account
-      if (data.user?.id) {
-        createNotification({
-          userId: data.user.id,
-          title: 'Welcome to PoliSync!',
-          message: `Your account has been created as a ${roleDisplayMap[userData.role] || 'Staff'} member. Please change your password on first login.`,
-          type: 'success',
-        });
-      }
-
-      // Notify other admins about the new user
-      notifyRoleUsers(['admin', 'superadmin'], {
-        title: 'New User Created',
-        message: `"${userData.name}" (${roleDisplayMap[userData.role] || 'Staff'}) has been added to the system.`,
-        type: 'info',
-      });
-
-      return data;
-    } catch (error) {
-      notify(error.message, 'error');
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setAppRole(null);
-    setParentChildren([]);
-    setMyAssignments([]);
-    setNotifications([]);
-  };
-
-  const changePassword = async (newPassword) => {
-    const failing = validatePassword(newPassword);
-    if (failing.length > 0) {
-      const message = `Password must have: ${failing.map(r => r.label).join(', ')}.`;
-      notify(message, 'error');
-      throw new Error(message);
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw error;
-    
-    // Once successful, remove the flag
-    const { error: dbError } = await supabase.from('profiles').update({ must_change_password: false }).eq('id', user.id);
-    if (dbError) throw dbError;
-    
-    setUser(prev => ({ ...prev, must_change_password: false }));
-    notify('Password changed successfully!', 'success');
-  };
-
-  const isSuperAdmin = () => appRole === 'superadmin';
-  const isAdmin = () => appRole === 'admin' || appRole === 'superadmin';
-  const isParent = () => appRole === 'parent';
-  const isTeacher = () => appRole === 'teacher';
-  const isTherapist = () => appRole === 'therapist';
-  const isTherapistOrTeacher = () => appRole === 'therapist' || appRole === 'teacher';
+  const {
+    login,
+    logout,
+    changePassword,
+    requestPasswordReset,
+    verifyPassword,
+    isSuperAdmin,
+    isAdmin,
+    isParent,
+    isTeacher,
+    isTherapist,
+    isTherapistOrTeacher,
+  } = createAuthActions({
+    user,
+    appRole,
+    setUser,
+    setAppRole,
+    setParentChildren,
+    setMyAssignments,
+    setNotifications,
+    loadCoreData,
+    notify,
+  });
 
   const fetchParentChildren = useCallback(async () => {
     if (appRole !== 'parent') return;
@@ -517,751 +445,24 @@ export const GlobalStateProvider = ({ children }) => {
     if (data) setMyAssignments(data);
   }, [appRole, user?.id]);
 
-  const addSessionNote = async (noteData) => {
-    try {
-      const { data, error } = await supabase.from('session_notes').insert([{
-        session_id: noteData.sessionId,
-        student_id: noteData.studentId,
-        created_by: user?.id,
-        note_type: noteData.noteType || 'general',
-        content: noteData.content,
-        rating: noteData.rating,
-      }]).select();
-      if (error) throw error;
-      if (data) notify('Session note added');
-      return data;
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  const markAttendance = async (sessionId, studentId, status, notes) => {
-    try {
-      const { data, error } = await supabase.from('attendance').upsert([{
-        session_id: sessionId,
-        student_id: studentId,
-        status,
-        notes,
-        marked_by: user?.id,
-        marked_at: new Date().toISOString(),
-      }]).select();
-      if (error) throw error;
-      if (data) notify('Attendance marked');
-      return data;
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  const fetchAttendance = async (sessionId) => {
-    const { data } = await supabase
-      .from('attendance')
-      .select('*, students(*)')
-      .eq('session_id', sessionId);
-    return data || [];
-  };
-
-  const assignParentToStudent = async (parentId, studentId) => {
-    try {
-      const { error } = await supabase.from('parent_student_relationships').insert([{
-        parent_id: parentId,
-        student_id: studentId,
-      }]);
-      if (error) throw error;
-      notify('Parent linked to student');
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  const assignTeacherToProgram = async (teacherId, programId) => {
-    try {
-      const { error } = await supabase.from('teacher_program_assignments').insert([{
-        teacher_id: teacherId,
-        program_id: programId,
-      }]);
-      if (error) throw error;
-      notify('Teacher assigned to program');
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  const updateUserRole = async (targetUserId, newRole) => {
-    try {
-      const { error } = await supabase.rpc('set_user_role', { p_target: targetUserId, p_role: newRole });
-      if (error) throw error;
-
-      // Map app role to display role (Job Title)
-      const roleDisplayMap = {
-        superadmin: 'Super Administrator',
-        admin: 'Administrator',
-        teacher: 'Teacher',
-        therapist: 'Therapist',
-        parent: 'Parent',
-      };
-      const displayRole = roleDisplayMap[newRole] || 'Staff';
-
-      // Optimistically update the local staff list for instant UI feedback
-      setStaff(prev => prev.map(s => s.id === targetUserId ? { ...s, app_role: newRole, role: displayRole } : s));
-
-      // If the user updated their own role, update the local user state
-      if (user && user.id === targetUserId) {
-        setAppRole(newRole);
-        setUser(prev => ({ ...prev, app_role: newRole, role: displayRole }));
-      }
-
-      notify(`Role updated to ${newRole}`);
-
-      // Notify the target user about their role change
-      if (user?.id !== targetUserId) {
-        createNotification({
-          userId: targetUserId,
-          title: 'Your Role Has Changed',
-          message: `Your role has been updated to ${displayRole}. Your permissions have been adjusted accordingly.`,
-          type: 'info',
-        });
-      }
-
-      // Notify admins about the role change
-      const targetUser = staff.find(s => s.id === targetUserId);
-      notifyRoleUsers(['admin', 'superadmin'], {
-        title: 'User Role Updated',
-        message: `${targetUser?.name || 'A user'}'s role was changed to ${displayRole}.`,
-        type: 'info',
-      });
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  /**
-   * Admin-only: Delete a user via the Edge Function
-   */
-  const adminDeleteUser = async (userId) => {
-    try {
-      // Optimistically remove from UI immediately
-      setStaff(prev => prev.filter(s => s.id !== userId));
-      notify('User deleted successfully');
-
-      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userId }
-      });
-
-      if (error) throw new Error(await invokeError(error));
-      if (data?.error) throw new Error(data.error);
-
-    } catch (error) {
-      // Rollback: re-fetch staff if the server-side delete actually failed
-      console.error('Error deleting user:', error);
-      const { data: refreshed } = await supabase.from('profiles').select('*');
-      if (refreshed) setStaff(refreshed);
-      notify('Failed to delete user: ' + error.message, 'error');
-      throw error;
-    }
-  };
-
-  /**
-   * Admin-only: Toggle a user's is_active status.
-   */
-  const toggleUserActive = async (targetUserId, isActive) => {
-    try {
-      const { error } = await supabase.rpc('set_user_active', { p_target: targetUserId, p_active: isActive });
-      if (error) throw error;
-
-      setStaff(prev => prev.map(s =>
-        s.id === targetUserId ? { ...s, is_active: isActive } : s
-      ));
-      notify(isActive ? 'User activated' : 'User deactivated');
-
-      // Notify the target user about their status change
-      createNotification({
-        userId: targetUserId,
-        title: isActive ? 'Account Activated' : 'Account Deactivated',
-        message: isActive
-          ? 'Your account has been reactivated. You can now access all features.'
-          : 'Your account has been deactivated. Please contact an administrator.',
-        type: isActive ? 'success' : 'warning',
-      });
-    } catch (error) {
-      notify(error.message, 'error');
-    }
-  };
-
-  const createNotification = async (notifData) => {
-    try {
-      const validTypes = ['info', 'success', 'warning', 'error', 'schedule'];
-      const safeType = validTypes.includes(notifData.type) ? notifData.type : 'info';
-      console.log('[Notification] Inserting:', { ...notifData, type: safeType });
-      const { data, error } = await supabase.from('notifications').insert([{
-        user_id: notifData.userId,
-        title: notifData.title,
-        message: notifData.message,
-        type: safeType,
-        related_id: notifData.relatedId,
-      }]).select();
-      if (error) {
-        console.error('[Notification] Insert failed:', error.message, error.details, error.hint);
-        throw error;
-      }
-      console.log('[Notification] Inserted successfully:', data);
-    } catch (error) {
-      console.error('[Notification] createNotification error:', error);
-    }
-  };
-
-  /**
-   * Send an in-app notification to all users matching a given role.
-   * @param {string|string[]} roles - 'admin', 'therapist', etc. or array of roles
-   * @param {{ title: string, message: string, type?: string, relatedId?: string }} notifData
-   */
-  const notifyRoleUsers = async (roles, notifData) => {
-    try {
-      const roleList = Array.isArray(roles) ? roles : [roles];
-      // Get user IDs for the target roles
-      const { data: roleRows } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role', roleList);
-      if (!roleRows?.length) return;
-
-      // Don't notify the current user (they already see the toast)
-      const targetIds = roleRows
-        .map(r => r.user_id)
-        .filter(id => id !== user?.id);
-      if (!targetIds.length) return;
-
-      const rows = targetIds.map(uid => ({
-        user_id: uid,
-        title: notifData.title,
-        message: notifData.message,
-        type: notifData.type || 'info',
-        related_id: notifData.relatedId || null,
-      }));
-      await supabase.from('notifications').insert(rows);
-    } catch (error) {
-      console.error('notifyRoleUsers error:', error);
-    }
-  };
-
-  /** Mark a single notification as read */
-  const markNotificationRead = async (notifId) => {
-    setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
-    try {
-      await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
-    } catch (error) {
-      console.error('markNotificationRead error:', error);
-    }
-  };
-
-  /** Mark all notifications as read for the current user */
-  const markAllNotificationsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    try {
-      await supabase.from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user?.id)
-        .eq('is_read', false);
-    } catch (error) {
-      console.error('markAllNotificationsRead error:', error);
-    }
-  };
-
-  /** Delete a single notification */
-  const deleteNotification = async (notifId) => {
-    setNotifications(prev => prev.filter(n => n.id !== notifId));
-    try {
-      await supabase.from('notifications').delete().eq('id', notifId);
-    } catch (error) {
-      console.error('deleteNotification error:', error);
-    }
-  };
-
-  const deleteAccount = (userId) => {
-    setStaff(prev => prev.filter(s => s.id !== userId));
-    setUser(null);
-  };
-
-  const addRoom = async (room) => {
-    try {
-      const { data, error } = await supabase.from('rooms').insert([{
-        name: room.name,
-        type: room.type,
-        max_capacity: room.maxCapacity || 5
-      }]).select();
-      if (error) throw error;
-      if (data) {
-        setRooms(prev => [...prev, { ...data[0], maxCapacity: data[0].max_capacity }]);
-        notify(`Room "${room.name}" added successfully`);
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const updateRoom = async (id, updates) => {
-    try {
-      const dbUpdates = {};
-      if (updates.name) dbUpdates.name = updates.name;
-      if (updates.type) dbUpdates.type = updates.type;
-      if (updates.maxCapacity) dbUpdates.max_capacity = updates.maxCapacity;
-
-      const { error } = await supabase.from('rooms').update(dbUpdates).eq('id', id);
-      if (error) throw error;
-      setRooms(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
-      notify('Room updated successfully');
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const deleteRoom = async (id) => {
-    try {
-      const { error } = await supabase.from('rooms').delete().eq('id', id);
-      if (error) throw error;
-      setRooms(prev => prev.filter(r => r.id !== id));
-      notify('Room deleted');
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const dispatchNotification = async (recipientId, message) => {
-    try {
-      // Find user in profiles (stored in staff array currently)
-      const user = staff.find(s => String(s.id) === String(recipientId));
-      if (!user) return;
-      
-      const { error } = await supabase.functions.invoke('send-notification', {
-        body: {
-          type: 'both',
-          recipient: { phone: user.phone || '', email: user.email || '' },
-          message: message,
-          subject: 'Polisync Schedule Update'
-        }
-      });
-      if (error) throw new Error(await invokeError(error));
-    } catch (err) {
-      console.error('Notification dispatch failed', err);
-    }
-  };
-
-  const addSession = async (session) => {
-    try {
-      const insertPayload = {
-        title: session.title,
-        therapist_id: session.therapistId,
-        student_ids: session.studentIds || [],
-        room: session.room,
-        start_hour: session.startHour,
-        span: session.span,
-        type: session.type,
-      };
-      if (session.sessionDate) insertPayload.session_date = session.sessionDate;
-      if (session.dayOfWeek !== undefined) insertPayload.day_of_week = session.dayOfWeek;
-
-      const { data, error } = await supabase.from('sessions').insert([insertPayload]).select();
-
-      if (error) throw error;
-      if (data) {
-        setSessions(prev => [...prev, {
-          id: data[0].id,
-          title: data[0].title,
-          therapistId: data[0].therapist_id,
-          studentIds: data[0].student_ids,
-          room: data[0].room,
-          startHour: data[0].start_hour,
-          span: data[0].span,
-          type: data[0].type,
-          sessionDate: data[0].session_date || null,
-          dayOfWeek: data[0].day_of_week,
-        }]);
-        notify('Session scheduled successfully');
-        
-        // Notify Therapist via external dispatch + in-app notification
-        if (data[0].therapist_id) {
-          dispatchNotification(data[0].therapist_id, `New session "${data[0].title}" has been scheduled for you at ${data[0].start_hour}:00.`);
-          createNotification({
-            userId: data[0].therapist_id,
-            title: 'New Session Assigned',
-            message: `"${data[0].title}" scheduled at ${data[0].start_hour}:00 in ${data[0].room}.`,
-            type: 'schedule',
-          });
-        }
-
-        // Notify admins about the new session
-        notifyRoleUsers(['admin', 'superadmin'], {
-          title: 'New Session Created',
-          message: `"${data[0].title}" was scheduled at ${data[0].start_hour}:00 in ${data[0].room}.`,
-          type: 'info',
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  // ── Staff Availability CRUD ─────────────────────────────────────────────────
-  const addStaffAvailability = async (staffId, date, startHour = 8, endHour = 17) => {
-    try {
-      const { data, error } = await supabase.from('staff_availability').upsert([{
-        staff_id: staffId,
-        available_date: date,
-        start_hour: startHour,
-        end_hour: endHour,
-      }], { onConflict: 'staff_id,available_date' }).select();
-      if (error) throw error;
-      if (data) {
-        setStaffAvailabilityState(prev => {
-          const exists = prev.findIndex(a => a.staff_id === staffId && a.available_date === date);
-          if (exists >= 0) {
-            const updated = [...prev];
-            updated[exists] = data[0];
-            return updated;
-          }
-          return [...prev, data[0]];
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const removeStaffAvailability = async (staffId, date) => {
-    try {
-      const { error } = await supabase.from('staff_availability')
-        .delete()
-        .eq('staff_id', staffId)
-        .eq('available_date', date);
-      if (error) throw error;
-      setStaffAvailabilityState(prev => prev.filter(a => !(a.staff_id === staffId && a.available_date === date)));
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const getAvailableStaffForDate = (date) => {
-    const isEligible = (s) => {
-      const appRole = (s.app_role || '').toLowerCase();
-      const role = (s.role || '').toLowerCase();
-      if (appRole === 'parent' || role === 'parent') return false;
-      if (['admin', 'superadmin', 'administrator', 'super administrator'].includes(appRole)) return false;
-      if (['admin', 'administrator', 'super administrator'].includes(role)) return false;
-      return true;
-    };
-    const eligibleStaff = staff.filter(isEligible);
-    if (!date) return eligibleStaff;
-    const availableIds = staffAvailability
-      .filter(a => a.available_date === date)
-      .map(a => a.staff_id);
-    return eligibleStaff.filter(s => availableIds.includes(s.id));
-  };
-  
-  const moveSession = async (sessionId, newStartHour, newRoom) => {
-    try {
-      const { error } = await supabase.from('sessions')
-        .update({ start_hour: newStartHour, room: newRoom })
-        .eq('id', sessionId);
-
-      if (error) throw error;
-      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, startHour: newStartHour, room: newRoom || s.room } : s));
-      notify('Session moved');
-      
-      // Notify Therapist via external dispatch + in-app notification
-      const session = sessions.find(s => s.id === sessionId);
-      if (session && session.therapistId) {
-        dispatchNotification(session.therapistId, `Your session "${session.title}" has been moved to ${newStartHour}:00 in room ${newRoom || session.room}.`);
-        createNotification({
-          userId: session.therapistId,
-          title: 'Session Rescheduled',
-          message: `"${session.title}" moved to ${newStartHour}:00 in ${newRoom || session.room}.`,
-          type: 'schedule',
-        });
-      }
-
-      // Notify admins
-      notifyRoleUsers(['admin', 'superadmin'], {
-        title: 'Session Rescheduled',
-        message: `"${session?.title || 'A session'}" was moved to ${newStartHour}:00.`,
-        type: 'info',
-      });
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const deleteSession = async (sessionId) => {
-    try {
-      const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
-      if (error) throw error;
-      const session = sessions.find(s => s.id === sessionId);
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
-      notify('Session cancelled');
-      
-      // Notify Therapist via external dispatch + in-app notification
-      if (session && session.therapistId) {
-        dispatchNotification(session.therapistId, `Your session "${session.title}" has been cancelled.`);
-        createNotification({
-          userId: session.therapistId,
-          title: 'Session Cancelled',
-          message: `"${session.title}" has been cancelled.`,
-          type: 'warning',
-        });
-      }
-
-      // Notify admins
-      notifyRoleUsers(['admin', 'superadmin'], {
-        title: 'Session Cancelled',
-        message: `"${session?.title || 'A session'}" has been cancelled.`,
-        type: 'warning',
-      });
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
-
-  const findAvailableGaps = (therapistId, roomId, span = 1) => {
-    const gaps = [];
-    const operatingHours = Array.from({ length: 9 }, (_, i) => i + 8); // 8am to 5pm (start hours)
-
-    operatingHours.forEach(hour => {
-      if (hour + span > 17) return; // Beyond 5pm
-
-      // Check therapist availability at this hour
-      const therapistBusy = sessions.some(s => 
-        String(s.therapistId) === String(therapistId) && 
-        Math.max(s.startHour, hour) < Math.min(s.startHour + s.span, hour + span)
-      );
-
-      // Check room availability at this hour
-      const roomBusy = sessions.some(s => 
-        s.room === roomId && 
-        Math.max(s.startHour, hour) < Math.min(s.startHour + s.span, hour + span)
-      );
-
-      if (!therapistBusy && !roomBusy) {
-        gaps.push({ hour, room: roomId });
-      }
-    });
-    return gaps;
-  };
-
-  const enhanceConflictDetection = (newSession) => {
-    const list = [];
-    const newStart = newSession.startHour;
-    const newEnd = newSession.startHour + newSession.span;
-    const newDay = newSession.dayOfWeek ?? 0;
-
-    sessions.forEach(existing => {
-      const existStart = existing.startHour;
-      const existEnd = existing.startHour + existing.span;
-      const existDay = existing.dayOfWeek ?? 0;
-
-      // Same day and time overlap
-      const timeOverlap = Math.max(newStart, existStart) < Math.min(newEnd, existEnd);
-      const sameDay = newDay === existDay;
-
-      if (timeOverlap && sameDay) {
-        // Therapist conflict
-        if (String(newSession.therapistId) === String(existing.therapistId)) {
-          list.push({ type: 'therapist', sessionIds: [newSession.id, existing.id], message: 'Therapist already booked' });
-        }
-        // Room conflict
-        if (newSession.room === existing.room) {
-          list.push({ type: 'room', sessionIds: [newSession.id, existing.id], room: newSession.room, message: `Room "${existing.room}" occupied` });
-        }
-        // Student conflict
-        if (newSession.studentIds?.some(id => existing.studentIds?.includes(id))) {
-          list.push({ type: 'student', sessionIds: [newSession.id, existing.id], message: 'Student has conflicting session' });
-        }
-      }
-    });
-
-    // Check student availability constraints
-    const maxDailyHours = schedulingSettings?.max_daily_hours_per_student || 4;
-
-    newSession.studentIds?.forEach(studentId => {
-      const studentSessions = sessions.filter(s => 
-        s.studentIds?.includes(studentId) && s.dayOfWeek === newDay
-      );
-      const totalHours = studentSessions.reduce((sum, s) => sum + s.span, 0) + newSession.span;
-      
-      if (totalHours > maxDailyHours) {
-        list.push({ type: 'student_limit', message: `Student exceeds daily ${maxDailyHours}h limit` });
-      }
-    });
-
-    return list;
-  };
-
-  /**
-   * Smart Schedule — calls the Edge Function for production-grade
-   * backtracking + scoring, with a local fallback for offline/preview.
-   */
-  const smartSchedule = async (options = {}) => {
-    const { dryRun = false, dayOfWeek, sessionDate, config: userConfig } = options;
-
-    // Try Edge Function first (full backtracking + multi-attempt)
-    if (supabase) {
-      try {
-        const result = await invokeSmartScheduler({ dayOfWeek, dryRun, config: userConfig });
-        if (result.success) {
-          // Refresh student programs state after scheduling
-          if (!dryRun && result.scheduled?.length > 0) {
-            const scheduledIds = result.scheduled.map(a => a.studentProgramId);
-            setStudentPrograms(prev =>
-              prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
-            );
-            const { data: refreshedSessions } = await supabase.from('sessions').select('*');
-            if (refreshedSessions) {
-              setSessions(refreshedSessions.map(s => ({
-                id: s.id,
-                title: s.title,
-                therapistId: s.therapist_id,
-                studentIds: s.student_ids || [],
-                room: s.room,
-                startHour: s.start_hour,
-                span: s.span,
-                type: s.type,
-                programId: s.program_id,
-                dayOfWeek: s.day_of_week,
-                sessionDate: s.session_date || null,
-                isConfirmed: s.is_confirmed
-              })));
-            }
-            notify(`Smart scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
-          }
-          return result;
-        }
-      } catch (err) {
-        console.warn('Edge Function failed, falling back to local scheduler:', err);
-      }
-    }
-
-    // Fallback: run local lightweight solver
-    try {
-      const result = localSmartSchedule({
-        studentPrograms,
-        students,
-        staff,
-        rooms,
-        programs,
-        sessions,
-        studentAvailability,
-        schedulingSettings,
-        dayOfWeek,
-      }, userConfig);
-
-      // Persist locally-computed schedule if not dry run
-      if (!dryRun && supabase && result.scheduled?.length > 0) {
-        const newlyCreated = [];
-        for (const a of result.scheduled) {
-          const { data, error } = await supabase.from('sessions').insert({
-            title: `Auto: ${a.programName}`,
-            therapist_id: a.teacherId,
-            student_ids: [a.studentId],
-            room: a.room,
-            start_hour: a.startHour,
-            span: a.duration,
-            type: a.type,
-            program_id: a.programId,
-            day_of_week: dayOfWeek ?? 0,
-            session_date: sessionDate || null,
-            is_confirmed: false,
-          }).select().single();
-
-          if (!error && data) {
-            newlyCreated.push({
-              id: data.id,
-              title: data.title,
-              therapistId: data.therapist_id,
-              studentIds: data.student_ids || [],
-              room: data.room,
-              startHour: data.start_hour,
-              span: data.span,
-              type: data.type,
-              programId: data.program_id,
-              dayOfWeek: data.day_of_week,
-              sessionDate: data.session_date || null,
-              isConfirmed: data.is_confirmed,
-            });
-            await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', a.studentProgramId);
-          }
-        }
-        // Refresh state optimistically
-        if (newlyCreated.length > 0) {
-          setSessions(prev => {
-            const existingIds = new Set(prev.map(s => s.id));
-            const toAdd = newlyCreated.filter(s => !existingIds.has(s.id));
-            return [...prev, ...toAdd];
-          });
-        }
-        const scheduledIds = result.scheduled.map(a => a.studentProgramId);
-        setStudentPrograms(prev =>
-          prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
-        );
-        notify(`Local scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
-      }
-
-      return { success: true, ...result };
-    } catch (error) {
-      console.error('Local smart schedule error:', error);
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Keep legacy name for backward compatibility
-  const autoSchedule = smartSchedule;
-
-  const addPerson = async (person) => {
-    try {
-      if (person.type === 'Staff') {
-        const { data, error } = await supabase.from('profiles').insert([{
-          name: person.name,
-          role: person.role,
-          department: person.department,
-          type: person.type,
-          status: person.status,
-          email: person.email,
-          phone: person.phone,
-          joined: person.joined
-        }]).select();
-        if (error) throw error;
-        if (data) {
-          setStaff(prev => [...prev, data[0]]);
-          notify(`${person.name} added to staff`);
-        }
-      } else {
-        const { data, error } = await supabase.from('students').insert([{
-          name: person.name,
-          role: person.role,
-          department: person.department,
-          type: person.type,
-          status: person.status,
-          email: person.email,
-          phone: person.phone,
-          joined: person.joined,
-          diagnosis: person.diagnosis || ''
-        }]).select();
-        if (error) throw error;
-        if (data) {
-          setStudents(prev => [...prev, data[0]]);
-          notify(`${person.name} enrolled successfully`);
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      notify(error.message, 'error');
-    }
-  };
+  const {
+    addStaffAvailability,
+    removeStaffAvailability,
+    smartSchedule,
+  } = createSchedulingActions({
+    studentPrograms,
+    students,
+    staff,
+    rooms,
+    programs,
+    sessions,
+    studentAvailability,
+    schedulingSettings,
+    setSessions,
+    setStudentPrograms,
+    setStaffAvailabilityState,
+    notify,
+  });
 
   const value = {
     staff,
@@ -1280,6 +481,8 @@ export const GlobalStateProvider = ({ children }) => {
     myAssignments,
     notifications,
     changePassword,
+    requestPasswordReset,
+    verifyPassword,
     isAdmin,
     isSuperAdmin,
     isParent,
@@ -1292,67 +495,32 @@ export const GlobalStateProvider = ({ children }) => {
     adminCreateUser,
     adminDeleteUser,
     logout,
-    deleteAccount,
-    findAvailableGaps,
-    enhanceConflictDetection,
-    autoSchedule,
     smartSchedule,
     addSession,
     moveSession,
     deleteSession,
     addPerson,
     addRoom,
-    updateRoom,
-    deleteRoom,
     addSessionNote,
     markAttendance,
     fetchAttendance,
     fetchParentChildren,
     fetchMyAssignments,
     assignParentToStudent,
-    assignTeacherToProgram,
+    fetchStudentDocumentRows,
+    createSignedDocumentUrls,
+    saveStudentDocument,
     updateUserRole,
     toggleUserActive,
-    createNotification,
-    notifyRoleUsers,
     markNotificationRead,
     markAllNotificationsRead,
     deleteNotification,
     addStaffAvailability,
     removeStaffAvailability,
-    getAvailableStaffForDate,
     toast,
     notify,
     loading,
-    clearDatabase: async () => {
-      setLoading(true);
-      try {
-        // 1. Delete all sessions first (foreign keys)
-        await supabase.from('sessions').delete().neq('id', -1);
-        // 2. Delete all students
-        await supabase.from('students').delete().neq('id', -1);
-        // 3. Delete all rooms
-        await supabase.from('rooms').delete().neq('id', -1);
-        // 4. Delete all profiles except the current logged-in user
-        if (user?.id) {
-          await supabase.from('profiles').delete().neq('id', user.id);
-        } else {
-          await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        }
-
-        // Update local state
-        setSessions([]);
-        setStudents([]);
-        setRooms([]);
-        setStaff(user ? [user] : []);
-        
-        console.log('Database cleared successfully');
-      } catch (error) {
-        console.error('Error clearing database:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+    clearDatabase
   };
 
   return (

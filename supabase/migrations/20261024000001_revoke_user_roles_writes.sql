@@ -1,0 +1,37 @@
+-- M6 — Revoke direct writes on `user_roles` from `authenticated`.
+--
+-- What this does
+--   Removes INSERT / UPDATE / DELETE on `public.user_roles` from
+--   `authenticated`.
+--
+-- Why
+--   `20261023000001_role_write_hardening.sql` replaced the single
+--   `user_roles_admin_all FOR ALL` policy with four command-scoped policies but
+--   did not revoke the table-level DML grants Supabase gives `authenticated` by
+--   default. An admin JWT can therefore still PATCH or DELETE a non-superadmin
+--   `user_roles` row through PostgREST without the `audit_logs` row that
+--   `set_user_role` writes in the same transaction. That is an audit-trail gap,
+--   not a privilege escalation: both `USING` and `WITH CHECK` on
+--   `user_roles_update` / `user_roles_delete` already reject a superadmin
+--   target, and `set_user_role` enforces the same boundary.
+--
+-- What must be true before it runs
+--   * All role writes already go through `public.set_user_role(uuid, app_role)`
+--     (the frontend has no direct `user_roles` write left; `set_user_active`
+--     only touches `profiles`). Both RPCs are SECURITY DEFINER, owned by
+--     postgres, so they keep writing after this revoke.
+--   * The `on_user_role_update` trigger function is SECURITY DEFINER too.
+--   * The edge functions write `user_roles` with the `service_role` key
+--     (`admin-create-user`), which this revoke does not touch.
+--   * Re-runnable: REVOKE of a privilege that is already absent is a no-op, so
+--     no guard is needed.
+
+-- SELECT is intentionally kept: the app reads its own role
+-- (GlobalStateContext, auth, notifications) and admins read the staff list.
+REVOKE INSERT, UPDATE, DELETE ON public.user_roles FROM authenticated;
+
+-- ── ROLLBACK (commented — nothing below runs) ───────────────────────────────
+-- WARNING: this restores the audit gap above — admin JWTs can write
+-- `user_roles` directly again without an `audit_logs` row.
+--
+-- GRANT INSERT, UPDATE, DELETE ON public.user_roles TO authenticated;
