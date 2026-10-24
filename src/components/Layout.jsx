@@ -83,7 +83,7 @@ const Layout = () => {
 
   const getNavStyle = (link, isActive) => {
     if (!isActive) return 'text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
-    return 'bg-ps-accent text-white font-medium';
+    return 'bg-ps-primary text-white font-medium';
   };
 
   const navLinks = [

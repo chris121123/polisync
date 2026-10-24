@@ -68,7 +68,7 @@ export const RoomDetail = ({ selectedRoom, cfg, staff, students, setSelectedRoom
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-medium text-ps-ink-1  flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-ps-accent" />
+              <div className="w-1.5 h-1.5 rounded-full bg-ps-primary" />
               Ongoing Sessions
             </h3>
           </div>

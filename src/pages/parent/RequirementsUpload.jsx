@@ -148,7 +148,7 @@ const RequirementsUpload = ({ studentId }) => {
               <button 
                 onClick={handleUpload} 
                 disabled={uploading}
-                className="w-full py-4 bg-ps-accent hover:bg-ps-accent/90 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 group"
+                className="w-full py-4 bg-ps-primary hover:bg-ps-primary/90 text-white rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 group"
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} className="group-hover:-translate-y-0.5 transition-transform" />}
                 {uploading ? 'Processing Secure Upload...' : 'Submit Documents'}

@@ -11,6 +11,8 @@
   --color-ps-ink-1: #1E2A5E;
   --color-ps-ink-2: #5E6E96;
   --color-ps-accent: #2563EB;
+  /* Fill token for solid brand surfaces under white text (accent is for text/icons/borders). */
+  --color-ps-primary: #2563EB;
   --color-ps-accent-soft: #EAF1FE;
   --color-ps-sky: #7DD3FC;
   --color-ps-wood: #C98A4B;
@@ -48,6 +50,7 @@
   --ps-ink-1: #1E2A5E;
   --ps-ink-2: #5E6E96;
   --ps-accent: #2563EB;
+  --ps-primary: #2563EB;
   --ps-accent-soft: #EAF1FE;
 }
 
@@ -58,6 +61,7 @@
   --ps-ink-1: #EAEDF7;
   --ps-ink-2: #8E9BC0;
   --ps-accent: #6E93F5;
+  --ps-primary: #2F5FD0;
   --ps-accent-soft: #172447;
   --color-ps-surface: #161C2E;
   --color-ps-bg: #0E1322;
@@ -65,6 +69,7 @@
   --color-ps-ink-1: #EAEDF7;
   --color-ps-ink-2: #8E9BC0;
   --color-ps-accent: #6E93F5;
+  --color-ps-primary: #2F5FD0;
   --color-ps-accent-soft: #172447;
   --color-ps-sky: #7DD3FC;
   --color-ps-wood: #A9763D;

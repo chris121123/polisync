@@ -20,13 +20,13 @@ export const getAuditBadge = (action) => {
   if (action.includes('delete')) return { color: 'bg-ps-danger/10 text-ps-danger', dot: 'bg-ps-danger' };
   if (action.includes('activate') && !action.includes('deactivate')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
   if (action.includes('deactivate')) return { color: 'bg-ps-warn/10 text-ps-warn', dot: 'bg-ps-warn' };
-  if (action.includes('role')) return { color: 'bg-ps-accent-soft text-ps-accent', dot: 'bg-ps-accent' };
+  if (action.includes('role')) return { color: 'bg-ps-accent-soft text-ps-accent', dot: 'bg-ps-primary' };
   if (action.includes('create')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
   return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
 };
 
 export const ROLE_PILL_COLORS = {
-  all: 'bg-ps-accent text-white',
+  all: 'bg-ps-primary text-white',
   superadmin: 'bg-violet-600 text-white',
   admin: 'bg-amber-600 text-white',
   teacher: 'bg-indigo-600 text-white',

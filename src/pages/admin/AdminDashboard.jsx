@@ -76,7 +76,7 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => navigate('/schedule')}
-            className="flex items-center gap-2 bg-ps-accent hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
+            className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
           >
             <CalendarDays size={16} strokeWidth={2} />
             <span>Open Schedule</span>
@@ -239,8 +239,8 @@ const AdminDashboard = () => {
                         className={clsx(
                           "w-full max-w-[36px] rounded-t transition-all duration-300",
                           isHovered 
-                            ? "bg-ps-accent shadow-sm scale-y-105 origin-bottom" 
-                            : (d.count > 0 ? "bg-ps-accent/80 hover:bg-ps-accent" : "bg-transparent")
+                            ? "bg-ps-primary shadow-sm scale-y-105 origin-bottom" 
+                            : (d.count > 0 ? "bg-ps-primary/80 hover:bg-ps-primary" : "bg-transparent")
                         )}
                         style={{ height: `${heightPercent}%` }}
                       />
@@ -292,7 +292,7 @@ const AdminDashboard = () => {
                   <div className="flex items-center gap-2.5">
                     <span className={clsx(
                       "w-2 h-2 rounded-full shrink-0",
-                      isOverCapacity ? "bg-ps-danger" : (isOccupied ? "bg-ps-accent" : "bg-ps-success")
+                      isOverCapacity ? "bg-ps-danger" : (isOccupied ? "bg-ps-primary" : "bg-ps-success")
                     )} />
                     <div>
                       <p className="text-xs font-semibold text-ps-ink-1 leading-tight">{room.name}</p>

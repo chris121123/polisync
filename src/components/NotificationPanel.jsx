@@ -273,7 +273,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                               {notif.title}
                             </p>
                             {!notif.is_read && (
-                              <span className="w-2 h-2 rounded-full bg-ps-accent flex-shrink-0 mt-1.5" />
+                              <span className="w-2 h-2 rounded-full bg-ps-primary flex-shrink-0 mt-1.5" />
                             )}
                           </div>
                           <p className="text-xs text-ps-ink-2 mt-0.5 line-clamp-2 leading-relaxed">

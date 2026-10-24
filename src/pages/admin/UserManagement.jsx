@@ -350,7 +350,7 @@ const UserManagement = () => {
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-ps-accent text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-ps-accent"
+            className="flex items-center gap-2 px-4 py-2.5 bg-ps-primary text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <UserPlus size={16} />
             Create User
@@ -538,7 +538,7 @@ const UserManagement = () => {
                     <p className="text-xs text-ps-ink-2 mt-1 mb-4">Create your first platform account to get started.</p>
                     <button
                       onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-ps-accent text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-ps-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all"
                     >
                       <UserPlus size={14} /> Create first user
                     </button>
@@ -642,7 +642,7 @@ const UserManagement = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => handleUpdateRole(showRoleModal)}
-                className="flex-1 py-2 bg-ps-accent hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
+                className="flex-1 py-2 bg-ps-primary hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
               >
                 Update Role
               </button>
@@ -858,7 +858,7 @@ const UserManagement = () => {
                   type="button"
                   onClick={handleCreateUser}
                   disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
-                  className="flex-1 py-2 bg-ps-accent hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-ps-primary hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
                 >
                   {createLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
