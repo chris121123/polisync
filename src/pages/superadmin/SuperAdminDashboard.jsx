@@ -21,7 +21,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import { StatCard } from '../admin/AdminDashboard';
 import { ROLE_COLORS, ROLE_LABELS } from '../../lib/rolePalette';
@@ -34,28 +33,25 @@ const EDGE_FUNCTIONS = [
 ];
 
 // ── Connection Ping ────────────────────────────────────────────────────
-function useConnectionStatus() {
+function useConnectionStatus(checkConnection) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
   useEffect(() => {
-    if (!supabase) {
-      setTimeout(() => setStatus('error'), 0);
-      return;
-    }
-    supabase
-      .from('profiles')
-      .select('id')
-      .limit(1)
-      .then(({ error }) => setStatus(error ? 'error' : 'ok'))
-      .catch(() => setStatus('error'));
+    let cancelled = false;
+    checkConnection().then((ok) => {
+      if (!cancelled) setStatus(ok ? 'ok' : 'error');
+    });
+    return () => { cancelled = true; };
+    // Factory action is state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return status;
 }
 
 // ── Main Component ─────────────────────────────────────────────────────
 const SuperAdminDashboard = () => {
-  const { staff, user, fetchRecentAudit } = useGlobalState();
+  const { staff, user, fetchRecentAudit, checkConnection } = useGlobalState();
   const navigate = useNavigate();
-  const connStatus = useConnectionStatus();
+  const connStatus = useConnectionStatus(checkConnection);
 
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(true);

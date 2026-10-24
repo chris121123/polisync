@@ -381,7 +381,7 @@ export const GlobalStateProvider = ({ children }) => {
     notifyRoleUsers,
   });
 
-  const { clearDatabase, saveSchedulingSettings } = createSettingsActions({
+  const { clearDatabase, saveSchedulingSettings, checkConnection } = createSettingsActions({
     setLoading,
     setSessions,
     setStudents,
@@ -525,6 +525,7 @@ export const GlobalStateProvider = ({ children }) => {
     fetchRecentAudit,
     saveSchedulingSettings,
     fetchSessionNotes,
+    checkConnection,
   };
 
   return (

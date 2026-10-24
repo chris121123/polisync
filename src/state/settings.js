@@ -49,5 +49,15 @@ export const createSettingsActions = ({ setLoading, setSessions, setStudents, se
     return { error };
   };
 
-  return { clearDatabase, saveSchedulingSettings };
+  const checkConnection = async () => {
+    if (!supabase) return false;
+    try {
+      const { error } = await supabase.from('profiles').select('id').limit(1);
+      return !error;
+    } catch {
+      return false;
+    }
+  };
+
+  return { clearDatabase, saveSchedulingSettings, checkConnection };
 };

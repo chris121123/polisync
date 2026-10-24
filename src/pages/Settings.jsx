@@ -24,7 +24,6 @@ import {
   StickyNote
 } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
-import { supabase } from '../lib/supabase';
 import clsx from 'clsx';
 import ClearDatabaseModal from '../components/ClearDatabaseModal';
 
@@ -114,7 +113,7 @@ const SlideOverDrawer = ({ isOpen, onClose, title, icon: Icon, children }) => (
 );
 
 const Settings = () => {
-  const { darkMode, setDarkMode, clearDatabase, loading, appRole, schedulingSettings } = useGlobalState();
+  const { darkMode, setDarkMode, clearDatabase, loading, appRole, schedulingSettings, checkConnection } = useGlobalState();
   const [activeTab, setActiveTab] = useState('appearance');
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -123,16 +122,13 @@ const Settings = () => {
 
   // Real Supabase connection ping
   useEffect(() => {
-    if (!supabase) {
-      setTimeout(() => setConnStatus('error'), 0);
-      return;
-    }
-    supabase
-      .from('profiles')
-      .select('id')
-      .limit(1)
-      .then(({ error }) => setConnStatus(error ? 'error' : 'ok'))
-      .catch(() => setConnStatus('error'));
+    let cancelled = false;
+    checkConnection().then((ok) => {
+      if (!cancelled) setConnStatus(ok ? 'ok' : 'error');
+    });
+    return () => { cancelled = true; };
+    // Factory action is state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const navItems = [
