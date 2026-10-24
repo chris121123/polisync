@@ -65,12 +65,9 @@ const TherapistDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-ps-border/60">
         <div className="space-y-1.5">
-          <div className="inline-block relative">
-            <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
-              My Caseload
-            </h1>
-            <div className="h-1 w-full bg-ps-primary rounded-full mt-1 opacity-80" />
-          </div>
+          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
+            My Caseload
+          </h1>
           <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">
             Clinical management and developmental notes for your weekly students.
           </p>
@@ -81,7 +78,7 @@ const TherapistDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Caseload Hours" 
-          value={`${totalHoursThisWeek}h`} 
+          value={`${totalHoursThisWeek} hrs`} 
           icon={Clock} 
           subtext="Contact time this week"
         />

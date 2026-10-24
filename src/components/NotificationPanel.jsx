@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { ROLE_COLORS, ROLE_LABELS } from '../lib/rolePalette';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -122,14 +123,8 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
   const unreadCount = (notifications || []).filter((n) => !n.is_read).length;
 
   const getRoleBadge = () => {
-    const badges = {
-      superadmin: { text: 'Super Admin', cls: 'bg-ps-accent-soft text-ps-accent' },
-      admin: { text: 'Admin', cls: 'bg-ps-bg text-ps-ink-2 border border-ps-border' },
-      therapist: { text: 'Therapist', cls: 'bg-ps-bg text-ps-ink-2 border border-ps-border' },
-      teacher: { text: 'Teacher', cls: 'bg-ps-bg text-ps-ink-2 border border-ps-border' },
-      parent: { text: 'Parent', cls: 'bg-ps-bg text-ps-ink-2 border border-ps-border' },
-    };
-    return badges[appRole] || badges.teacher;
+    const colors = ROLE_COLORS[appRole] || ROLE_COLORS.teacher;
+    return { text: ROLE_LABELS[appRole] || ROLE_LABELS.teacher, cls: `${colors.bg} ${colors.text}` };
   };
 
   const badge = getRoleBadge();
