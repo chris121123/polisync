@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
 
 const MAX_ATTEMPTS = 5;
@@ -17,6 +17,7 @@ const Login = () => {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -263,7 +264,7 @@ const Login = () => {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   disabled={isLockedOut}
                   onChange={(e) => {
@@ -272,12 +273,24 @@ const Login = () => {
                   }}
                   onBlur={() => validateField('password')}
                   placeholder="••••••••"
-                  className={`w-full pl-11 pr-4 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
+                  className={`w-full pl-11 pr-12 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
                     fieldErrors.password
                       ? 'border-ps-danger ring-2 ring-ps-danger/20'
                       : 'border-ps-border focus:border-ps-accent focus:ring-4 focus:ring-ps-accent/10'
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  // keeps focus and caret in the input instead of firing its blur validation
+                  onMouseDown={(e) => e.preventDefault()}
+                  disabled={isLockedOut}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-ps-ink-2 hover:text-ps-ink-1 disabled:opacity-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               {fieldErrors.password && (
                 <p className="text-xs text-ps-danger font-medium flex items-center gap-1 mt-1">
