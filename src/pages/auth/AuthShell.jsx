@@ -13,19 +13,18 @@ const AuthShell = ({ children }) => (
         className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
       ></div>
       <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
-        {/* crown-only crop: the source is square with the wordmark below y=60% */}
-        <div className="rounded-2xl bg-white p-3 shadow-sm">
-          <div className="w-14 h-14 overflow-hidden flex items-center justify-center">
-            <img
-              src="/brand/polikids-logo.jpg"
-              alt="Polikids Center for Development logo"
-              className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]"
-            />
-          </div>
+        {/* full logo: source JPG is square, its own white bg blends with the card */}
+        <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-sm">
+          <img
+            src="/brand/polikids-logo.jpg"
+            alt="Polikids Center for Development logo"
+            className="aspect-square object-contain w-24 sm:w-40"
+          />
         </div>
-        <div>
+        <div className="space-y-2 max-w-xs sm:max-w-sm">
           <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
-          <p className="text-sm font-medium text-ps-sky">Center for Development</p>
+          <p className="text-sm font-medium text-ps-sky">One secure hub for every session at Polikids.</p>
+          <p className="text-sm text-white/75 leading-relaxed">Schedule therapy and classroom sessions, track attendance, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
         </div>
       </div>
     </div>
