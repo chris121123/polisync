@@ -30,6 +30,7 @@ dist-ssr
 
 # Local agent customizations & skills
 .agents/*.md
+.agents/skills/
 
 docs/
 
