@@ -21,7 +21,12 @@ import {
   MoreVertical,
   Trash2,
   Search,
-  Activity
+  Activity,
+  Clock,
+  Sliders,
+  ChevronDown,
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
@@ -29,15 +34,16 @@ import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
-import {
-  EMPTY_CONFIG,
-  AUDIT_CATEGORIES,
-  getAuditBadge,
-  ROLE_PILL_COLORS,
-  ROLE_PILL_INACTIVE,
-} from './userManagementConstants.js';
-import { AuditPanel } from './AuditPanel.jsx';
-import { ConfigPanel } from './ConfigPanel.jsx';
+
+const EMPTY_CONFIG = {
+  operating_start_time: '08:00',
+  operating_end_time: '17:00',
+  allow_overbook: false,
+  max_daily_hours_per_student: 4.0,
+  auto_schedule_enabled: false,
+  min_break_minutes: 15,
+};
+
 const UserManagement = () => {
   const {
     staff,
@@ -321,6 +327,14 @@ const UserManagement = () => {
       return (s.name && s.name.toLowerCase().includes(q)) || (s.email && s.email.toLowerCase().includes(q));
     });
 
+  // Audit category mapping
+  const AUDIT_CATEGORIES = {
+    all: () => true,
+    account: (log) => ['user_created', 'user_deleted'].some(a => log.action?.includes(a.replace('user_', ''))),
+    role: (log) => log.action?.includes('role'),
+    status: (log) => log.action?.includes('activated') || log.action?.includes('deactivated'),
+  };
+
   const filteredAuditLogs = auditLogs.filter(log => {
     const matchesCategory = auditCategory === 'all' || AUDIT_CATEGORIES[auditCategory]?.(log);
     if (!auditSearch) return matchesCategory;
@@ -332,6 +346,26 @@ const UserManagement = () => {
       (target && target.toLowerCase().includes(q))
     );
   });
+
+  const getAuditBadge = (action) => {
+    if (!action) return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
+    if (action.includes('delete')) return { color: 'bg-ps-danger/10 text-ps-danger', dot: 'bg-ps-danger' };
+    if (action.includes('activate') && !action.includes('deactivate')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
+    if (action.includes('deactivate')) return { color: 'bg-ps-warn/10 text-ps-warn', dot: 'bg-ps-warn' };
+    if (action.includes('role')) return { color: 'bg-ps-accent-soft text-ps-accent', dot: 'bg-ps-accent' };
+    if (action.includes('create')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
+    return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
+  };
+
+  const ROLE_PILL_COLORS = {
+    all: 'bg-ps-accent dark:bg-indigo-600 text-white',
+    superadmin: 'bg-violet-600 text-white',
+    admin: 'bg-amber-600 text-white',
+    teacher: 'bg-indigo-600 text-white',
+    therapist: 'bg-teal-600 text-white',
+    parent: 'bg-pink-600 text-white',
+  };
+  const ROLE_PILL_INACTIVE = 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
 
   const tabs = [
     { id: 'users', label: 'Users' },
@@ -557,31 +591,270 @@ const UserManagement = () => {
 
       {/* ── 2. AUDIT TRAIL TAB ── */}
       {activeTab === 'audit' && (
-        <AuditPanel
-          fetchAuditLogs={fetchAuditLogs}
-          auditLoading={auditLoading}
-          auditSearch={auditSearch}
-          setAuditSearch={setAuditSearch}
-          auditCategory={auditCategory}
-          setAuditCategory={setAuditCategory}
-          auditLogs={auditLogs}
-          filteredAuditLogs={filteredAuditLogs}
-          expandedLogIds={expandedLogIds}
-          toggleExpandLog={toggleExpandLog}
-          staff={staff}
-          getAuditBadge={getAuditBadge}
-        />
+        <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border overflow-hidden">
+          <div className="px-6 py-4 border-b border-ps-border">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-base font-semibold text-ps-ink-1">System Activity Log</h2>
+                <p className="text-xs text-ps-ink-2 mt-0.5">Immutable audit trail of administrative and identity events</p>
+              </div>
+              <button
+                onClick={fetchAuditLogs}
+                className="text-xs font-medium text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+              >
+                Refresh
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={14} />
+                <input
+                  type="text"
+                  value={auditSearch}
+                  onChange={e => setAuditSearch(e.target.value)}
+                  placeholder="Search action, actor, or target..."
+                  className="w-full pl-9 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-xs text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+              </div>
+              <div className="flex gap-1.5">
+                {[['all','All'],['account','Accounts'],['role','Role Changes'],['status','Status']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setAuditCategory(id)}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent',
+                      auditCategory === id
+                        ? 'bg-ps-accent dark:bg-indigo-600 text-white'
+                        : 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            {auditLoading && (
+              <div className="p-12 text-center">
+                <div className="w-6 h-6 border-2 border-ps-accent border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+            )}
+
+            {!auditLoading && auditLogs.length > 0 && (
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-ps-border bg-ps-bg/50">
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Timestamp</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Action</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Performed By</th>
+                    <th className="hidden md:table-cell text-left px-6 py-3 text-xs font-medium text-ps-ink-2">IP Address</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ps-border text-sm">
+                  {filteredAuditLogs.map(log => {
+                    const { action, actor, target } = auditLine(log, staff);
+                    const badge = getAuditBadge(log.action);
+                    const isExpanded = expandedLogIds.has(log.id);
+                    const hasDetails = log.details && typeof log.details === 'object' && Object.keys(log.details).length > 0;
+
+                    return (
+                      <React.Fragment key={log.id}>
+                        <tr className="hover:bg-ps-bg/40 transition-colors">
+                          <td className="px-6 py-3.5 text-xs text-ps-ink-2 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', badge.color)}>
+                                {action}
+                              </span>
+                              {target && <span className="text-xs text-ps-ink-2 font-normal">→ {target}</span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5 text-xs text-ps-ink-2">
+                            {actor}
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-3.5 text-xs text-ps-ink-2 font-mono">
+                            {log.ip_address || '—'}
+                          </td>
+                          <td className="px-6 py-3.5 text-right">
+                            {hasDetails ? (
+                              <button
+                                onClick={() => toggleExpandLog(log.id)}
+                                className="inline-flex items-center gap-1 text-xs text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+                              >
+                                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                {isExpanded ? 'Hide' : 'View'}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-ps-ink-2/60">—</span>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && hasDetails && (
+                          <tr className="bg-ps-bg/60">
+                            <td colSpan={5} className="px-6 py-3">
+                              <pre className="text-xs bg-ps-surface p-3 rounded-lg border border-ps-border text-ps-ink-2 overflow-x-auto font-mono">
+                                {JSON.stringify(log.details, null, 2)}
+                              </pre>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                  {filteredAuditLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-xs text-ps-ink-2">
+                        No entries match your search or filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+
+            {!auditLoading && auditLogs.length === 0 && (
+              <div className="p-8 text-center text-ps-ink-2">
+                <Clock size={28} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">No activity logs recorded</p>
+                <p className="text-xs mt-1">Actions like user creation and role changes will appear here.</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ── 3. PLATFORM CONFIG TAB ── */}
       {activeTab === 'config' && (
-        <ConfigPanel
-          configForm={configForm}
-          setConfigForm={setConfigForm}
-          handleSaveConfig={handleSaveConfig}
-          configLoading={configLoading}
-          isConfigDirty={isConfigDirty}
-        />
+        <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border p-6 space-y-6">
+          <div className="border-b border-ps-border pb-4">
+            <h2 className="text-base font-semibold text-ps-ink-1 flex items-center gap-2">
+              <Sliders size={18} className="text-ps-accent" />
+              Platform Scheduling Settings
+            </h2>
+            <p className="text-xs text-ps-ink-2 mt-1">
+              Global constraints and operational parameters for automated and manual scheduling engines.
+            </p>
+          </div>
+
+          {/* Audit Notice Callout */}
+          <div className="p-3.5 rounded-lg bg-ps-bg border border-ps-border flex items-start gap-3">
+            <Info size={16} className="text-ps-accent shrink-0 mt-0.5" />
+            <div className="text-xs text-ps-ink-2 leading-relaxed">
+              <span className="font-medium text-ps-ink-1">Audit Notice: </span>
+              Changes are logged when audit schema supports <code className="px-1 py-0.5 bg-ps-surface border border-ps-border rounded font-mono text-ps-accent">config_changed</code>.
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveConfig} className="space-y-6 max-w-2xl">
+            {/* Auto-Scheduler Toggle — primary control, moved to top */}
+            <div className="p-4 rounded-xl border border-ps-border bg-ps-bg/40 flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="auto_schedule_enabled"
+                checked={configForm.auto_schedule_enabled}
+                onChange={e => setConfigForm(p => ({ ...p, auto_schedule_enabled: e.target.checked }))}
+                className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
+              />
+              <label htmlFor="auto_schedule_enabled" className="cursor-pointer">
+                <span className="text-sm font-semibold text-ps-ink-1 block">Auto-Scheduler Engine</span>
+                <span className="text-xs text-ps-ink-2 block mt-0.5">Enable automated constraint-satisfaction solver runs for pending student assignments. Disable to use manual scheduling only.</span>
+              </label>
+            </div>
+
+            {/* Operating Hours */}
+            <div>
+              <label className="block text-sm font-medium text-ps-ink-1 mb-2">Center Operating Hours</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs text-ps-ink-2 mb-1">Start Time</span>
+                  <input
+                    type="time"
+                    value={configForm.operating_start_time}
+                    onChange={e => setConfigForm(p => ({ ...p, operating_start_time: e.target.value }))}
+                    className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
+                </div>
+                <div>
+                  <span className="block text-xs text-ps-ink-2 mb-1">End Time</span>
+                  <input
+                    type="time"
+                    value={configForm.operating_end_time}
+                    onChange={e => setConfigForm(p => ({ ...p, operating_end_time: e.target.value }))}
+                    className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Numeric Constraints */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-ps-ink-1 mb-1">Max Daily Hours Per Student</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="1"
+                  max="12"
+                  value={configForm.max_daily_hours_per_student}
+                  onChange={e => setConfigForm(p => ({ ...p, max_daily_hours_per_student: e.target.value }))}
+                  className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+                <span className="text-xs text-ps-ink-2 mt-1 block">Upper limit on daily scheduled therapy time</span>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ps-ink-1 mb-1">Minimum Break Minutes</label>
+                <input
+                  type="number"
+                  step="5"
+                  min="0"
+                  max="60"
+                  value={configForm.min_break_minutes}
+                  onChange={e => setConfigForm(p => ({ ...p, min_break_minutes: e.target.value }))}
+                  className="w-full px-3 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                />
+                <span className="text-xs text-ps-ink-2 mt-1 block">Buffer between back-to-back sessions</span>
+              </div>
+            </div>
+
+            {/* Allow Overbooking Toggle */}
+            <div>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={configForm.allow_overbook}
+                  onChange={e => setConfigForm(p => ({ ...p, allow_overbook: e.target.checked }))}
+                  className="mt-1 rounded border-ps-border text-ps-accent focus:ring-ps-accent/20"
+                />
+                <div>
+                  <span className="text-sm font-medium text-ps-ink-1 block">Allow Overbooking</span>
+                  <span className="text-xs text-ps-ink-2 block">Permit scheduling sessions beyond room maximum capacity when explicitly approved</span>
+                </div>
+              </label>
+            </div>
+
+            <div className="pt-4 border-t border-ps-border flex items-center gap-4">
+              <button
+                type="submit"
+                disabled={configLoading}
+                className="px-5 py-2.5 bg-ps-accent dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-ps-accent"
+              >
+                {configLoading ? 'Saving...' : 'Save Configuration'}
+              </button>
+              {isConfigDirty && !configLoading && (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-ps-warn">
+                  <span className="w-1.5 h-1.5 rounded-full bg-ps-warn" />
+                  Unsaved changes
+                </span>
+              )}
+            </div>
+          </form>
+        </div>
       )}
 
       {/* ── Change Role Modal ── */}

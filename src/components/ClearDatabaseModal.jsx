@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Lock, Mail, Key, ShieldAlert, X } from 'lucide-react';
 import clsx from 'clsx';
-import { useGlobalState } from '../context/GlobalStateContext';
+import { supabase } from '../lib/supabase';
 
 const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
-  const { verifyPassword } = useGlobalState();
   const [step, setStep] = useState(1); // 1: Warning, 2: Auth
   const [countdown, setCountdown] = useState(30);
   const [email, setEmail] = useState('');
@@ -47,7 +46,10 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
 
     try {
       // Re-authenticate to verify credentials
-      const signInError = await verifyPassword(email, password);
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (signInError) {
         throw new Error('Invalid credentials. Verification failed.');

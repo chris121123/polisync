@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { Upload, FileText, Loader2, X, Check, CloudUpload, Info, ChevronRight } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const RequirementsUpload = ({ studentId }) => {
-  const { user, notify, fetchStudentDocumentRows, createSignedDocumentUrls, saveStudentDocument } = useGlobalState();
+  const { user, notify } = useGlobalState();
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -16,7 +17,11 @@ const RequirementsUpload = ({ studentId }) => {
     if (!studentId) return;
     queueMicrotask(() => setLoading(true));
     let cancelled = false;
-    fetchStudentDocumentRows(studentId)
+    supabase
+      .from('student_documents')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('created_at', { ascending: false })
       .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error) notify('Could not load documents', 'error');
@@ -27,7 +32,7 @@ const RequirementsUpload = ({ studentId }) => {
         const paths = rows.map(r => r.file_url).filter(p => p && !/^https?:/i.test(p));
         if (paths.length === 0) return;
         // shortcut: signed links live 10 minutes, reload the page to re-sign a long-open tab.
-        const { data: signed } = await createSignedDocumentUrls(paths);
+        const { data: signed } = await supabase.storage.from('requirements').createSignedUrls(paths, 600);
         if (cancelled || !signed) return;
         setSignedUrls(Object.fromEntries(signed.map(s => [s.path, s.signedUrl])));
       })
@@ -37,7 +42,7 @@ const RequirementsUpload = ({ studentId }) => {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [studentId, refreshKey, notify, fetchStudentDocumentRows, createSignedDocumentUrls]);
+  }, [studentId, refreshKey, notify]);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -61,17 +66,18 @@ const RequirementsUpload = ({ studentId }) => {
     for (const [i, file] of files.entries()) {
       const ext = (file.name.split('.').pop() || 'bin').replace(/[^a-z0-9]/gi, '').toLowerCase();
       const filePath = `documents/${studentId}/${Date.now()}-${i}.${ext}`;
-      const { uploadError, dbError } = await saveStudentDocument({
-        studentId,
-        userId: user.id,
-        filePath,
-        file,
-        fileName: file.name,
-      });
+      const { error: uploadError } = await supabase.storage.from('requirements').upload(filePath, file);
       if (uploadError) {
         notify(`Upload failed: ${uploadError.message}`, 'error');
         continue;
       }
+      const { error: dbError } = await supabase.from('student_documents').insert([{
+        student_id: studentId,
+        uploaded_by: user.id,
+        file_name: file.name,
+        file_url: filePath,
+        document_type: 'General'
+      }]);
       if (dbError) notify(`Record failed: ${dbError.message}`, 'error');
       else successCount++;
     }

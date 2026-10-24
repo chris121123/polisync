@@ -1,8 +1,8 @@
 # polisync Agent Guidelines
 
 ## Commands
-- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint; `npm run test:golden` — 54 golden tests
-- No typecheck script. Verify with `npm run test:golden` + `npm run lint` + `npm run build` + manual check in dev server
+- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint
+- No test / typecheck scripts. Verify with `npm run lint` + `npm run build` + manual check in dev server
 - One-off: `node promote-superadmin.mjs` — promotes existing `admin` rows to `superadmin` (reads `.env`)
 
 ## Stack / Entrypoints
@@ -25,7 +25,7 @@
 ## Supabase
 - Env: copy `.env.example` → `.env`. Notification secrets (`SEMAPHORE_*`, `RESEND_*`) live in Supabase Dashboard → Edge Functions Secrets, not `.env`
 - Migrations: `supabase/migrations/*.sql`. Edge functions: `admin-create-user`, `admin-delete-user`, `auto-scheduler`, `send-notification`
-- Scheduler: `src/lib/scheduling/engine.js` — try `invokeSmartScheduler` (edge, `client.js`) first, fallback `localSmartSchedule`; persist via `sessions` + `student_programs.status='scheduled'`
+- Scheduler: `src/lib/scheduler.js` — try `invokeSmartScheduler` (edge) first, fallback `localSmartSchedule`; persist via `sessions` + `student_programs.status='scheduled'`
 
 ## Conventions
 - Styling: Tailwind 4 utilities; icons `lucide-react` ~18–20px; transitions via `motion` + `AnimatePresence`; toasts via `notify(msg, type)`
