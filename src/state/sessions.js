@@ -22,6 +22,11 @@ export const createSessionActions = ({
       };
       if (session.sessionDate) insertPayload.session_date = session.sessionDate;
       if (session.dayOfWeek !== undefined) insertPayload.day_of_week = session.dayOfWeek;
+      else if (session.sessionDate) {
+        // Mon=0…Fri=4 from local date parts; weekends stay unset (DB CHECK allows 0–4).
+        const jsDay = new Date(`${session.sessionDate}T00:00:00`).getDay();
+        if (jsDay >= 1 && jsDay <= 5) insertPayload.day_of_week = jsDay - 1;
+      }
 
       const { data, error } = await supabase.from('sessions').insert([insertPayload]).select();
 

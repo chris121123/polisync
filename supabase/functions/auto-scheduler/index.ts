@@ -7,7 +7,16 @@
  *   - Global scoring to pick the best schedule across retry attempts
  *
  * POST /functions/v1/auto-scheduler
- * Body: { dayOfWeek?: number, dryRun?: boolean, config?: Partial<SchedulerConfig> }
+ * Body: {
+ *   dayOfWeek?: number,            // 0=Mon..4=Fri, defaults today (weekend → 422)
+ *   sessionDate?: string,          // 'YYYY-MM-DD' anchor week / selected date
+ *   scope?: 'whole-week' | 'selected-day',   // default 'selected-day'
+ *   studentProgramIds?: number[],  // subset to schedule; omit = all pending
+ *   dryRun?: boolean,
+ *   config?: Partial<SchedulerConfig>,
+ * }
+ * Response: { success, dryRun, dayOfWeek, scope, score, scheduled, unscheduled,
+ *             alreadyScheduled, perDay, stats, logs }
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
@@ -96,8 +105,10 @@ interface ExistingSession {
   room: string
   start_hour: number
   span: number
+  session_date?: string | null
   day_of_week: number
   program_id: number | null
+  student_program_id: number | null
 }
 
 /** A single assignment in the schedule being built */
@@ -111,6 +122,8 @@ interface Assignment {
   startHour: number
   duration: number
   type: string
+  dayOfWeek?: number
+  sessionDate?: string
 }
 
 interface ScheduleResult {
@@ -124,6 +137,33 @@ interface LogEntry {
   level: 'info' | 'warn' | 'debug'
   message: string
   data?: Record<string, unknown>
+}
+
+type Scope = 'whole-week' | 'selected-day'
+
+type UnscheduledItem = { studentProgramId: number; studentId: number; reason: string }
+
+interface DayResult {
+  dayOfWeek: number
+  sessionDate: string
+  score: number
+  scheduled: number[]
+  unscheduled: UnscheduledItem[]
+}
+
+/** Everything the handler needs to persist and answer. */
+interface RunOutput {
+  scheduled: Assignment[]
+  unscheduled: UnscheduledItem[]
+  alreadyScheduled: number[]
+  perDay: DayResult[]
+  score: number
+  stats: { attempts: number; backtracks: number; elapsed: number }
+  /** sessions_per_week per requirement */
+  quota: Map<number, number>
+  /** sessions already linked to the requirement before this run */
+  linked: Map<number, number>
+  logs: LogEntry[]
 }
 
 // ─── Default Config ──────────────────────────────────────────────────────────
@@ -148,7 +188,30 @@ function timeToHour(time: string): number {
 
 function getCurrentDayOfWeek(): number {
   const d = new Date().getDay()
-  return d === 0 ? 4 : d - 1 // Mon=0 … Fri=4
+  return d === 0 ? 4 : d - 1 // Mon=0 … Fri=4 (Saturday 5 is rejected by validation)
+}
+
+// Monday of the anchor week (default: current week) + day, from local date parts (no UTC drift).
+function dateForDay(day: number, anchor?: string): string {
+  const parts = anchor && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor.split('-').map(Number) : null
+  const now = new Date()
+  const dt = parts
+    ? new Date(parts[0], parts[1] - 1, parts[2])
+    : new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7) + day)
+
+  const mm = String(dt.getMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getDate()).padStart(2, '0')
+  return `${dt.getFullYear()}-${mm}-${dd}`
+}
+
+// Monday=0 … Friday=4 from a local 'YYYY-MM-DD'. Weekend or unparseable dates yield null.
+function weekdayOfDate(date: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
+  const [y, m, d] = date.split('-').map(Number)
+  const jsDay = new Date(y, m - 1, d).getDay()
+  return jsDay === 0 || jsDay === 6 ? null : jsDay - 1
 }
 
 // ─── Conflict Detection ─────────────────────────────────────────────────────
@@ -491,6 +554,7 @@ function solve(
     solve(ordered, index + 1, currentAssignments, programs, teachers, rooms, existingSessions, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters, logs)
 
     // Unassign (backtrack)
+    counters.depth--
     currentAssignments.pop()
     counters.backtracks++
 
@@ -501,19 +565,87 @@ function solve(
   // Also try skipping this student-program (it may unlock better assignments later)
   counters.depth++
   solve(ordered, index + 1, currentAssignments, programs, teachers, rooms, existingSessions, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters, logs)
+  counters.depth--
 }
 
 // ─── Main Orchestrator ───────────────────────────────────────────────────────
 
+/** One day: the existing 3-attempt (mrv/reverse/random) strategy, best result wins. */
+function solveDay(
+  pending: StudentProgram[],
+  programs: Program[],
+  teachers: Teacher[],
+  rooms: Room[],
+  existing: ExistingSession[],
+  studentAvailMap: Map<number, AvailabilityWindow[]>,
+  teacherAvailMap: Map<string, AvailabilityWindow[]>,
+  config: SchedulerConfig,
+  dayOfWeek: number,
+  startedAt: number,
+  logs: LogEntry[],
+): ScheduleResult {
+  const modes: Array<'mrv' | 'reverse' | 'random'> = ['mrv', 'reverse', 'random']
+  let globalBest: ScheduleResult | null = null
+
+  for (let attempt = 0; attempt < Math.min(config.retryAttempts, modes.length); attempt++) {
+    const mode = modes[attempt]
+    logs.push({ level: 'info', message: `Day ${dayOfWeek} attempt ${attempt + 1}/${config.retryAttempts}: ordering=${mode}` })
+
+    const ordered = orderByHeuristic(pending, programs, studentAvailMap, teachers, mode)
+    const best: { result: ScheduleResult | null } = { result: null }
+    const counters = { depth: 0, backtracks: 0, startTime: startedAt }
+
+    solve(ordered, 0, [], programs, teachers, rooms, existing, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters, logs)
+
+    if (best.result) {
+      best.result.stats.attempts = attempt + 1
+      logs.push({
+        level: 'info',
+        message: `Day ${dayOfWeek} attempt ${attempt + 1}: score=${best.result.score}, scheduled=${best.result.assignments.length}, unscheduled=${best.result.unscheduled.length}, backtracks=${best.result.stats.backtracks}`,
+      })
+
+      if (!globalBest || best.result.score > globalBest.score) {
+        globalBest = best.result
+      }
+
+      // Perfect schedule found — stop early
+      if (best.result.unscheduled.length === 0) {
+        logs.push({ level: 'info', message: `Day ${dayOfWeek}: perfect schedule found, stopping early` })
+        break
+      }
+    }
+  }
+
+  return globalBest || {
+    assignments: [],
+    unscheduled: pending.map(sp => ({ studentProgramId: sp.id, studentId: sp.student_id, reason: 'Solver found no solution' })),
+    score: -pending.length * 5,
+    stats: { attempts: config.retryAttempts, backtracks: 0, elapsed: Date.now() - startedAt },
+  }
+}
+
+interface RunOptions {
+  dayOfWeek: number
+  scope: Scope
+  sessionDate?: string
+  studentProgramIds?: number[]
+}
+
 async function runSmartScheduler(
   supabase: ReturnType<typeof createClient>,
-  dayOfWeek: number,
+  options: RunOptions,
   userConfig: Partial<SchedulerConfig>,
-): Promise<{ result: ScheduleResult; logs: LogEntry[] }> {
+): Promise<RunOutput> {
+  const startedAt = Date.now()
   const config: SchedulerConfig = { ...DEFAULT_CONFIG, ...userConfig }
   const logs: LogEntry[] = []
+  const { dayOfWeek, scope, sessionDate, studentProgramIds } = options
 
   logs.push({ level: 'info', message: 'Fetching scheduling data...' })
+
+  const pendingQuery = studentProgramIds
+    ? supabase.from('student_programs').select('*').eq('status', 'pending').in('id', studentProgramIds)
+    : supabase.from('student_programs').select('*').eq('status', 'pending')
 
   // ── Fetch all data in parallel ──
   const [
@@ -527,11 +659,13 @@ async function runSmartScheduler(
     { data: teacherAvailData },
   ] = await Promise.all([
     supabase.from('scheduling_settings').select('*').single(),
-    supabase.from('student_programs').select('*').eq('status', 'pending'),
-    supabase.from('sessions').select('*').eq('day_of_week', dayOfWeek),
+    pendingQuery,
+    // Whole week: quota counts must see every weekday, even for a single-day run.
+    // Legacy manual sessions have day_of_week = null, so they are fetched and dated below.
+    supabase.from('sessions').select('*').or('day_of_week.in.(0,1,2,3,4),day_of_week.is.null'),
     supabase.from('programs').select('*').eq('is_active', true),
     supabase.from('rooms').select('*'),
-    supabase.from('profiles').select('*').in('role', ['Staff', 'Teacher']).eq('status', 'Active'),
+    supabase.from('profiles').select('*').in('app_role', ['teacher', 'therapist']).eq('is_active', true),
     supabase.from('student_availability').select('*').eq('is_active', true),
     supabase.from('teacher_availability').select('*').eq('is_active', true),
   ])
@@ -549,6 +683,19 @@ async function runSmartScheduler(
   const rooms: Room[] = roomsData || []
   const teachers: Teacher[] = teachersData || []
   const existing: ExistingSession[] = existingSessions || []
+
+  // Legacy rows carry no weekday; derive it from the date so they still block conflicts.
+  // Rows with no derivable weekday, or dated outside the target week, cannot conflict at all.
+  const weekDates = new Set([0, 1, 2, 3, 4].map(d => dateForDay(d, sessionDate)))
+  const occupied: ExistingSession[] = []
+  for (const s of existing) {
+    if (s.day_of_week != null) {
+      occupied.push(s)
+    } else if (s.session_date && weekDates.has(s.session_date)) {
+      const weekday = weekdayOfDate(s.session_date)
+      if (weekday !== null) occupied.push({ ...s, day_of_week: weekday })
+    }
+  }
 
   // Build availability maps
   const studentAvailMap = new Map<number, AvailabilityWindow[]>()
@@ -580,52 +727,99 @@ async function runSmartScheduler(
 
   if (pending.length === 0) {
     return {
-      result: { assignments: [], unscheduled: [], score: 0, stats: { attempts: 0, backtracks: 0, elapsed: 0 } },
-      logs,
+      scheduled: [], unscheduled: [], alreadyScheduled: [], perDay: [],
+      score: 0, stats: { attempts: 0, backtracks: 0, elapsed: 0 },
+      quota: new Map(), linked: new Map(), logs,
     }
   }
 
-  // ── Multi-attempt strategy ──
-  const modes: Array<'mrv' | 'reverse' | 'random'> = ['mrv', 'reverse', 'random']
-  let globalBest: ScheduleResult | null = null
+  // Weekly quota per requirement: sessions_per_week minus sessions already linked (SCHED-004).
+  const quota = new Map<number, number>()
+  const linked = new Map<number, number>()
+  const remaining = new Map<number, number>()
+  const alreadyScheduled: number[] = []
+  for (const sp of pending) {
+    const perWeek = sp.sessions_per_week ?? 1
+    const have = existing.filter(s => s.student_program_id === sp.id).length
+    quota.set(sp.id, perWeek)
+    linked.set(sp.id, have)
+    remaining.set(sp.id, perWeek - have)
+    if (perWeek - have <= 0) alreadyScheduled.push(sp.id)
+  }
 
-  for (let attempt = 0; attempt < Math.min(config.retryAttempts, modes.length); attempt++) {
-    const mode = modes[attempt]
-    logs.push({ level: 'info', message: `Attempt ${attempt + 1}/${config.retryAttempts}: ordering=${mode}` })
+  if (scope === 'selected-day') {
+    const date = sessionDate ?? dateForDay(dayOfWeek)
+    const eligible = pending.filter(sp =>
+      remaining.get(sp.id)! > 0 &&
+      !occupied.some(s => s.student_program_id === sp.id && s.day_of_week === dayOfWeek)
+    )
+    const result: ScheduleResult = eligible.length > 0
+      ? solveDay(eligible, programs, teachers, rooms, occupied, studentAvailMap, teacherAvailMap, config, dayOfWeek, startedAt, logs)
+      : { assignments: [], unscheduled: [], score: 0, stats: { attempts: 0, backtracks: 0, elapsed: 0 } }
+    const scheduled = result.assignments.map(a => ({ ...a, dayOfWeek, sessionDate: date }))
 
-    const ordered = orderByHeuristic(pending, programs, studentAvailMap, teachers, mode)
-    const best: { result: ScheduleResult | null } = { result: null }
-    const counters = { depth: 0, backtracks: 0, startTime: Date.now() }
-
-    solve(ordered, 0, [], programs, teachers, rooms, existing, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters, logs)
-
-    if (best.result) {
-      best.result.stats.attempts = attempt + 1
-      logs.push({
-        level: 'info',
-        message: `Attempt ${attempt + 1} result: score=${best.result.score}, scheduled=${best.result.assignments.length}, unscheduled=${best.result.unscheduled.length}, backtracks=${best.result.stats.backtracks}`,
-      })
-
-      if (!globalBest || best.result.score > globalBest.score) {
-        globalBest = best.result
-      }
-
-      // Perfect schedule found — stop early
-      if (best.result.unscheduled.length === 0) {
-        logs.push({ level: 'info', message: 'Perfect schedule found, stopping early' })
-        break
-      }
+    return {
+      scheduled,
+      unscheduled: result.unscheduled,
+      alreadyScheduled,
+      perDay: [{ dayOfWeek, sessionDate: date, score: result.score, scheduled: scheduled.map(a => a.studentProgramId), unscheduled: result.unscheduled }],
+      score: result.score,
+      stats: result.stats,
+      quota, linked, logs,
     }
   }
 
-  const finalResult = globalBest || {
-    assignments: [],
-    unscheduled: pending.map(sp => ({ studentProgramId: sp.id, studentId: sp.student_id, reason: 'Solver found no solution' })),
-    score: -pending.length * 5,
-    stats: { attempts: config.retryAttempts, backtracks: 0, elapsed: 0 },
+  // ── Whole week: Mon→Fri, one shared budget, decrement the quota per assignment ──
+  const scheduled: Assignment[] = []
+  const perDay: DayResult[] = []
+  const reasons = new Map<number, UnscheduledItem>()
+  let score = 0
+  let backtracks = 0
+  let attempts = 0
+
+  for (let d = 0; d < 5; d++) {
+    const date = dateForDay(d, sessionDate)
+    const eligible = pending.filter(sp =>
+      remaining.get(sp.id)! > 0 &&
+      !occupied.some(s => s.student_program_id === sp.id && s.day_of_week === d)
+    )
+    const dayScheduled: number[] = []
+    let dayUnscheduled: UnscheduledItem[] = []
+    let dayScore = 0
+
+    if (eligible.length > 0) {
+      const result = solveDay(eligible, programs, teachers, rooms, occupied, studentAvailMap, teacherAvailMap, config, d, startedAt, logs)
+      dayScore = result.score
+      backtracks += result.stats.backtracks
+      attempts = Math.max(attempts, result.stats.attempts)
+      for (const a of result.assignments) {
+        scheduled.push({ ...a, dayOfWeek: d, sessionDate: date })
+        dayScheduled.push(a.studentProgramId)
+        remaining.set(a.studentProgramId, remaining.get(a.studentProgramId)! - 1)
+      }
+      dayUnscheduled = result.unscheduled
+      for (const u of result.unscheduled) reasons.set(u.studentProgramId, u)
+    }
+
+    score += dayScore
+    perDay.push({ dayOfWeek: d, sessionDate: date, score: dayScore, scheduled: dayScheduled, unscheduled: dayUnscheduled })
   }
 
-  return { result: finalResult, logs }
+  const unscheduled: UnscheduledItem[] = pending
+    .filter(sp => remaining.get(sp.id)! > 0)
+    .map(sp => {
+      const done = quota.get(sp.id)! - remaining.get(sp.id)!
+      const base = reasons.get(sp.id) || { studentProgramId: sp.id, studentId: sp.student_id, reason: 'No valid slot found' }
+      return done > 0
+        ? { studentProgramId: sp.id, studentId: sp.student_id, reason: `Weekly quota not fully met (${done}/${quota.get(sp.id)})` }
+        : base
+    })
+
+  return {
+    scheduled, unscheduled, alreadyScheduled, perDay, score,
+    stats: { attempts, backtracks, elapsed: Date.now() - startedAt },
+    quota, linked, logs,
+  }
 }
 
 // ─── Deno Serve Handler ──────────────────────────────────────────────────────
@@ -686,7 +880,14 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    let body: { dayOfWeek?: number; dryRun?: boolean; config?: Partial<SchedulerConfig> }
+    let body: {
+      dayOfWeek?: number
+      dryRun?: boolean
+      config?: Partial<SchedulerConfig>
+      scope?: string
+      sessionDate?: string
+      studentProgramIds?: unknown
+    }
     try {
       body = (await req.json()) ?? {}
     } catch {
@@ -694,70 +895,110 @@ Deno.serve(async (req: Request) => {
     }
 
     const dayOfWeek: number = body.dayOfWeek ?? getCurrentDayOfWeek()
+    if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 4) {
+      return json({ success: false, error: 'Scheduling is Monday–Friday only' }, 422, req)
+    }
+
+    const rawIds = body.studentProgramIds
+    if (rawIds !== undefined && (!Array.isArray(rawIds) || rawIds.length > 500 || !rawIds.every(id => Number.isInteger(id) && id > 0))) {
+      return json({ success: false, error: 'studentProgramIds must be an array of positive integers' }, 422, req)
+    }
+
+    const scope: Scope = body.scope === 'whole-week' ? 'whole-week' : 'selected-day'
     const dryRun: boolean = body.dryRun ?? false
     const userConfig: Partial<SchedulerConfig> =
       body.config && typeof body.config === 'object' ? clampConfig(body.config) : {}
+    const sessionDate = typeof body.sessionDate === 'string' ? body.sessionDate : undefined
 
-    const { result, logs } = await runSmartScheduler(supabase, dayOfWeek, userConfig)
+    const output = await runSmartScheduler(
+      supabase,
+      { dayOfWeek, scope, sessionDate, studentProgramIds: rawIds as number[] | undefined },
+      userConfig,
+    )
 
-    // ── Persist if not dry run ──
-    if (!dryRun && result.assignments.length > 0) {
-      const inserts = result.assignments.map(a => ({
-        title: `Auto: ${a.programName}`,
-        therapist_id: a.teacherId,
-        student_ids: [a.studentId],
-        room: a.room,
-        start_hour: a.startHour,
-        span: a.duration,
-        type: a.type,
-        program_id: a.programId,
-        day_of_week: dayOfWeek,
-        is_confirmed: false,
-      }))
+    // ── Persist if not dry run ── (B2: no success without written rows)
+    let created: Array<{ id: number; student_program_id: number | null; day_of_week: number }> = []
 
-      const { data: created, error: insertError } = await supabase
+    if (!dryRun && output.scheduled.length > 0) {
+      const { data, error: insertError } = await supabase
         .from('sessions')
-        .insert(inserts)
-        .select()
+        .insert(output.scheduled.map(a => ({
+          title: `Auto: ${a.programName}`,
+          therapist_id: a.teacherId,
+          student_ids: [a.studentId],
+          room: a.room,
+          start_hour: a.startHour,
+          span: a.duration,
+          type: a.type,
+          program_id: a.programId,
+          student_program_id: a.studentProgramId,
+          day_of_week: a.dayOfWeek,
+          session_date: a.sessionDate,
+          is_confirmed: false,
+        })), { ignoreDuplicates: true })
+        .select('id, student_program_id, day_of_week')
 
       if (insertError) {
-        logs.push({ level: 'warn', message: `Insert error: ${insertError.message}` })
-      } else if (created) {
-        // Update student_programs status
-        const spIds = result.assignments.map(a => a.studentProgramId)
-        await supabase.from('student_programs').update({ status: 'scheduled' }).in('id', spIds)
-
-        // Log each scheduling action
-        for (const a of result.assignments) {
-          await supabase.from('session_scheduling_log').insert({
-            student_program_id: a.studentProgramId,
-            status: 'success',
-            attempt_number: result.stats.attempts,
-            metadata: { score: result.score, room: a.room, teacher: a.teacherId, startHour: a.startHour },
-          })
-        }
+        console.error('Auto scheduler insert failed:', insertError.message)
+        return json({ success: false, error: 'Failed to save schedule' }, 500, req)
       }
 
-      // Log failures
-      for (const u of result.unscheduled) {
-        await supabase.from('session_scheduling_log').insert({
+      created = data ?? []
+      const keyOf = (studentProgramId: number | null, dayOfWeek: number) => `${studentProgramId}:${dayOfWeek}`
+
+      // Only a fully met weekly quota leaves the Pending tab (B8).
+      const createdPerProgram = new Map<number, number>()
+      for (const r of created) {
+        if (r.student_program_id == null) continue
+        createdPerProgram.set(r.student_program_id, (createdPerProgram.get(r.student_program_id) ?? 0) + 1)
+      }
+      const completeIds = [...createdPerProgram.keys()].filter(id =>
+        (output.linked.get(id) ?? 0) + createdPerProgram.get(id)! >= (output.quota.get(id) ?? 1)
+      )
+      if (completeIds.length > 0) {
+        await supabase.from('student_programs').update({ status: 'scheduled' }).in('id', completeIds)
+      }
+
+      const assignmentByKey = new Map(output.scheduled.map(a => [keyOf(a.studentProgramId, a.dayOfWeek!), a] as [string, Assignment]))
+      if (created.length > 0) {
+        await supabase.from('session_scheduling_log').insert(created.map(r => {
+          const a = assignmentByKey.get(keyOf(r.student_program_id, r.day_of_week))
+          return {
+            student_program_id: r.student_program_id,
+            status: 'success',
+            attempt_number: output.stats.attempts,
+            metadata: { score: output.score, room: a?.room, teacher: a?.teacherId, startHour: a?.startHour },
+          }
+        }))
+      }
+      if (output.unscheduled.length > 0) {
+        await supabase.from('session_scheduling_log').insert(output.unscheduled.map(u => ({
           student_program_id: u.studentProgramId,
           status: 'failed',
           failure_reason: u.reason,
-          attempt_number: result.stats.attempts,
-        })
+          attempt_number: output.stats.attempts,
+        })))
       }
+      output.logs.push({ level: 'info', message: `Inserted ${created.length} of ${output.scheduled.length} sessions` })
     }
+
+    const createdIds = new Map(created.map(r => [`${r.student_program_id}:${r.day_of_week}`, r.id] as [string, number]))
+    const scheduled = output.scheduled
+      .map(a => ({ ...a, sessionId: dryRun ? null : createdIds.get(`${a.studentProgramId}:${a.dayOfWeek}`) ?? null }))
+      .filter(a => dryRun || a.sessionId !== null)
 
     return json({
       success: true,
       dryRun,
       dayOfWeek,
-      score: result.score,
-      scheduled: result.assignments,
-      unscheduled: result.unscheduled,
-      stats: result.stats,
-      logs: logs.filter(l => l.level !== 'debug'),
+      scope,
+      score: output.score,
+      scheduled,
+      unscheduled: output.unscheduled,
+      alreadyScheduled: output.alreadyScheduled,
+      perDay: output.perDay,
+      stats: output.stats,
+      logs: output.logs.filter(l => l.level !== 'debug'),
     }, 200, req)
   } catch (error) {
     console.error('Auto scheduler error:', (error as Error).message)

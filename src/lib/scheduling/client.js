@@ -11,6 +11,9 @@ import { getCurrentDayOfWeek } from './time.js';
  * @param {number} [options.dayOfWeek] - 0=Mon, 4=Fri
  * @param {boolean} [options.dryRun=false] - Preview without persisting
  * @param {Object} [options.config] - Override scheduler config
+ * @param {'whole-week'|'selected-day'} [options.scope='selected-day'] - Mon–Fri spread or one day
+ * @param {string} [options.sessionDate] - 'YYYY-MM-DD' anchor week / selected date
+ * @param {number[]} [options.studentProgramIds] - Subset to schedule; omit = all pending
  * @returns {Promise<Object>} Schedule result with score, assignments, unscheduled
  */
 export async function invokeSmartScheduler(options = {}) {
@@ -19,11 +22,16 @@ export async function invokeSmartScheduler(options = {}) {
   }
 
   try {
+    const scope = options.scope ?? 'selected-day';
     const { data, error } = await supabase.functions.invoke('auto-scheduler', {
       body: {
-        dayOfWeek: options.dayOfWeek ?? getCurrentDayOfWeek(),
+        // Whole-week ignores dayOfWeek; send 0 so a Saturday default is not rejected by validation.
+        dayOfWeek: options.dayOfWeek ?? (scope === 'whole-week' ? 0 : getCurrentDayOfWeek()),
         dryRun: options.dryRun ?? false,
         config: options.config ?? {},
+        scope,
+        sessionDate: options.sessionDate,
+        studentProgramIds: options.studentProgramIds,
       },
     });
 

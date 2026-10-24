@@ -10,6 +10,7 @@ import { createSettingsActions } from '../state/settings';
 import { createAttendanceActions } from '../state/attendance';
 import { createDocumentActions } from '../state/documents';
 import { createSchedulingActions } from '../state/scheduling';
+import { createRequirementsActions } from '../state/requirements';
 import { createAuthActions } from '../state/auth';
 
 const GlobalStateContext = createContext();
@@ -90,6 +91,7 @@ export const GlobalStateProvider = ({ children }) => {
         span: s.span,
         type: s.type,
         programId: s.program_id,
+        studentProgramId: s.student_program_id ?? null,
         dayOfWeek: s.day_of_week,
         sessionDate: s.session_date || null,
         isConfirmed: s.is_confirmed
@@ -233,6 +235,7 @@ export const GlobalStateProvider = ({ children }) => {
               span: payload.new.span,
               type: payload.new.type,
               programId: payload.new.program_id,
+              studentProgramId: payload.new.student_program_id ?? null,
               dayOfWeek: payload.new.day_of_week,
               sessionDate: payload.new.session_date || null,
               isConfirmed: payload.new.is_confirmed
@@ -249,6 +252,7 @@ export const GlobalStateProvider = ({ children }) => {
             span: payload.new.span,
             type: payload.new.type,
             programId: payload.new.program_id,
+            studentProgramId: payload.new.student_program_id ?? null,
             dayOfWeek: payload.new.day_of_week,
             sessionDate: payload.new.session_date || null,
             isConfirmed: payload.new.is_confirmed
@@ -466,6 +470,12 @@ export const GlobalStateProvider = ({ children }) => {
     notify,
   });
 
+  const { addStudentProgram, addStudentAvailability, removeStudentAvailability } = createRequirementsActions({
+    setStudentPrograms,
+    setStudentAvailability,
+    notify,
+  });
+
   const value = {
     staff,
     students,
@@ -520,6 +530,9 @@ export const GlobalStateProvider = ({ children }) => {
     deleteNotification,
     addStaffAvailability,
     removeStaffAvailability,
+    addStudentProgram,
+    addStudentAvailability,
+    removeStudentAvailability,
     toast,
     notify,
     loading,
