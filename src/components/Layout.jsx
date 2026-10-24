@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Stethoscope, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -117,12 +117,12 @@ const Layout = () => {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
-                <Stethoscope size={18} />
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0">
+                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="h-full w-full object-cover object-top" />
               </div>
               <div className="hidden sm:block">
                 <h1 className="font-semibold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
-                <p className="text-xs font-medium text-ps-ink-2">Special Ed Center</p>
+                <p className="text-ps-ink-2 text-[11px]">Polikids Center</p>
               </div>
             </div>
           </div>
@@ -194,10 +194,13 @@ const Layout = () => {
           {/* Mobile sidebar header */}
           <div className="flex items-center justify-between p-4 border-b border-ps-border lg:hidden">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-ps-accent flex items-center justify-center text-white shrink-0">
-                <Stethoscope size={18} />
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shrink-0">
+                <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="h-full w-full object-cover object-top" />
               </div>
-              <span className="font-semibold text-sm text-ps-ink-1">PoliSync</span>
+              <div className="leading-tight">
+                <span className="block font-semibold text-sm text-ps-ink-1">PoliSync</span>
+                <span className="text-ps-ink-2 text-[11px]">Polikids Center</span>
+              </div>
             </div>
             <button
               onClick={() => setIsSidebarOpen(false)}
