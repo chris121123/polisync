@@ -71,9 +71,8 @@ const Login = () => {
     
     try {
       const trimmedEmail = email.trim();
-      const trimmedPassword = password.trim();
 
-      const loggedInUser = await login(trimmedEmail, trimmedPassword);
+      const loggedInUser = await login(trimmedEmail, password);
       if (loggedInUser) {
         setFailedAttempts(0);
         setIsLockedOut(false);
@@ -284,6 +283,9 @@ const Login = () => {
                 <p className="text-xs text-ps-danger font-medium flex items-center gap-1 mt-1">
                   <AlertCircle size={12} /> {fieldErrors.password}
                 </p>
+              )}
+              {password.length > 0 && password !== password.trim() && (
+                <p className="text-xs text-ps-warn font-medium">Spaces at the start or end count as part of your password.</p>
               )}
             </div>
 
