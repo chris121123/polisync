@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, CalendarDays, GraduationCap, Stethoscope, HeartHandshake, ArrowRight } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalStateContext';
+import { parseDemoAccounts, DEMO_ROLE_LABELS } from '../../lib/demoAccounts';
 import AuthShell from './AuthShell';
 import { AUTH_ROLES } from './roles';
 
@@ -12,8 +15,29 @@ const ROLE_ICONS = {
   parent: HeartHandshake,
 };
 
+// demo superadmin is a public backdoor (ADR-019): never render it
+const DEMO_ROLES = ['admin', 'teacher', 'therapist', 'parent'];
+
 const RolePicker = () => {
   const navigate = useNavigate();
+  const { login } = useGlobalState();
+  const [demoError, setDemoError] = useState('');
+  const [demoLoading, setDemoLoading] = useState(false);
+  const demoAccounts = parseDemoAccounts(import.meta.env.VITE_DEMO_ACCOUNTS)
+    .filter((account) => DEMO_ROLES.includes(account.role));
+
+  const handleDemoLogin = async (account) => {
+    setDemoError('');
+    setDemoLoading(true);
+    try {
+      await login(account.email, account.password);
+      navigate('/dashboard');
+    } catch (err) {
+      setDemoError(err?.message || 'Demo sign-in failed.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <AuthShell>
@@ -49,6 +73,31 @@ const RolePicker = () => {
             );
           })}
         </nav>
+
+        {demoAccounts.length > 0 && (
+          <div className="space-y-3">
+            <div className="text-center space-y-1">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ps-ink-2">Demo accounts</h3>
+              <p className="text-xs text-ps-ink-2">Tap a role to sign in.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.role}
+                  type="button"
+                  onClick={() => handleDemoLogin(account)}
+                  disabled={demoLoading}
+                  className="min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-xs font-medium text-ps-ink-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
+                </button>
+              ))}
+            </div>
+            {demoError && (
+              <p className="text-xs text-ps-danger font-medium text-center">{demoError}</p>
+            )}
+          </div>
+        )}
 
         <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3 text-xs text-ps-ink-2 font-medium">
           <div className="flex items-center gap-2">
