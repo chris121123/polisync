@@ -1,0 +1,187 @@
+{
+  "_source": "src/lib/scheduler.js @ 4d81976",
+  "_note": "stats.elapsed is removed from localSchedule.expected: it derives from Date.now().",
+  "score": {
+    "cases": [
+      {
+        "name": "empty",
+        "assignments": [],
+        "unscheduledCount": 0,
+        "expected": 0
+      },
+      {
+        "name": "one assignment",
+        "assignments": [
+          {
+            "studentId": 1,
+            "startHour": 9,
+            "duration": 1
+          }
+        ],
+        "unscheduledCount": 0,
+        "expected": 13
+      },
+      {
+        "name": "five assignments",
+        "assignments": [
+          {
+            "studentId": 1,
+            "startHour": 8,
+            "duration": 1
+          },
+          {
+            "studentId": 1,
+            "startHour": 11,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 9,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 10,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 14,
+            "duration": 1
+          }
+        ],
+        "unscheduledCount": 0,
+        "expected": 58
+      },
+      {
+        "name": "five assignments, three unscheduled",
+        "assignments": [
+          {
+            "studentId": 1,
+            "startHour": 8,
+            "duration": 1
+          },
+          {
+            "studentId": 1,
+            "startHour": 11,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 9,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 10,
+            "duration": 1
+          },
+          {
+            "studentId": 2,
+            "startHour": 14,
+            "duration": 1
+          }
+        ],
+        "unscheduledCount": 3,
+        "expected": 43
+      },
+      {
+        "name": "span fallback when duration is absent",
+        "assignments": [
+          {
+            "studentId": 3,
+            "startHour": 9,
+            "span": 1
+          },
+          {
+            "studentId": 3,
+            "startHour": 12,
+            "span": 1
+          }
+        ],
+        "unscheduledCount": 0,
+        "expected": 21
+      }
+    ]
+  },
+  "localSchedule": {
+    "input": {
+      "studentPrograms": [
+        {
+          "id": 101,
+          "student_id": 1,
+          "program_id": 11,
+          "status": "pending",
+          "priority": 5,
+          "preferred_duration_hours": 1,
+          "assigned_teacher_id": null
+        }
+      ],
+      "staff": [
+        {
+          "id": 201,
+          "name": "Therapist One",
+          "app_role": "therapist",
+          "role": "Therapist",
+          "status": "Active"
+        }
+      ],
+      "rooms": [
+        {
+          "id": "r1",
+          "name": "Room A",
+          "maxCapacity": 5
+        }
+      ],
+      "programs": [
+        {
+          "id": 11,
+          "name": "Speech Therapy",
+          "type": "individual",
+          "default_duration_hours": 1
+        }
+      ],
+      "sessions": [],
+      "studentAvailability": [
+        {
+          "student_id": 1,
+          "day_of_week": 0,
+          "start_time": "09:00",
+          "end_time": "12:00"
+        }
+      ],
+      "schedulingSettings": {
+        "min_break_minutes": 15,
+        "max_daily_hours_per_student": 4,
+        "operating_start_time": "08:00",
+        "operating_end_time": "17:00"
+      },
+      "dayOfWeek": 0
+    },
+    "expected": {
+      "scheduled": [
+        {
+          "studentProgramId": 101,
+          "studentId": 1,
+          "programId": 11,
+          "programName": "Speech Therapy",
+          "teacherId": 201,
+          "room": "Room A",
+          "startHour": 9,
+          "duration": 1,
+          "type": "individual"
+        }
+      ],
+      "unscheduled": [],
+      "score": 13,
+      "stats": {
+        "backtracks": 1
+      }
+    },
+    "determinism": {
+      "runs": 20,
+      "identical": true,
+      "branch": "byte-identical"
+    }
+  }
+}
