@@ -129,7 +129,7 @@ const Login = () => {
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.85)] via-[rgba(14,19,34,.6)] to-[rgba(37,99,235,.35)]"
+          className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
         ></div>
         <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
           {/* crown-only crop: the source is square with the wordmark below y=60% */}

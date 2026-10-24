@@ -2,21 +2,19 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Star, Search, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { supabase } from '../../lib/supabase';
 
 const SessionNotes = () => {
-  const { user } = useGlobalState();
+  const { user, fetchSessionNotes } = useGlobalState();
   const [notes, setNotes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedNote, setExpandedNote] = useState(null);
 
   const fetchNotes = React.useCallback(async () => {
-    const { data } = await supabase
-      .from('session_notes')
-      .select('*, sessions(*), students(*)')
-      .order('created_at', { ascending: false });
+    const data = await fetchSessionNotes();
     if (data) setNotes(data);
+    // Factory actions are state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => { fetchNotes(); }, [fetchNotes]);

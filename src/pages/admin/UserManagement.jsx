@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
@@ -47,7 +46,9 @@ const UserManagement = () => {
     toggleUserActive,
     user,
     schedulingSettings,
-    notify
+    notify,
+    fetchRecentAudit,
+    saveSchedulingSettings,
   } = useGlobalState();
   const location = useLocation();
   const navigate = useNavigate();
@@ -114,12 +115,7 @@ const UserManagement = () => {
   const fetchAuditLogs = useCallback(async () => {
     setAuditLoading(true);
     try {
-      if (!supabase) return;
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(30);
+      const { data, error } = await fetchRecentAudit(30);
       if (error) throw error;
       if (data) setAuditLogs(data);
     } catch (err) {
@@ -127,6 +123,8 @@ const UserManagement = () => {
     } finally {
       setAuditLoading(false);
     }
+    // Factory actions are state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -282,19 +280,7 @@ const UserManagement = () => {
     e.preventDefault();
     setConfigLoading(true);
     try {
-      if (!supabase) throw new Error('Database connection unavailable');
-      const { error } = await supabase
-        .from('scheduling_settings')
-        .update({
-          operating_start_time: configForm.operating_start_time,
-          operating_end_time: configForm.operating_end_time,
-          allow_overbook: configForm.allow_overbook,
-          max_daily_hours_per_student: Number(configForm.max_daily_hours_per_student),
-          auto_schedule_enabled: configForm.auto_schedule_enabled,
-          min_break_minutes: Number(configForm.min_break_minutes),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', schedulingSettings?.id || 1);
+      const { error } = await saveSchedulingSettings(configForm, schedulingSettings?.id || 1);
       if (error) throw error;
       if (notify) notify('Platform configuration updated successfully');
       setInitialConfigForm({ ...configForm });
@@ -440,9 +426,7 @@ const UserManagement = () => {
                     <td className="px-6 py-4">
                       <span className={clsx(
                         "text-xs font-medium px-2.5 py-1 rounded-full",
-                        member.app_role === 'superadmin'
-                          ? "bg-ps-accent-soft text-ps-accent"
-                          : "bg-ps-bg text-ps-ink-2 border border-ps-border"
+                        ROLE_PILL_COLORS[member.app_role || 'teacher']
                       )}>
                         {member.app_role || 'teacher'}
                       </span>

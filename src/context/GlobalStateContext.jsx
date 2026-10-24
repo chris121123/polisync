@@ -356,6 +356,7 @@ export const GlobalStateProvider = ({ children }) => {
     updateUserRole,
     adminDeleteUser,
     toggleUserActive,
+    fetchRecentAudit,
   } = createUserAdminActions({
     user,
     staff,
@@ -371,7 +372,7 @@ export const GlobalStateProvider = ({ children }) => {
 
   const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
-  const { addSession, moveSession, deleteSession } = createSessionActions({
+  const { addSession, moveSession, deleteSession, fetchSessionNotes } = createSessionActions({
     sessions,
     setSessions,
     notify,
@@ -380,7 +381,7 @@ export const GlobalStateProvider = ({ children }) => {
     notifyRoleUsers,
   });
 
-  const { clearDatabase } = createSettingsActions({
+  const { clearDatabase, saveSchedulingSettings, checkConnection } = createSettingsActions({
     setLoading,
     setSessions,
     setStudents,
@@ -520,7 +521,11 @@ export const GlobalStateProvider = ({ children }) => {
     toast,
     notify,
     loading,
-    clearDatabase
+    clearDatabase,
+    fetchRecentAudit,
+    saveSchedulingSettings,
+    fetchSessionNotes,
+    checkConnection,
   };
 
   return (

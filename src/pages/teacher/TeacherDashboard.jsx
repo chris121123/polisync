@@ -75,7 +75,7 @@ const TeacherDashboard = () => {
               <ChevronLeft size={20} />
             </button>
             <div className="text-center min-w-[130px] sm:min-w-[140px]">
-              <h1 className="text-2xl font-display font-bold text-ps-ink-1">
+              <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
                 {dayNames[selectedDay - 1]}
               </h1>
               <p className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Daily Schedule</p>

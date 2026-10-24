@@ -21,26 +21,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { supabase } from '../../lib/supabase';
 import { auditLine } from '../../lib/auditLog';
 import { StatCard } from '../admin/AdminDashboard';
-
-// ── Role accent map ────────────────────────────────────────────────────
-const ROLE_COLORS = {
-  superadmin: { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-600/10', dot: 'bg-violet-600 dark:bg-violet-400' },
-  admin:      { text: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-600/10',   dot: 'bg-amber-600 dark:bg-amber-400' },
-  teacher:    { text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-600/10',  dot: 'bg-indigo-600 dark:bg-indigo-400' },
-  therapist:  { text: 'text-teal-600 dark:text-teal-400',     bg: 'bg-teal-600/10',    dot: 'bg-teal-600 dark:bg-teal-400' },
-  parent:     { text: 'text-pink-600 dark:text-pink-400',     bg: 'bg-pink-600/10',    dot: 'bg-pink-600 dark:bg-pink-400' },
-};
-
-const ROLE_LABELS = {
-  superadmin: 'Super Admin',
-  admin: 'Admin',
-  teacher: 'Teacher',
-  therapist: 'Therapist',
-  parent: 'Parent',
-};
+import { ROLE_COLORS, ROLE_LABELS } from '../../lib/rolePalette';
 
 const EDGE_FUNCTIONS = [
   'admin-create-user',
@@ -50,53 +33,47 @@ const EDGE_FUNCTIONS = [
 ];
 
 // ── Connection Ping ────────────────────────────────────────────────────
-function useConnectionStatus() {
+function useConnectionStatus(checkConnection) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
   useEffect(() => {
-    if (!supabase) {
-      setTimeout(() => setStatus('error'), 0);
-      return;
-    }
-    supabase
-      .from('profiles')
-      .select('id')
-      .limit(1)
-      .then(({ error }) => setStatus(error ? 'error' : 'ok'))
-      .catch(() => setStatus('error'));
+    let cancelled = false;
+    checkConnection().then((ok) => {
+      if (!cancelled) setStatus(ok ? 'ok' : 'error');
+    });
+    return () => { cancelled = true; };
+    // Factory action is state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return status;
 }
 
 // ── Main Component ─────────────────────────────────────────────────────
 const SuperAdminDashboard = () => {
-  const { staff, user } = useGlobalState();
+  const { staff, user, fetchRecentAudit, checkConnection } = useGlobalState();
   const navigate = useNavigate();
-  const connStatus = useConnectionStatus();
+  const connStatus = useConnectionStatus(checkConnection);
 
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditLoading, setAuditLoading] = useState(true);
 
   // Fetch last 10 audit events on mount
-  const fetchRecentAudit = useCallback(async () => {
+  const loadRecentAudit = useCallback(async () => {
     setAuditLoading(true);
     try {
-      if (!supabase) return;
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await fetchRecentAudit(10);
       if (!error && data) setAuditLogs(data);
     } catch {
       // non-blocking
     } finally {
       setAuditLoading(false);
     }
+    // Factory actions are state-free and recreated per render by design (ADR-001).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    fetchRecentAudit();
-  }, [fetchRecentAudit]);
+    loadRecentAudit();
+  }, [loadRecentAudit]);
 
   // ── Derived account metrics ──────────────────────────────────────────
   const totalAccounts = staff.length;
@@ -320,7 +297,7 @@ const SuperAdminDashboard = () => {
               <CheckCircle2 size={14} className="text-ps-success" />
             </div>
             <p className="text-xs text-ps-ink-2 truncate">{user?.email || '—'}</p>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-600 dark:text-violet-400">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-role-superadmin">
               <Shield size={11} /> Super Administrator
             </span>
           </div>
