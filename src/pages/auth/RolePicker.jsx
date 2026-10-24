@@ -50,6 +50,7 @@ const RolePicker = () => {
         <div className="flex flex-col items-start space-y-2">
           <h2 className="font-display font-semibold text-3xl text-ps-ink-1">Sign in to PoliSync</h2>
           <p className="text-ps-ink-2 text-sm">Choose the account type you use.</p>
+          <p className="text-xs text-ps-ink-2">Accounts are created by the center’s administrator.</p>
         </div>
 
         <nav aria-label="Account types" className="space-y-2">
