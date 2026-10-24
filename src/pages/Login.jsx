@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { parseDemoAccounts, DEMO_ROLE_LABELS } from '../lib/demoAccounts';
 
 const MAX_ATTEMPTS = 5;
 
@@ -18,6 +19,7 @@ const Login = () => {
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const demoAccounts = parseDemoAccounts(import.meta.env.VITE_DEMO_ACCOUNTS);
 
   const validateForm = () => {
     const newErrors = {};
@@ -69,18 +71,11 @@ const Login = () => {
     await sendResetEmail(email);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isLockedOut) return;
-    if (!validateForm()) return;
-    
-    setError('');
+  const performLogin = async (emailValue, passwordValue) => {
     setLoading(true);
     
     try {
-      const trimmedEmail = email.trim();
-
-      const loggedInUser = await login(trimmedEmail, password);
+      const loggedInUser = await login(emailValue, passwordValue);
       if (loggedInUser) {
         setFailedAttempts(0);
         setIsLockedOut(false);
@@ -122,6 +117,22 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLockedOut) return;
+    if (!validateForm()) return;
+    setError('');
+    await performLogin(email.trim(), password);
+  };
+
+  const handleDemoLogin = async (account) => {
+    if (loading || isLockedOut) return;
+    setEmail(account.email);
+    setPassword(account.password);
+    setError('');
+    await performLogin(account.email, account.password);
   };
 
   return (
@@ -363,6 +374,30 @@ const Login = () => {
               </button>
             )}
           </form>
+
+          {/* Demo role accounts (only when VITE_DEMO_ACCOUNTS is set) */}
+          {demoAccounts.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-center space-y-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-ps-ink-2">Demo accounts</h3>
+                <p className="text-xs text-ps-ink-2">Tap a role to sign in.</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {demoAccounts.map((account) => (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleDemoLogin(account)}
+                    disabled={loading || isLockedOut}
+                    aria-label={`Sign in as demo ${DEMO_ROLE_LABELS[account.role]}`}
+                    className="min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-xs font-medium text-ps-ink-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  >
+                    {DEMO_ROLE_LABELS[account.role]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Trust Badge at bottom */}
           <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3 text-xs text-ps-ink-2 font-medium">
