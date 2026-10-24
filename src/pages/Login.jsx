@@ -245,12 +245,15 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-ps-ink-2">
+              <label htmlFor="login-email" className="block text-xs font-medium text-ps-ink-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="email"
                   type="email"
                   value={email}
                   disabled={isLockedOut}
@@ -276,12 +279,15 @@ const Login = () => {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-ps-ink-2">
+              <label htmlFor="login-password" className="block text-xs font-medium text-ps-ink-2">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
                 <input
+                  id="login-password"
+                  name="password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   disabled={isLockedOut}
