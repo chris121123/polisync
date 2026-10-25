@@ -9,10 +9,8 @@ import {
   Activity,
   CheckCircle2,
   AlertCircle,
-  Clock,
   ArrowRight,
   ChevronRight,
-  Settings as SettingsIcon,
   Wifi,
   WifiOff,
   Loader2,
@@ -317,57 +315,6 @@ const SuperAdminDashboard = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* ── Quick Actions ─────────────────────────────────────────────── */}
-      <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
-        <h2 className="text-base font-display font-semibold text-ps-ink-1 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            {
-              label: 'Create User',
-              icon: UserPlus,
-              desc: 'Add a new account',
-              action: () => navigate('/admin/users', { state: { openCreate: true } }),
-              accent: true,
-            },
-            {
-              label: 'User Management',
-              icon: Users,
-              desc: 'Manage all accounts',
-              action: () => navigate('/admin/users'),
-            },
-            {
-              label: 'Audit Trail',
-              icon: Clock,
-              desc: 'View system activity',
-              action: () => navigate('/admin/users', { state: { tab: 'audit' } }),
-            },
-            {
-              label: 'Settings',
-              icon: SettingsIcon,
-              desc: 'Platform configuration',
-              action: () => navigate('/settings'),
-            },
-          ].map(({ label, icon: Icon, desc, action, accent }) => (
-            <button
-              key={label}
-              onClick={action}
-              className={clsx(
-                'flex flex-col items-start p-4 rounded-xl border text-left transition-all hover:shadow-sm active:scale-95 gap-2',
-                accent
-                  ? 'bg-ps-primary text-white border-ps-accent'
-                  : 'bg-ps-bg border-ps-border hover:border-ps-accent/30 text-ps-ink-1'
-              )}
-            >
-              <Icon size={18} className={accent ? 'text-white' : 'text-ps-accent'} />
-              <div>
-                <p className={clsx('text-xs font-semibold', accent ? 'text-white' : 'text-ps-ink-1')}>{label}</p>
-                <p className={clsx('text-xs font-medium mt-0.5', accent ? 'text-white/70' : 'text-ps-ink-2')}>{desc}</p>
-              </div>
-            </button>
-          ))}
         </div>
       </div>
 

@@ -95,7 +95,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
           </div>
         </div>
 
-        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-4 md:p-6 space-y-4 overflow-y-auto">
           {step === 1 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
               <div>

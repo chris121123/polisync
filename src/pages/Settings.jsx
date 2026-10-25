@@ -93,7 +93,7 @@ const SlideOverDrawer = ({ isOpen, onClose, title, icon: Icon, children }) => (
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-sm text-ps-ink-2 leading-relaxed custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4 text-sm text-ps-ink-2 leading-relaxed custom-scrollbar">
               {children}
             </div>
 
@@ -102,7 +102,7 @@ const SlideOverDrawer = ({ isOpen, onClose, title, icon: Icon, children }) => (
                 onClick={onClose}
                 className="w-full py-3 bg-ps-primary text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
               >
-                Close Drawer
+                Close
               </button>
             </div>
           </motion.div>

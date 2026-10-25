@@ -48,7 +48,7 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
           </div>
         </div>
 
-        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-4 md:p-6 space-y-4 overflow-y-auto">
           {/* Date Picker */}
           <div>
             <label htmlFor="availability-date" className="text-xs font-medium text-ps-ink-2 mb-2 block">Select Date</label>
