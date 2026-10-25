@@ -20,5 +20,33 @@ export const createRoomActions = ({ setRooms, notify }) => {
     }
   };
 
-  return { addRoom };
+  const deleteRoom = async (room) => {
+    try {
+      // sessions.room is a plain text reference, so deleting an occupied room would
+      // orphan its sessions and hide them from the calendar.
+      const { count, error: countError } = await supabase
+        .from('sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('room', room.name);
+      if (countError) throw countError;
+
+      if (count > 0) {
+        notify(`"${room.name}" still has ${count} scheduled session${count === 1 ? '' : 's'}. Move or delete them first.`, 'error');
+        return false;
+      }
+
+      const { error } = await supabase.from('rooms').delete().eq('id', room.id);
+      if (error) throw error;
+
+      setRooms(prev => prev.filter(r => String(r.id) !== String(room.id)));
+      notify(`Room "${room.name}" deleted`);
+      return true;
+    } catch (error) {
+      console.error(error);
+      notify(error.message, 'error');
+      return false;
+    }
+  };
+
+  return { addRoom, deleteRoom };
 };

@@ -321,12 +321,6 @@ const AdminDashboard = () => {
               <h3 className="text-sm font-display font-semibold text-ps-ink-1">Upcoming Program Sessions</h3>
               <p className="text-xs text-ps-ink-2 font-medium">Scheduled therapy and classroom groups today</p>
             </div>
-            <button
-              onClick={() => navigate('/schedule')}
-              className="text-xs font-medium text-ps-accent hover:underline flex items-center gap-1"
-            >
-              Full Calendar <ChevronRight size={13} />
-            </button>
           </div>
 
           <div className="space-y-2.5">
