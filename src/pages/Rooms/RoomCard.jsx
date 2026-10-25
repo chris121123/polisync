@@ -1,8 +1,8 @@
-import { DoorOpen, Users, User, MapPin, ArrowUpRight } from 'lucide-react';
+import { DoorOpen, Users, User, MapPin, ArrowUpRight, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
-export const RoomCard = ({ room, cfg, isSelected, setSelectedRoomId }) => (
+export const RoomCard = ({ room, cfg, isSelected, setSelectedRoomId, onDelete }) => (
   <motion.div 
     layoutId={`room-${room.id}`}
     onClick={() => setSelectedRoomId(room.id)}
@@ -78,7 +78,17 @@ export const RoomCard = ({ room, cfg, isSelected, setSelectedRoomId }) => (
     
     <div className="mt-4 pt-3 border-t border-ps-border flex items-center justify-between text-xs font-medium text-ps-ink-2">
        <span className="text-ps-accent group-hover:underline flex items-center gap-1">View Details <ArrowUpRight size={12} /></span>
-       <span>ID: {room.id.toString().padStart(3, '0')}</span>
+       <div className="flex items-center gap-1.5">
+         <span>ID: {room.id.toString().padStart(3, '0')}</span>
+         <button
+           type="button"
+           onClick={(event) => { event.stopPropagation(); onDelete(room); }}
+           aria-label={`Delete ${room.name}`}
+           className="rounded-lg p-1.5 text-ps-ink-2 transition-colors hover:bg-ps-danger/10 hover:text-ps-danger"
+         >
+           <Trash2 size={14} />
+         </button>
+       </div>
     </div>
   </motion.div>
 );
