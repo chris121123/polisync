@@ -2,7 +2,7 @@ const AuthShell = ({ children }) => (
   <div className="min-h-screen md:h-screen w-full flex flex-col md:flex-row bg-ps-bg font-sans text-ps-ink-1 transition-colors">
 
     {/* ── Left: Building + Brand Panel ─────────────────────────────── */}
-    <div className="relative h-[40vh] md:h-full md:w-1/2 shrink-0 overflow-hidden">
+    <div className="relative min-h-[40vh] md:h-full md:w-1/2 shrink-0 overflow-hidden">
       <img
         src="/brand/building.jpg"
         alt="Polikids Center for Development building"
@@ -10,22 +10,25 @@ const AuthShell = ({ children }) => (
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.78)] via-[rgba(14,19,34,.5)] to-[rgba(37,99,235,.3)]"
+        className="absolute inset-0 bg-gradient-to-br from-[rgba(14,19,34,.82)] via-[rgba(14,19,34,.58)] to-[rgba(37,99,235,.3)]"
       ></div>
-      <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 p-6 text-center md:items-start md:justify-between md:p-12 md:text-left">
-        {/* crown-only crop: the source is square with the wordmark below y=60% */}
-        <div className="rounded-2xl bg-white p-3 shadow-sm">
-          <div className="w-14 h-14 overflow-hidden flex items-center justify-center">
-            <img
-              src="/brand/polikids-logo.jpg"
-              alt="Polikids Center for Development logo"
-              className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]"
-            />
-          </div>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-t from-[rgba(14,19,34,.6)] via-[rgba(14,19,34,.15)] to-transparent"
+      ></div>
+      <div className="relative z-10 h-full flex flex-col items-center justify-center gap-5 md:gap-16 p-6 text-center md:items-start md:justify-start md:p-12 md:text-left">
+        {/* logo lockup: tight crop on white, sits on a white tile */}
+        <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-sm">
+          <img
+            src="/brand/polikids-logo-lockup.png"
+            alt="Polikids Center for Development logo"
+            className="h-auto w-28 sm:w-40"
+          />
         </div>
-        <div>
-          <h1 className="font-display font-semibold text-3xl tracking-tight text-white">PoliSync</h1>
-          <p className="text-sm font-medium text-ps-sky">Center for Development</p>
+        <div className="space-y-3 w-full max-w-2xl">
+          <h1 className="font-display font-semibold text-3xl sm:text-4xl md:text-4xl lg:text-5xl tracking-tight text-white">PoliSync</h1>
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-ps-sky">One secure hub for every session at Polikids.</p>
+          <p className="hidden md:block text-base md:text-xl lg:text-2xl text-white/90 leading-relaxed">Schedule therapy and classroom sessions with automatic conflict checks, record attendance and notes, and keep teachers, therapists, and parents aligned on every child’s progress.</p>
         </div>
       </div>
     </div>

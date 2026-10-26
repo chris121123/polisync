@@ -1,5 +1,5 @@
 {
-  "_source": "src/lib/scheduler.js @ 4d81976",
+  "_source": "src/lib/scheduling/{conflicts,scoring,engine}.js @ bce2b0a",
   "_note": "stats.elapsed is removed from localSchedule.expected: it derives from Date.now().",
   "score": {
     "cases": [
@@ -169,7 +169,9 @@
           "room": "Room A",
           "startHour": 9,
           "duration": 1,
-          "type": "individual"
+          "type": "individual",
+          "dayOfWeek": 0,
+          "sessionDate": null
         }
       ],
       "unscheduled": [],

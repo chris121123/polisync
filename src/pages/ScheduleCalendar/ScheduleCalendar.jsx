@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock,
   Users, X, Info, AlertCircle, Trash2, Zap, CheckCircle2, Filter,
@@ -11,17 +12,18 @@ import {
   HOURS, formatHour, formatDateISO, getWeekStart, weekDatesFor,
   filterSessionsForView, groupSessionsByDay, slotHasConflict as slotHasConflictAt, TYPE_CONFIG,
 } from './calendarMath.js';
-import { isTherapistOrTeacher } from './staff.js';
+import { countAvailableStaff } from './staff.js';
 import { NowIndicator, SessionCard, WeeklySessionCard } from './SessionCard.jsx';
 import { AddSessionModal } from './AddSessionModal.jsx';
 import { ManageAvailabilityModal } from './ManageAvailabilityModal.jsx';
+import { PendingPanel } from './PendingPanel.jsx';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ScheduleCalendar = () => {
-  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify, staffAvailability, addStaffAvailability, removeStaffAvailability } = useGlobalState();
+  const { staff, students, sessions, moveSession, addSession, deleteSession, conflicts, rooms, smartSchedule, notify, staffAvailability } = useGlobalState();
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
@@ -33,10 +35,18 @@ const ScheduleCalendar = () => {
   const [roomPage, setRoomPage] = useState(0);
   const scrollRef = useRef(null);
 
+  // Tab lives in the URL so search can deep-link to the pending list.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'pending' ? 'pending' : 'calendar';
+  const setTab = (next) => setSearchParams(next === 'pending' ? { tab: 'pending' } : {}, { replace: true });
+
   // ── Selected Date State ──
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const selectedDateISO = formatDateISO(selectedDate);
+  // Same Mon–Fri mapping as handleAutoSchedule (Sunday keeps its Fri mapping).
+  const scheduleDayOfWeek = selectedDate.getDay() === 0 ? 4 : selectedDate.getDay() - 1;
+  const isWeekend = scheduleDayOfWeek < 0 || scheduleDayOfWeek > 4;
 
   const navigateDate = (offset) => {
     setSelectedDate(prev => {
@@ -60,10 +70,10 @@ const ScheduleCalendar = () => {
   const weekDates = weekDatesFor(weekStart);
 
   // Count available staff for selected date (excluding parents/admins)
-  const availableStaffCount = useMemo(() => {
-    const eligibleIds = new Set((staff || []).filter(isTherapistOrTeacher).map(s => s.id));
-    return staffAvailability?.filter(a => a.available_date === selectedDateISO && eligibleIds.has(a.staff_id)).length || 0;
-  }, [staff, staffAvailability, selectedDateISO]);
+  const availableStaffCount = useMemo(
+    () => countAvailableStaff(staff, staffAvailability, selectedDateISO),
+    [staff, staffAvailability, selectedDateISO]
+  );
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -79,8 +89,7 @@ const ScheduleCalendar = () => {
 
   const handleAutoSchedule = async () => {
     setIsAutoScheduling(true);
-    const dayOfWeek = selectedDate.getDay() === 0 ? 4 : selectedDate.getDay() - 1;
-    const result = await smartSchedule({ dayOfWeek, sessionDate: selectedDateISO });
+    const result = await smartSchedule({ dayOfWeek: scheduleDayOfWeek, sessionDate: selectedDateISO });
     if (!result.success) {
       notify(result.error || 'Auto-scheduler failed to run', 'error');
     } else if (!result.scheduled || result.scheduled.length === 0) {
@@ -188,6 +197,24 @@ const ScheduleCalendar = () => {
                 </div>
               </div>
 
+              {/* Section tabs: Calendar / Pending */}
+              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1" role="group" aria-label="Schedule section">
+                {[['calendar', 'Calendar'], ['pending', 'Pending']].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setTab(key)}
+                    aria-pressed={tab === key}
+                    className={clsx(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                      tab === key ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               {/* View toggle: Daily / Weekly */}
               <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1">
                 <button
@@ -240,7 +267,7 @@ const ScheduleCalendar = () => {
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto mt-2 xl:mt-0">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto xl:shrink-0 xl:flex-nowrap mt-2 xl:mt-0">
               {/* Type filters */}
               <div className="flex items-center gap-1 bg-ps-bg rounded-xl p-1">
                 {[
@@ -266,10 +293,11 @@ const ScheduleCalendar = () => {
 
               <button
                 onClick={handleAutoSchedule}
-                disabled={isAutoScheduling}
+                disabled={isAutoScheduling || isWeekend}
+                title={isWeekend ? 'Scheduling is Monday–Friday only' : undefined}
                 className={clsx(
                   "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-                  isAutoScheduling 
+                  isAutoScheduling || isWeekend
                     ? "bg-ps-border text-ps-ink-2 cursor-not-allowed" 
                     : "border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent"
                 )}
@@ -279,7 +307,7 @@ const ScheduleCalendar = () => {
                 ) : (
                   <Zap size={16} strokeWidth={2.5} />
                 )}
-                {isAutoScheduling ? 'Scheduling...' : 'Auto-Schedule'}
+                {isAutoScheduling ? 'Scheduling...' : isWeekend ? 'Mon–Fri only' : 'Auto-Schedule'}
               </button>
 
               <button
@@ -323,8 +351,9 @@ const ScheduleCalendar = () => {
         {/* ── Grid ───────── */}
         <div ref={scrollRef} className="flex-1 overflow-auto bg-ps-bg">
 
-          {/* ════════════ MOBILE LIST VIEW ════════════ */}
-          {isMobile ? (
+          {tab === 'pending' ? (
+            <PendingPanel selectedDateISO={selectedDateISO} dayOfWeek={scheduleDayOfWeek} />
+          ) : isMobile ? (
             <div className="p-4 space-y-4 pb-20">
               {[...filteredSessions].sort((a, b) => a.startHour - b.startHour).map(session => {
                 const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
@@ -827,9 +856,6 @@ const ScheduleCalendar = () => {
         onClose={() => setIsAvailabilityModalOpen(false)}
         staff={staff}
         staffAvailability={staffAvailability}
-        addStaffAvailability={addStaffAvailability}
-        removeStaffAvailability={removeStaffAvailability}
-        notify={notify}
       />
     </div>
   );

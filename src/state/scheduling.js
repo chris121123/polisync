@@ -63,19 +63,47 @@ export const createSchedulingActions = ({
    * backtracking + scoring, with a local fallback for offline/preview.
    */
   const smartSchedule = async (options = {}) => {
-    const { dryRun = false, dayOfWeek, sessionDate, config: userConfig } = options;
+    const {
+      dryRun = false,
+      dayOfWeek,
+      sessionDate,
+      scope = 'selected-day',
+      config: userConfig,
+      studentProgramIds,
+    } = options;
+
+    if (dayOfWeek != null && (dayOfWeek < 0 || dayOfWeek > 4)) {
+      return { success: false, error: 'Scheduling is Monday–Friday only' };
+    }
+
+    // A requirement leaves the Pending tab only once its weekly quota is met (B2/B8).
+    const fullyScheduled = (created, unscheduled) => {
+      const unmet = new Set((unscheduled || []).map(u => u.studentProgramId));
+      const counts = new Map();
+      for (const a of created) {
+        counts.set(a.studentProgramId, (counts.get(a.studentProgramId) ?? 0) + 1);
+      }
+      return [...counts.keys()].filter(id => {
+        if (unmet.has(id)) return false;
+        const perWeek = studentPrograms.find(p => p.id === id)?.sessions_per_week ?? 1;
+        const linked = (sessions || []).filter(s => (s.studentProgramId ?? s.student_program_id) === id).length;
+        return (counts.get(id) ?? 0) + linked >= perWeek;
+      });
+    };
 
     // Try Edge Function first (full backtracking + multi-attempt)
     if (supabase) {
       try {
-        const result = await invokeSmartScheduler({ dayOfWeek, dryRun, config: userConfig });
+        const result = await invokeSmartScheduler({ dayOfWeek, dryRun, config: userConfig, scope, sessionDate, studentProgramIds });
         if (result.success) {
           // Refresh student programs state after scheduling
           if (!dryRun && result.scheduled?.length > 0) {
-            const scheduledIds = result.scheduled.map(a => a.studentProgramId);
-            setStudentPrograms(prev =>
-              prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
-            );
+            const scheduledIds = fullyScheduled(result.scheduled, result.unscheduled);
+            if (scheduledIds.length > 0) {
+              setStudentPrograms(prev =>
+                prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
+              );
+            }
             const { data: refreshedSessions } = await supabase.from('sessions').select('*');
             if (refreshedSessions) {
               setSessions(refreshedSessions.map(s => ({
@@ -88,6 +116,7 @@ export const createSchedulingActions = ({
                 span: s.span,
                 type: s.type,
                 programId: s.program_id,
+                studentProgramId: s.student_program_id ?? null,
                 dayOfWeek: s.day_of_week,
                 sessionDate: s.session_date || null,
                 isConfirmed: s.is_confirmed
@@ -114,6 +143,9 @@ export const createSchedulingActions = ({
         studentAvailability,
         schedulingSettings,
         dayOfWeek,
+        scope,
+        sessionDate,
+        studentProgramIds,
       }, userConfig);
 
       // Persist locally-computed schedule if not dry run
@@ -129,8 +161,9 @@ export const createSchedulingActions = ({
             span: a.duration,
             type: a.type,
             program_id: a.programId,
-            day_of_week: dayOfWeek ?? 0,
-            session_date: sessionDate || null,
+            student_program_id: a.studentProgramId,
+            day_of_week: a.dayOfWeek ?? dayOfWeek,
+            session_date: a.sessionDate ?? sessionDate ?? null,
             is_confirmed: false,
           }).select().single();
 
@@ -145,12 +178,20 @@ export const createSchedulingActions = ({
               span: data.span,
               type: data.type,
               programId: data.program_id,
+              studentProgramId: data.student_program_id ?? null,
               dayOfWeek: data.day_of_week,
               sessionDate: data.session_date || null,
               isConfirmed: data.is_confirmed,
             });
-            await supabase.from('student_programs').update({ status: 'scheduled' }).eq('id', a.studentProgramId);
           }
+        }
+        // Only mark requirements whose weekly quota is now met — B2.
+        const completedIds = fullyScheduled(newlyCreated, result.unscheduled);
+        if (completedIds.length > 0) {
+          await supabase.from('student_programs').update({ status: 'scheduled' }).in('id', completedIds);
+          setStudentPrograms(prev =>
+            prev.map(p => completedIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
+          );
         }
         // Refresh state optimistically
         if (newlyCreated.length > 0) {
@@ -160,11 +201,7 @@ export const createSchedulingActions = ({
             return [...prev, ...toAdd];
           });
         }
-        const scheduledIds = result.scheduled.map(a => a.studentProgramId);
-        setStudentPrograms(prev =>
-          prev.map(p => scheduledIds.includes(p.id) ? { ...p, status: 'scheduled' } : p)
-        );
-        notify(`Local scheduler: ${result.scheduled.length} sessions created (score: ${result.score})`);
+        notify(`Local scheduler: ${newlyCreated.length} sessions created (score: ${result.score})`);
       }
 
       return { success: true, ...result };
