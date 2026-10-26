@@ -28,8 +28,8 @@ function corsHeaders(req: Request) {
   const allowed = (Deno.env.get('APP_ORIGIN') ?? '').split(',').map(o => o.trim()).filter(Boolean)
   const origin = req.headers.get('Origin') ?? ''
   const ok = allowed.includes(origin)
-    || /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
-    || /^https:\/\/[a-z0-9-]+\.(netlify|vercel)\.app$/.test(origin)
+    || /^http:\/\/localhost:\d+$/.test(origin)
+    || /^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(origin)
 
   return {
     ...(ok ? { 'Access-Control-Allow-Origin': origin } : {}),
