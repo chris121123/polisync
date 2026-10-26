@@ -372,9 +372,9 @@ export const GlobalStateProvider = ({ children }) => {
     notifyRoleUsers,
   });
 
-  const { addRoom, deleteRoom } = createRoomActions({ setRooms, notify });
+  const { addRoom } = createRoomActions({ setRooms, notify });
 
-  const { addPerson, deleteStudent } = createDirectoryActions({ setStaff, setStudents, setSessions, notify });
+  const { addPerson } = createDirectoryActions({ setStaff, setStudents, notify });
 
   const { addSession, moveSession, deleteSession, fetchSessionNotes } = createSessionActions({
     sessions,
@@ -513,9 +513,7 @@ export const GlobalStateProvider = ({ children }) => {
     moveSession,
     deleteSession,
     addPerson,
-    deleteStudent,
     addRoom,
-    deleteRoom,
     addSessionNote,
     markAttendance,
     fetchAttendance,
