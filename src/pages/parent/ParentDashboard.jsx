@@ -240,7 +240,10 @@ const ParentDashboard = () => {
               Your account isn't linked to any students yet. This usually happens while our administration processes your registration.
             </p>
           </div>
-          <button className="px-6 py-3 bg-ps-primary text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+          <button
+            onClick={() => { window.location.href = 'mailto:support@polisync.com?subject=PoliSync%20Support%20Request'; }}
+            className="px-6 py-3 bg-ps-primary text-white font-bold rounded-2xl shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+          >
             Contact Support
           </button>
         </div>

@@ -20,6 +20,7 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, appRole, logout, notifications } = useGlobalState();
   const navigate = useNavigate();
   const bellRef = useRef(null);
@@ -71,6 +72,19 @@ const Layout = () => {
     logout();
     navigate('/login');
   };
+
+  const confirmLogout = () => {
+    setShowLogoutConfirm(false);
+    handleLogout();
+  };
+
+  // Escape closes the logout confirmation
+  useEffect(() => {
+    if (!showLogoutConfirm) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowLogoutConfirm(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showLogoutConfirm]);
 
   const handleNavClick = () => {
     // Close sidebar on tablet when clicking a nav link
@@ -260,7 +274,7 @@ const Layout = () => {
               {isSidebarOpen ? (
                 <div className="flex gap-1">
                   <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutConfirm(true)}
                     className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-surface rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
                     title="Logout"
                     aria-label="Logout"
@@ -271,7 +285,7 @@ const Layout = () => {
               ) : (
                 <div className="absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border rounded-xl shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all z-50 flex flex-col gap-2">
                     <button 
-                      onClick={handleLogout}
+                      onClick={() => setShowLogoutConfirm(true)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg focus-visible:outline-2 focus-visible:outline-ps-accent"
                     >
                       <LogOut size={14} /> Logout
@@ -289,6 +303,59 @@ const Layout = () => {
           </React.Suspense>
         </main>
       </div>
+      {/* Logout Confirmation */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLogoutConfirm(false)}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40"
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="logout_confirm_title"
+              aria-describedby="logout_confirm_desc"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-ps-surface border border-ps-border rounded-2xl shadow-md p-5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <h2 id="logout_confirm_title" className="font-display font-semibold text-lg text-ps-ink-1">Log out?</h2>
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  aria-label="Close"
+                  className="p-1.5 -mt-1 -mr-1 rounded-lg text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <p id="logout_confirm_desc" className="text-sm text-ps-ink-2 font-medium mt-2 mb-5">
+                You'll need to sign in again to get back to PoliSync.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-2.5 bg-ps-bg hover:bg-ps-border text-ps-ink-1 font-medium rounded-xl text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmLogout}
+                  className="flex-1 py-2.5 bg-ps-primary hover:opacity-90 text-white font-medium rounded-xl text-sm transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  Log out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Global Search Modal */}
       <GlobalSearch isOpen={isSearchOpen} onToggle={() => setIsSearchOpen(prev => !prev)} onClose={() => setIsSearchOpen(false)} />
       
