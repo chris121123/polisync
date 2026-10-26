@@ -143,20 +143,6 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: 'Only a superadmin can create a superadmin' }, 403, req)
     }
 
-    // Copy of the form rules in src/pages/admin/UserManagement.jsx; the two are kept in sync by hand.
-    if (!/^[A-Za-zÀ-ÿÑñ .,'-]+$/.test(name)) {
-      return json({ success: false, error: 'Full name must contain letters only' }, 422, req)
-    }
-
-    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
-      return json({ success: false, error: 'Please enter a valid email address' }, 422, req)
-    }
-
-    const normalizedPhone = String(phone ?? '').replace(/[\s-]/g, '')
-    if (normalizedPhone && !/^09\d{9}$/.test(normalizedPhone)) {
-      return json({ success: false, error: 'Enter a valid PH mobile number (11 digits starting with 09)' }, 422, req)
-    }
-
     // Copy of src/lib/passwordPolicy.js (3 rules: length 8, uppercase, number); the two are kept in sync by hand.
     if (password.length < 8) {
       return json({ success: false, error: 'Password must be at least 8 characters' }, 422, req)
@@ -203,7 +189,7 @@ Deno.serve(async (req: Request) => {
       type: role === 'parent' ? 'Parent' : 'Staff',
       status: 'Active',
       email,
-      phone: normalizedPhone || null,
+      phone: phone || null,
       joined: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       app_role: role,
       created_by: adminUserId,

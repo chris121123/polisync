@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  User,
   Users,
   UserPlus,
   Shield,
   ShieldAlert,
   X,
+  Mail,
+  Lock,
+  Briefcase,
+  Phone,
+  Building,
   Eye,
   EyeOff,
   ToggleLeft,
@@ -17,7 +23,6 @@ import {
   Search,
   Activity
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine } from '../../lib/auditLog';
@@ -32,12 +37,6 @@ import {
 } from './userManagementConstants.js';
 import { AuditPanel } from './AuditPanel.jsx';
 import { ConfigPanel } from './ConfigPanel.jsx';
-
-const NAME_PATTERN = /^[A-Za-zÀ-ÿÑñ .,'-]+$/;
-const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-const PHONE_PATTERN = /^09\d{9}$/;
-const normalizePhone = (phone) => phone.replace(/[\s-]/g, '');
-
 const UserManagement = () => {
   const {
     staff,
@@ -135,16 +134,13 @@ const UserManagement = () => {
   }, [activeTab, auditLogs.length, fetchAuditLogs]);
 
   useEffect(() => {
-    const openCreate = location.state?.openCreate;
-    const tab = location.state?.tab;
-    if (tab) setActiveTab(tab);
-    if (openCreate) {
+    if (location.state?.openCreate) {
       setShowCreateModal(true);
       setCreateError('');
       setCreateSuccess('');
+      navigate(location.pathname, { replace: true, state: null });
     }
-    if (openCreate || tab) navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state?.openCreate, location.state?.tab, navigate]);
+  }, [location.pathname, location.state?.openCreate, navigate]);
 
   useEffect(() => {
     let timer;
@@ -182,14 +178,10 @@ const UserManagement = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!newUser.name.trim()) newErrors.name = 'Full name is required';
-    else if (!NAME_PATTERN.test(newUser.name.trim())) newErrors.name = 'Full name must contain letters only';
     if (!newUser.email.trim()) {
       newErrors.email = 'Email address is required';
-    } else if (!EMAIL_PATTERN.test(newUser.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUser.email)) {
       newErrors.email = 'Please enter a valid email address';
-    }
-    if (normalizePhone(newUser.phone) && !PHONE_PATTERN.test(normalizePhone(newUser.phone))) {
-      newErrors.phone = 'Enter a valid PH mobile number (11 digits starting with 09)';
     }
     if (!newUser.password) {
       newErrors.password = 'Temporary password is required';
@@ -204,17 +196,12 @@ const UserManagement = () => {
     const newErrors = { ...errors };
     if (field === 'name') {
       if (!newUser.name.trim()) newErrors.name = 'Full name is required';
-      else if (!NAME_PATTERN.test(newUser.name.trim())) newErrors.name = 'Full name must contain letters only';
       else delete newErrors.name;
     }
     if (field === 'email') {
       if (!newUser.email.trim()) newErrors.email = 'Email address is required';
-      else if (!EMAIL_PATTERN.test(newUser.email)) newErrors.email = 'Please enter a valid email address';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newUser.email)) newErrors.email = 'Please enter a valid email address';
       else delete newErrors.email;
-    }
-    if (field === 'phone') {
-      if (normalizePhone(newUser.phone) && !PHONE_PATTERN.test(normalizePhone(newUser.phone))) newErrors.phone = 'Enter a valid PH mobile number (11 digits starting with 09)';
-      else delete newErrors.phone;
     }
     if (field === 'password') {
       if (!newUser.password) newErrors.password = 'Temporary password is required';
@@ -248,7 +235,7 @@ const UserManagement = () => {
     setCreateError('');
 
     try {
-      await adminCreateUser({ ...newUser, phone: normalizePhone(newUser.phone) });
+      await adminCreateUser(newUser);
       setCreateSuccess('User created successfully!');
 
       try {
@@ -655,189 +642,173 @@ const UserManagement = () => {
       )}
 
       {/* ── Create User Modal ── */}
-      <AnimatePresence>
-        {showCreateModal && (
+      {showCreateModal && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={handleCancelCreate}
+        >
           <div
-            className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
-            onClick={handleCancelCreate}
+            className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-md max-w-lg w-full overflow-hidden border border-ps-border max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="p-4 md:p-6 relative shrink-0 bg-ps-primary">
-                <div className="relative flex justify-between items-start">
-                  <div>
-                    <p className="text-white/80 text-xs font-medium mb-1">New Account</p>
-                    <h3 className="text-white text-lg md:text-xl font-semibold">Create New User</h3>
-                    <p className="text-white/70 text-xs mt-1">Administrator-provisioned account</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCancelCreate}
-                    aria-label="Close"
-                    className="p-2 cursor-pointer rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-ps-border shrink-0">
+              <div>
+                <h3 className="text-base font-semibold text-ps-ink-1">Create New User</h3>
+                <p className="text-xs text-ps-ink-2 mt-0.5">Administrator-provisioned account</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelCreate}
+                className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+              {createError && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-danger/10 border border-ps-danger/30 text-ps-danger text-xs font-medium">
+                  <AlertCircle size={16} />
+                  {createError}
                 </div>
-                <div className="relative flex gap-2 mt-4">
-                  <div className="h-1 flex-1 rounded-full bg-ps-surface" />
+              )}
+              {createSuccess && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-success/10 border border-ps-success/30 text-ps-success text-xs font-medium">
+                  <CheckCircle2 size={16} />
+                  {createSuccess}
                 </div>
+              )}
+
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Full Name</label>
+                <div className="relative">
+                  <User className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.name ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    type="text"
+                    value={newUser.name}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, name: e.target.value }));
+                      if (errors.name) setErrors(p => ({ ...p, name: '' }));
+                    }}
+                    onBlur={() => validateField('name')}
+                    placeholder="FirstName LastName"
+                    className={clsx(
+                      "w-full pl-10 pr-4 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.name
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
+                </div>
+                {errors.name && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.name}</p>}
               </div>
 
-              {/* Body */}
-              <div className="flex-1 min-h-0 p-4 md:p-6 space-y-4 overflow-y-auto">
-                {createError && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-danger/10 border border-ps-danger/30 text-ps-danger text-xs font-medium">
-                    <AlertCircle size={16} />
-                    {createError}
-                  </div>
-                )}
-                {createSuccess && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-success/10 border border-ps-success/30 text-ps-success text-xs font-medium">
-                    <CheckCircle2 size={16} />
-                    {createSuccess}
-                  </div>
-                )}
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.email ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    type="email"
+                    autoComplete="username"
+                    value={newUser.email}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, email: e.target.value }));
+                      if (errors.email) setErrors(p => ({ ...p, email: '' }));
+                    }}
+                    onBlur={() => validateField('email')}
+                    placeholder="email@polisync.com"
+                    className={clsx(
+                      "w-full pl-10 pr-4 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.email
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.email}</p>}
+              </div>
 
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label htmlFor="new_user_name" className="text-xs font-medium text-ps-ink-2 mb-2 block">Full Name</label>
-                    <input
-                      id="new_user_name"
-                      type="text"
-                      value={newUser.name}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, name: e.target.value }));
-                        if (errors.name) setErrors(p => ({ ...p, name: '' }));
-                      }}
-                      onBlur={() => validateField('name')}
-                      placeholder="FirstName LastName"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.name
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
-                    />
-                    {errors.name && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.name}</p>}
-                  </div>
+              {/* Password */}
+              <div>
+                <label htmlFor="temp_password_input" className="block text-xs font-medium text-ps-ink-1 mb-1.5">Temporary Password</label>
+                <div className="relative">
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.password ? 'text-ps-danger' : 'text-ps-ink-2'}`} size={16} />
+                  <input
+                    id="temp_password_input"
+                    aria-describedby="temp_password_rules"
+                    type="text"
+                    style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
+                    autoComplete="new-password"
+                    value={newUser.password}
+                    onChange={(e) => {
+                      setNewUser(p => ({ ...p, password: e.target.value }));
+                      if (errors.password) setErrors(p => ({ ...p, password: '' }));
+                    }}
+                    onBlur={() => validateField('password')}
+                    placeholder="Min 8 characters"
+                    className={clsx(
+                      "w-full pl-10 pr-10 py-2 bg-ps-bg border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2",
+                      errors.password
+                        ? "border-ps-danger focus:ring-ps-danger/20"
+                        : "border-ps-border focus:ring-ps-accent/20 focus:border-ps-accent"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ps-ink-2 hover:text-ps-ink-1"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
+                {!errors.password && <p className="text-xs text-ps-ink-2 mt-1">User will be prompted to change password on initial login.</p>}
+                <ul id="temp_password_rules" className="mt-2 space-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
+                    return (
+                      <li key={rule.id} className={clsx('flex items-center gap-1.5 text-xs', met ? 'text-ps-success' : 'text-ps-ink-2')}>
+                        {met ? <Check size={12} /> : <X size={12} />}
+                        {rule.label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
 
-                  {/* Email */}
-                  <div>
-                    <label htmlFor="new_user_email" className="text-xs font-medium text-ps-ink-2 mb-2 block">Email Address</label>
-                    <input
-                      id="new_user_email"
-                      type="email"
-                      autoComplete="username"
-                      value={newUser.email}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, email: e.target.value }));
-                        if (errors.email) setErrors(p => ({ ...p, email: '' }));
-                      }}
-                      onBlur={() => validateField('email')}
-                      placeholder="email@polisync.com"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.email
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
-                    />
-                    {errors.email && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.email}</p>}
+              {/* Role + Department */}
+              <div className={clsx("grid gap-4", newUser.role === 'parent' ? "grid-cols-1" : "grid-cols-2")}>
+                <div>
+                  <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Role</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser(p => ({ ...p, role: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                    >
+                      <option value="teacher">Teacher</option>
+                      <option value="therapist">Therapist</option>
+                      <option value="parent">Parent</option>
+                      <option value="admin">Admin</option>
+                      <option value="superadmin">Super Admin</option>
+                    </select>
                   </div>
+                </div>
 
-                  {/* Password */}
+                {newUser.role !== 'parent' && (
                   <div>
-                    <label htmlFor="temp_password_input" className="text-xs font-medium text-ps-ink-2 mb-2 block">Temporary Password</label>
+                    <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Department</label>
                     <div className="relative">
-                      <input
-                        id="temp_password_input"
-                        aria-describedby="temp_password_rules"
-                        type="text"
-                        style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
-                        autoComplete="new-password"
-                        value={newUser.password}
-                        onChange={(e) => {
-                          setNewUser(p => ({ ...p, password: e.target.value }));
-                          if (errors.password) setErrors(p => ({ ...p, password: '' }));
-                        }}
-                        onBlur={() => validateField('password')}
-                        placeholder="Min 8 characters"
-                        className={clsx(
-                          "w-full px-4 py-3 pr-10 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                          errors.password
-                            ? "border-ps-danger focus:ring-ps-danger/20"
-                            : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                        )}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-ps-ink-2 hover:text-ps-ink-1"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                    {errors.password && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
-                    {!errors.password && <p className="text-xs text-ps-ink-2 mt-1">User will be prompted to change password on initial login.</p>}
-                    <ul id="temp_password_rules" className="mt-2 rounded-lg border border-ps-border bg-ps-bg p-3 space-y-1.5">
-                      {PASSWORD_RULES.map((rule) => {
-                        const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
-                        return (
-                          <li key={rule.id} className={clsx('flex items-center gap-1.5 text-xs', met ? 'text-ps-success' : 'text-ps-ink-2')}>
-                            {met ? <Check size={12} /> : <X size={12} />}
-                            {rule.label}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-
-                  {/* Role */}
-                  <div>
-                    <p id="new_user_role_label" className="text-xs font-medium text-ps-ink-2 mb-2 block">Role</p>
-                    <div role="group" aria-labelledby="new_user_role_label" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {[
-                        { value: 'teacher', label: 'Teacher' },
-                        { value: 'therapist', label: 'Therapist' },
-                        { value: 'parent', label: 'Parent' },
-                        { value: 'admin', label: 'Admin' },
-                        { value: 'superadmin', label: 'Super Admin' },
-                      ].map(({ value, label }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setNewUser(p => ({ ...p, role: value }))}
-                          aria-pressed={newUser.role === value}
-                          className={clsx(
-                            'py-3 rounded-xl text-xs font-medium border-2 transition-all cursor-pointer',
-                            newUser.role === value
-                              ? 'bg-ps-primary text-white border-transparent shadow-md'
-                              : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
-                          )}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {newUser.role !== 'parent' && (
-                    <div>
-                      <label htmlFor="new_user_department" className="text-xs font-medium text-ps-ink-2 mb-2 block">Department</label>
+                      <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
                       <select
-                        id="new_user_department"
                         value={newUser.department}
                         onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                        className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
                       >
                         <option value="General">General</option>
                         <option value="SPED">SPED</option>
@@ -846,48 +817,32 @@ const UserManagement = () => {
                         <option value="Admin">Admin</option>
                       </select>
                     </div>
-                  )}
-
-                  {/* Phone */}
-                  <div>
-                    <label htmlFor="phone_input" className="text-xs font-medium text-ps-ink-2 mb-2 block">Phone (optional)</label>
-                    <input
-                      id="phone_input"
-                      type="tel"
-                      autoComplete="tel"
-                      value={newUser.phone}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, phone: e.target.value }));
-                        if (errors.phone) setErrors(p => ({ ...p, phone: '' }));
-                      }}
-                      onBlur={() => validateField('phone')}
-                      placeholder="09XX XXX XXXX"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.phone
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
-                    />
-                    {errors.phone && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.phone}</p>}
                   </div>
-                </motion.div>
+                )}
               </div>
 
-              {/* Footer */}
-              <div className="px-6 pb-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleCancelCreate}
-                  className="px-6 py-3 text-sm font-medium text-ps-ink-2 hover:bg-ps-bg rounded-xl transition-colors border border-ps-border cursor-pointer"
-                >
-                  Cancel
-                </button>
+              {/* Phone */}
+              <div>
+                <label className="block text-xs font-medium text-ps-ink-1 mb-1.5">Phone (optional)</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+                  <input
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="+63 9XX XXX XXXX"
+                    className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-sm text-ps-ink-1 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={handleCreateUser}
                   disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
-                  className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-2 bg-ps-primary hover:opacity-90 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2"
                 >
                   {createLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -898,11 +853,18 @@ const UserManagement = () => {
                     </>
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={handleCancelCreate}
+                  className="px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
-            </motion.div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* ── Delete User Modal ── */}
       {deleteModalData && (

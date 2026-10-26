@@ -215,7 +215,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
             </div>
 
             {/* ── Notification List ──────────────────────────── */}
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {filteredNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
                   <div className="w-14 h-14 rounded-xl bg-ps-bg flex items-center justify-center mb-3">
