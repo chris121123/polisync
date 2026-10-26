@@ -10,8 +10,7 @@ import { orderByHeuristic, scoreSchedule } from './scoring.js';
  *
  * @param {Object} params - All scheduling data from GlobalStateContext
  * @param {Object} [overrideConfig] - Config overrides
- * @returns {Object} { scheduled, unscheduled, score, stats } — whole-week also returns
- *   { alreadyScheduled, perDay }
+ * @returns {Object} { scheduled, unscheduled, score, stats }
  */
 export function localSmartSchedule({
   studentPrograms,
@@ -23,9 +22,6 @@ export function localSmartSchedule({
   studentAvailability,
   schedulingSettings,
   dayOfWeek,
-  scope = 'selected-day',
-  sessionDate,
-  studentProgramIds,
 }, overrideConfig = {}) {
   const config = { ...DEFAULT_CONFIG, ...overrideConfig };
 
@@ -42,9 +38,7 @@ export function localSmartSchedule({
   }
 
   const day = dayOfWeek ?? getCurrentDayOfWeek();
-  const pending = (studentPrograms || []).filter(
-    sp => sp.status === 'pending' && (!studentProgramIds || studentProgramIds.includes(sp.id))
-  );
+  const pending = (studentPrograms || []).filter(sp => sp.status === 'pending');
 
   if (pending.length === 0) {
     return { scheduled: [], unscheduled: [], score: 0, stats: { backtracks: 0, elapsed: 0 } };
@@ -62,10 +56,8 @@ export function localSmartSchedule({
     room: s.room,
     start_hour: s.startHour,
     span: s.span,
-    // Legacy rows have dayOfWeek = null; the date is then the only source of the weekday.
-    day_of_week: s.dayOfWeek ?? (s.sessionDate ? weekdayOfDate(s.sessionDate) : null),
+    day_of_week: s.dayOfWeek ?? 0,
     program_id: s.programId,
-    student_program_id: s.studentProgramId ?? s.student_program_id ?? null,
   }));
 
   const roomList = (rooms || []).map(r => ({ id: r.id, name: r.name, max_capacity: r.maxCapacity || r.max_capacity || 5 }));
@@ -79,95 +71,23 @@ export function localSmartSchedule({
   });
   const programList = (programs || []).map(p => ({ ...p, id: Number(p.id) }));
 
-  // One shared budget for the whole run: timeBudgetMs is the outer bound (B5).
-  const startTime = Date.now();
-  let backtracks = 0;
+  // Run solver with MRV ordering
+  const ordered = orderByHeuristic(pending, programList, studentAvailMap);
+  const best = { result: null };
+  const counters = { depth: 0, backtracks: 0, startTime: Date.now() };
 
-  const runDay = (list, solveDay) => {
-    const ordered = orderByHeuristic(list, programList, studentAvailMap);
-    const best = { result: null };
-    const counters = { depth: 0, backtracks: 0, startTime };
+  solveBacktrack(
+    ordered, 0, [], programList, teacherList, roomList,
+    existingSessions, studentAvailMap, teacherAvailMap,
+    config, day, best, counters
+  );
 
-    solveBacktrack(
-      ordered, 0, [], programList, teacherList, roomList,
-      existingSessions, studentAvailMap, teacherAvailMap,
-      config, solveDay, best, counters
-    );
-
-    backtracks += counters.backtracks;
-    return best.result;
-  };
-
-  const stats = () => ({ backtracks, elapsed: Date.now() - startTime });
-
-  if (scope === 'whole-week') {
-    const quota = new Map();
-    const remaining = new Map();
-    const alreadyScheduled = [];
-
-    for (const sp of pending) {
-      const perWeek = sp.sessions_per_week ?? 1;
-      const linked = existingSessions.filter(s => s.student_program_id === sp.id).length;
-      quota.set(sp.id, perWeek);
-      remaining.set(sp.id, perWeek - linked);
-      if (perWeek - linked <= 0) alreadyScheduled.push(sp.id);
-    }
-
-    const scheduled = [];
-    const perDay = [];
-    const reasons = new Map();
-    let score = 0;
-
-    for (let d = 0; d < 5; d++) {
-      const date = dateForDay(d, sessionDate);
-      const eligible = pending.filter(sp =>
-        remaining.get(sp.id) > 0 &&
-        !existingSessions.some(s => s.student_program_id === sp.id && s.day_of_week === d)
-      );
-      const dayScheduled = [];
-      const dayUnscheduled = [];
-      let dayScore = 0;
-
-      if (eligible.length > 0) {
-        const result = runDay(eligible, d);
-        if (result) {
-          dayScore = result.score;
-          for (const a of result.assignments) {
-            scheduled.push({ ...a, dayOfWeek: d, sessionDate: date });
-            dayScheduled.push(a.studentProgramId);
-            remaining.set(a.studentProgramId, remaining.get(a.studentProgramId) - 1);
-          }
-          for (const u of result.unscheduled) {
-            reasons.set(u.studentProgramId, u);
-            dayUnscheduled.push(u);
-          }
-        }
-      }
-
-      score += dayScore;
-      perDay.push({ dayOfWeek: d, sessionDate: date, score: dayScore, scheduled: dayScheduled, unscheduled: dayUnscheduled });
-    }
-
-    const unscheduled = pending
-      .filter(sp => remaining.get(sp.id) > 0)
-      .map(sp => {
-        const done = quota.get(sp.id) - remaining.get(sp.id);
-        const base = reasons.get(sp.id) || { studentProgramId: sp.id, studentId: sp.student_id, reason: 'No valid slot' };
-        return done > 0
-          ? { studentProgramId: sp.id, studentId: sp.student_id, reason: `Weekly quota not fully met (${done}/${quota.get(sp.id)})` }
-          : base;
-      });
-
-    return { scheduled, unscheduled, score, stats: stats(), alreadyScheduled, perDay };
-  }
-
-  const result = runDay(pending, day);
-  if (result) {
+  if (best.result) {
     return {
-      scheduled: result.assignments.map(a => ({ ...a, dayOfWeek: day, sessionDate: sessionDate ?? null })),
-      unscheduled: result.unscheduled,
-      score: result.score,
-      stats: stats(),
+      scheduled: best.result.assignments,
+      unscheduled: best.result.unscheduled,
+      score: best.result.score,
+      stats: { backtracks: counters.backtracks, elapsed: Date.now() - counters.startTime },
     };
   }
 
@@ -175,33 +95,8 @@ export function localSmartSchedule({
     scheduled: [],
     unscheduled: pending.map(sp => ({ studentProgramId: sp.id, studentId: sp.student_id, reason: 'No solution found' })),
     score: -pending.length * 5,
-    stats: stats(),
+    stats: { backtracks: counters.backtracks, elapsed: Date.now() - counters.startTime },
   };
-}
-
-// Monday of the anchor week (or the current week) + day, in local date parts (no UTC drift).
-function dateForDay(day, anchor) {
-  const parts = typeof anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(anchor)
-    ? anchor.split('-').map(Number)
-    : null;
-  const now = new Date();
-  const base = parts
-    ? new Date(parts[0], parts[1] - 1, parts[2])
-    : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  base.setDate(base.getDate() - ((base.getDay() + 6) % 7) + day);
-
-  const mm = String(base.getMonth() + 1).padStart(2, '0');
-  const dd = String(base.getDate()).padStart(2, '0');
-  return `${base.getFullYear()}-${mm}-${dd}`;
-}
-
-// Monday=0 … Friday=4 from a local 'YYYY-MM-DD'. Weekend or unparseable dates yield null (no weekday).
-function weekdayOfDate(date) {
-  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  const [year, month, day] = date.split('-').map(Number);
-  const jsDay = new Date(year, month - 1, day).getDay();
-  return jsDay === 0 || jsDay === 6 ? null : jsDay - 1;
 }
 
 function buildStudentAvailMap(studentAvailability) {
@@ -225,18 +120,18 @@ function checkConflictLocal(candidate, existingSessions, assignments, studentAva
     return 'Outside operating hours';
   }
 
-  // Student availability: rows exist ⇒ only inside a window for this day (none = no slots)
+  // Student availability
   const windows = (studentAvail || []).filter(w => w.dayOfWeek === dayOfWeek);
-  if ((studentAvail || []).length > 0) {
+  if (windows.length > 0) {
     const validWindow = windows.some(w => candidate.startHour >= w.startHour && cEnd <= w.endHour);
     if (!validWindow) return 'Outside student availability';
   }
 
   const breakHours = config.minBreakMinutes / 60;
 
-  // Check existing sessions (null day = unknown, cannot be pinned to this weekday)
+  // Check existing sessions
   for (const s of existingSessions) {
-    if (s.day_of_week !== dayOfWeek) continue;
+    if ((s.day_of_week ?? 0) !== dayOfWeek) continue;
     const sEnd = s.start_hour + s.span;
     if (!hasTimeOverlap(candidate.startHour, cEnd, s.start_hour, sEnd)) continue;
 
@@ -264,7 +159,7 @@ function checkConflictLocal(candidate, existingSessions, assignments, studentAva
 
   // Max daily hours
   const existingHours = existingSessions
-    .filter(s => s.day_of_week === dayOfWeek && s.student_ids?.includes(candidate.studentId))
+    .filter(s => (s.day_of_week ?? 0) === dayOfWeek && s.student_ids?.includes(candidate.studentId))
     .reduce((sum, s) => sum + s.span, 0);
   const assignedHours = (studentAssignments || []).reduce((sum, a) => sum + a.duration, 0);
   if (existingHours + assignedHours + candidate.duration > config.maxDailyHoursPerStudent) {
@@ -280,7 +175,7 @@ function getValidSlotsLocal(sp, program, teachers, rooms, existingSessions, curr
   const studentAssignments = currentAssignments.filter(a => a.studentId === sp.student_id);
 
   const windows = (studentAvail || []).filter(w => w.dayOfWeek === dayOfWeek);
-  const effectiveWindows = (studentAvail || []).length > 0
+  const effectiveWindows = windows.length > 0
     ? windows
     : [{ startHour: config.operatingStartHour, endHour: config.operatingEndHour, dayOfWeek }];
 
@@ -356,7 +251,6 @@ function solveBacktrack(ordered, index, currentAssignments, programs, teachers, 
 
     currentAssignments.push(assignment);
     solveBacktrack(ordered, index + 1, currentAssignments, programs, teachers, rooms, existingSessions, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters);
-    counters.depth--;
     currentAssignments.pop();
     counters.backtracks++;
 
@@ -366,5 +260,4 @@ function solveBacktrack(ordered, index, currentAssignments, programs, teachers, 
   // Try skipping this program
   counters.depth++;
   solveBacktrack(ordered, index + 1, currentAssignments, programs, teachers, rooms, existingSessions, studentAvailMap, teacherAvailMap, config, dayOfWeek, best, counters);
-  counters.depth--;
 }

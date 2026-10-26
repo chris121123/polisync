@@ -5,7 +5,6 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, formatTime } from '../../lib/sessionDay';
 import { StatCard } from '../admin/AdminDashboard';
-import MyAvailabilityCard from '../../components/MyAvailabilityCard';
 
 const TeacherDashboard = () => {
   const { user, sessions, students, fetchMyAssignments, myAssignments, markAttendance, fetchAttendance } = useGlobalState();
@@ -138,8 +137,6 @@ const TeacherDashboard = () => {
           subtext="Active curricula"
         />
       </div>
-
-      <MyAvailabilityCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Schedule List */}

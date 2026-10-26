@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 import { StatCard } from '../admin/AdminDashboard';
-import MyAvailabilityCard from '../../components/MyAvailabilityCard';
 
 const TherapistDashboard = () => {
   const { user, sessions, students, fetchMyAssignments, myAssignments, addSessionNote } = useGlobalState();
@@ -102,8 +101,6 @@ const TherapistDashboard = () => {
           subtext="Assigned specializations"
         />
       </div>
-
-      <MyAvailabilityCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Sessions Panel */}

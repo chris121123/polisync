@@ -36,6 +36,3 @@ docs/
 
 # Vercel CLI link
 .vercel/
-
-# Supabase CLI local state
-supabase/.temp/

@@ -155,15 +155,6 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           action: () => navigate('/directory'),
         });
       }
-      if (isAdminOnly && matchesAnyKeyword(lowerQuery, ['pending', 'requirements', 'unscheduled'])) {
-        searchResults.push({
-          id: 'nav-schedule-pending',
-          title: 'Pending Sessions',
-          sub: 'Schedule unmet student requirements',
-          icon: Calendar,
-          action: () => navigate('/schedule?tab=pending'),
-        });
-      }
 
       // Natural language queries
       if (searchResults.length === 0) {

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { X, AlertCircle, UserCheck, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
-import { HOURS, formatHour, formatDateISO, TYPE_CONFIG } from './calendarMath.js';
+import { HOURS, formatHour, TYPE_CONFIG } from './calendarMath.js';
 import { isTherapistOrTeacher } from './staff.js';
 
 const getRoomColor = () => ({
@@ -17,13 +17,22 @@ const getRoomColor = () => ({
 export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability, onOpenAvailability }) => {
   const [step, setStep] = useState(1);
 
+  // Helper: get today's date in local timezone as YYYY-MM-DD
+  const getLocalToday = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
+
   const [formData, setFormData] = useState({
     title: '', therapistId: '', room: rooms[0]?.name || '',
     startHour: 9, span: 1, type: 'sped', studentIds: [],
-    sessionDate: formatDateISO(new Date())
+    sessionDate: getLocalToday()
   });
 
-  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: formatDateISO(new Date()) }); };
+  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: getLocalToday() }); };
 
   // Filter staff by availability on the selected date
   const availableStaff = useMemo(() => {
@@ -133,7 +142,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                 <input
                   type="date"
                   value={formData.sessionDate}
-                  min={formatDateISO(new Date())}
+                  min={getLocalToday()}
                   onChange={e => {
                     setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
                   }}
@@ -148,9 +157,9 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                   </p>
                 )}
                 {formData.sessionDate && !availableStaff.length && (
-                  <p className="text-xs text-ps-warn bg-ps-warn/10 dark:text-ps-warn font-medium mt-1 flex flex-wrap items-center gap-1 px-2 py-1 rounded-lg">
-                    <AlertCircle size={10} /> No staff marked available for this date — staff mark their own availability on their dashboard. Check back once someone marks the date.
-                    <button onClick={onOpenAvailability} className="ml-1 underline font-medium">View availability</button>
+                  <p className="text-xs text-ps-warn bg-ps-warn/10 dark:text-ps-warn font-medium mt-1 flex items-center gap-1 px-2 py-1 rounded-lg">
+                    <AlertCircle size={10} /> No staff marked available for this date —
+                    <button onClick={onOpenAvailability} className="ml-1 underline font-medium">Open Availability</button> to mark staff first.
                   </p>
                 )}
               </div>

@@ -7,8 +7,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { countAvailableStaff } from '../ScheduleCalendar/staff';
-import { formatDateISO } from '../ScheduleCalendar/calendarMath';
 
 export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeColor }) => {
   return (
@@ -35,13 +33,12 @@ export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeColor 
 };
 
 const AdminDashboard = () => {
-  const { staff, students, rooms, sessions, conflicts, staffAvailability } = useGlobalState();
+  const { staff, students, rooms, sessions, conflicts } = useGlobalState();
   const navigate = useNavigate();
   const [hoveredHour, setHoveredHour] = useState(null);
 
   const roomsInUseCount = new Set(sessions.map(s => s.room)).size;
   const activeStaff = staff.filter(s => s.is_active !== false).length;
-  const availableToday = countAvailableStaff(staff, staffAvailability, formatDateISO(new Date()));
   const scheduledStudents = new Set(sessions.flatMap(s => s.studentIds || [])).size;
   const totalHours = sessions.reduce((acc, s) => acc + (s.span || 0), 0);
 
@@ -101,7 +98,7 @@ const AdminDashboard = () => {
           title="Active Staff"
           value={staff.length}
           icon={UserCircle}
-          subtext={`${availableToday} available today`}
+          subtext={`${activeStaff} currently available`}
           badge={`${activeStaff}/${staff.length} active`}
           badgeColor="bg-ps-success/10 text-ps-success"
         />
