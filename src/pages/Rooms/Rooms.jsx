@@ -8,14 +8,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { RoomCard } from './RoomCard.jsx';
 import { RoomDetail } from './RoomDetail.jsx';
+import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
 
 const Rooms = () => {
-  const { rooms, sessions, staff, students, addRoom } = useGlobalState();
+  const { rooms, sessions, staff, students, addRoom, deleteRoom } = useGlobalState();
   const [filterType, setFilterType] = useState('All');
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newRoom, setNewRoom] = useState({ name: '', type: 'General SPED', maxCapacity: 5 });
   const [formErrors, setFormErrors] = useState({});
+  const [roomToDelete, setRoomToDelete] = useState(null);
+  const [isDeletingRoom, setIsDeletingRoom] = useState(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -52,6 +55,18 @@ const Rooms = () => {
     setFormErrors({});
   };
 
+  const closeDeleteModal = () => {
+    if (!isDeletingRoom) setRoomToDelete(null);
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    setIsDeletingRoom(true);
+    const removed = await deleteRoom(roomToDelete);
+    setIsDeletingRoom(false);
+    if (removed) setRoomToDelete(null);
+  };
+
   // Calculate room details based on live sessions
   const roomData = useMemo(() => {
     return rooms.map(room => {
@@ -70,6 +85,9 @@ const Rooms = () => {
   }, [rooms, sessions, staff]);
 
   const selectedRoom = roomData.find(r => r.id === selectedRoomId);
+  const roomSessionCount = roomToDelete
+    ? sessions.filter(s => s.room === roomToDelete.name).length
+    : 0;
 
   const filteredRooms = roomData.filter(room => {
     if (filterType === 'All') return true;
@@ -176,6 +194,7 @@ const Rooms = () => {
                 cfg={getStatusConfig(room.status)}
                 isSelected={selectedRoomId === room.id}
                 setSelectedRoomId={setSelectedRoomId}
+                onDelete={setRoomToDelete}
               />
             ))}
         </motion.div>
@@ -295,6 +314,59 @@ const Rooms = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <AppModal
+        isOpen={!!roomToDelete}
+        onClose={closeDeleteModal}
+        maxWidth="max-w-md"
+        labelledBy="delete-room-title"
+      >
+        <ModalHeader
+          titleId="delete-room-title"
+          eyebrow="Room management"
+          title="Delete room"
+          onClose={closeDeleteModal}
+          className="bg-ps-danger"
+        />
+        <div className="space-y-3 px-5 py-5 md:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ps-danger/10 text-ps-danger">
+              <AlertTriangle size={18} />
+            </div>
+            <p className="text-sm font-semibold text-ps-ink-1">
+              Remove {roomToDelete?.name}?
+            </p>
+          </div>
+          {roomSessionCount > 0 ? (
+            <div className="flex items-start gap-2 rounded-xl border border-ps-danger/20 bg-ps-danger/10 px-3 py-2.5">
+              <AlertCircle size={14} className="mt-0.5 shrink-0 text-ps-danger" />
+              <p className="text-xs font-medium text-ps-danger">
+                This room still has {roomSessionCount} scheduled session{roomSessionCount === 1 ? '' : 's'}. Move or delete them before removing the room.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm font-medium text-ps-ink-2">This permanently removes the room. This cannot be undone.</p>
+          )}
+        </div>
+        <div className="flex shrink-0 gap-3 border-t border-ps-border bg-ps-surface px-5 py-4 md:px-6">
+          <button
+            type="button"
+            onClick={closeDeleteModal}
+            disabled={isDeletingRoom}
+            className="flex-1 rounded-xl border border-ps-border py-3 text-sm font-medium text-ps-ink-2 transition-colors hover:bg-ps-bg disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteRoom}
+            disabled={isDeletingRoom || roomSessionCount > 0}
+            className="flex-1 rounded-xl bg-ps-danger py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+          >
+            {isDeletingRoom ? 'Deleting…' : 'Delete Room'}
+          </button>
+        </div>
+      </AppModal>
     </div>
   );
 };

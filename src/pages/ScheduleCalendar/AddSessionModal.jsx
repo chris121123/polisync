@@ -1,36 +1,51 @@
-import { useState, useMemo } from 'react';
-import { X, AlertCircle, UserCheck, CheckCircle2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { AlertCircle, ArrowRight, CheckCircle2, UserCheck, X } from 'lucide-react';
 import clsx from 'clsx';
-import { motion } from 'framer-motion';
+import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
 import { HOURS, formatHour, formatDateISO, TYPE_CONFIG } from './calendarMath.js';
 import { isTherapistOrTeacher } from './staff.js';
 
-const getRoomColor = () => ({
-  bg: 'bg-ps-bg',
-  border: 'border-ps-border',
-  text: 'text-ps-ink-1',
-  dot: 'bg-ps-primary',
-  header: 'bg-ps-surface',
+// Header tones carry white text at AA contrast (bg-sped is too light behind white).
+const HEADER_TONES = {
+  sped: 'bg-purple-700',
+  rehab: 'bg-sky-700',
+  playschool: 'bg-ps-wood-deep',
+};
+
+const createEmptyForm = (rooms) => ({
+  title: '',
+  therapistId: '',
+  room: rooms[0]?.name || '',
+  startHour: 9,
+  span: 1,
+  type: 'sped',
+  studentIds: [],
+  sessionDate: formatDateISO(new Date()),
 });
 
 // ─── Add Session Modal ────────────────────────────────────────────────────────
 export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms, sessions, staffAvailability, onOpenAvailability }) => {
   const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState(() => createEmptyForm(rooms));
+  // Rooms can finish loading after this modal mounts, so fall back to the first room.
+  const selectedRoom = formData.room || rooms[0]?.name || '';
 
-  const [formData, setFormData] = useState({
-    title: '', therapistId: '', room: rooms[0]?.name || '',
-    startHour: 9, span: 1, type: 'sped', studentIds: [],
-    sessionDate: formatDateISO(new Date())
-  });
+  const reset = () => {
+    setStep(1);
+    setFormData(createEmptyForm(rooms));
+  };
 
-  const reset = () => { setStep(1); setFormData({ title: '', therapistId: '', room: rooms[0]?.name || '', startHour: 9, span: 1, type: 'sped', studentIds: [], sessionDate: formatDateISO(new Date()) }); };
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   // Filter staff by availability on the selected date
   const availableStaff = useMemo(() => {
     if (!formData.sessionDate) {
       return []; // Must choose a date first to see available staff
     }
-    
+
     // If we have no availability records at all or none for this date, nobody is available
     if (!staffAvailability || staffAvailability.length === 0) {
       return [];
@@ -39,271 +54,298 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
     const availableIds = staffAvailability
       .filter(a => a.available_date === formData.sessionDate)
       .map(a => a.staff_id);
-      
+
     if (availableIds.length === 0) return [];
-    
+
     return staff.filter(s => isTherapistOrTeacher(s) && availableIds.includes(s.id));
   }, [staff, staffAvailability, formData.sessionDate]);
 
   const conflictMessage = useMemo(() => {
     if (step !== 2) return null;
-    const { startHour, span, room, therapistId } = formData;
+    const { startHour, span, therapistId } = formData;
     const end = startHour + span;
 
     for (const s of sessions) {
       const sEnd = s.startHour + s.span;
       const overlaps = Math.max(startHour, s.startHour) < Math.min(end, sEnd);
       if (overlaps) {
-        if (s.room === room) return `Room "${room}" is already booked during this time.`;
-        if (String(s.therapistId) === String(therapistId)) return `Provider is already booked during this time.`;
+        if (s.room === selectedRoom) return `Room "${selectedRoom}" is already booked during this time.`;
+        if (String(s.therapistId) === String(therapistId)) return 'Provider is already booked during this time.';
       }
     }
     return null;
-  }, [formData, sessions, step]);
-
-  if (!isOpen) return null;
+  }, [formData, sessions, step, selectedRoom]);
 
   const typeCfg = TYPE_CONFIG[formData.type];
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
-      onClick={() => { reset(); onClose(); }}
-    >
-      <motion.div
-        initial={{ opacity: 0, y: "100%" }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: "100%" }}
-        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+    <AppModal isOpen={isOpen} onClose={handleClose} labelledBy="add-session-title">
+      <ModalHeader
+        titleId="add-session-title"
+        eyebrow={`New session · Step ${step} of 2`}
+        title={formData.title || 'Untitled session'}
+        onClose={handleClose}
+        className={HEADER_TONES[formData.type]}
       >
-        {/* header */}
-        <div className={clsx('p-4 md:p-6 relative shrink-0', formData.type === 'rehab' ? 'bg-sky-700' : formData.type === 'sped' ? 'bg-purple-700' : typeCfg.gradient)}>
-          <div className="relative flex justify-between items-start">
-            <div>
-              <p className="text-white text-xs md:text-xs font-medium  mb-1">New Session</p>
-              <h3 className="text-white text-lg md:text-xl font-semibold">{formData.title || 'Untitled Session'}</h3>
+        <div className="mt-5 flex gap-2">
+          {[1, 2].map(s => (
+            <div key={s} className="flex-1">
+              <div className={clsx('h-1 rounded-full transition-colors', s <= step ? 'bg-white' : 'bg-white/25')} />
+              <p className={clsx(
+                'mt-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors',
+                s <= step ? 'text-white/90' : 'text-white/50'
+              )}>
+                {s === 1 ? 'Details' : 'Schedule'}
+              </p>
             </div>
-            <button onClick={() => { reset(); onClose(); }} className="p-2 rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors">
-              <X size={18} />
-            </button>
-          </div>
-          <div className="relative flex gap-2 mt-4">
-            {[1, 2].map(s => (
-              <div key={s} className={clsx('h-1 flex-1 rounded-full transition-all', s <= step ? 'bg-ps-surface' : 'bg-white/30')} />
-            ))}
-          </div>
+          ))}
         </div>
+      </ModalHeader>
 
-        <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
-          {step === 1 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Title *</label>
-                <input
-                  autoFocus
-                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
-                  placeholder="e.g., SPED Group B Morning"
-                  value={formData.title}
-                  onChange={e => setFormData({ ...formData, title: e.target.value })}
-                />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="session-title" className="mb-2 block text-xs font-medium text-ps-ink-2">Session Title *</label>
+              <input
+                id="session-title"
+                data-autofocus
+                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                placeholder="e.g., SPED Group B Morning"
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-medium text-ps-ink-2">Category</label>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: key })}
+                    className={clsx(
+                      'rounded-xl border-2 py-3 text-xs font-medium transition-all',
+                      formData.type === key
+                        ? 'border-transparent bg-ps-primary text-white shadow-sm'
+                        : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
+                    )}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
               </div>
-              <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Category</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
+            </div>
+
+            <div>
+              <label htmlFor="session-date" className="mb-2 block text-xs font-medium text-ps-ink-2">Session Date *</label>
+              <input
+                id="session-date"
+                type="date"
+                value={formData.sessionDate}
+                min={formatDateISO(new Date())}
+                onChange={e => {
+                  setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
+                }}
+                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+              />
+              {formData.sessionDate && (
+                <p className="mt-1 text-xs font-medium text-ps-ink-2">
+                  {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  {availableStaff.length > 0 && (
+                    <span className="ml-2 text-ps-success">· {availableStaff.length} staff available</span>
+                  )}
+                </p>
+              )}
+              {formData.sessionDate && !availableStaff.length && (
+                <div className="mt-2 flex items-start gap-2 rounded-xl border border-ps-warn/20 bg-ps-warn/10 px-3 py-2.5">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0 text-ps-warn" />
+                  <div className="text-xs font-medium text-ps-warn">
+                    No staff marked available for this date — staff mark their own availability on their dashboard.
+                    <button type="button" onClick={onOpenAvailability} className="ml-1 underline">
+                      View availability
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="session-provider" className="mb-1 block text-xs font-medium text-ps-ink-2">Provider / Therapist *</label>
+              <p className="mb-2 text-xs font-medium text-ps-ink-2">
+                The staff member (therapist or teacher) responsible for conducting this session.
+              </p>
+              <select
+                id="session-provider"
+                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                value={formData.therapistId}
+                onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
+              >
+                <option value="">{availableStaff.length === 0 ? 'No staff available for this date' : 'Select staff member…'}</option>
+                {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
+              </select>
+              {formData.sessionDate && availableStaff.length > 0 && (
+                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-ps-success">
+                  <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="session-students" className="mb-2 block text-xs font-medium text-ps-ink-2">Assign Students</label>
+              <select
+                id="session-students"
+                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                onChange={e => {
+                  const sid = e.target.value;
+                  if (sid && !formData.studentIds.includes(sid)) {
+                    setFormData({ ...formData, studentIds: [...formData.studentIds, sid] });
+                  }
+                }}
+                value=""
+              >
+                <option value="" disabled hidden>— Add a student —</option>
+                {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {formData.studentIds.map(sid => {
+                  const student = students.find(s => String(s.id) === String(sid));
+                  return (
+                    <span key={sid} className="flex items-center gap-1 rounded-lg bg-ps-accent-soft px-2 py-1 text-xs font-medium text-ps-accent">
+                      {student?.name}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${student?.name || 'student'}`}
+                        onClick={() => setFormData({ ...formData, studentIds: formData.studentIds.filter(id => id !== sid) })}
+                        className="rounded-sm transition-opacity hover:opacity-70"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-5">
+            <div>
+              <label className="mb-2 block text-xs font-medium text-ps-ink-2">Venue / Room</label>
+              {rooms.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-ps-border bg-ps-bg px-4 py-3 text-xs font-medium text-ps-ink-2">
+                  No rooms available. Add a room first.
+                </p>
+              ) : (
+                <div className="grid max-h-[160px] grid-cols-2 gap-2 overflow-y-auto pb-2 pr-1">
+                  {rooms.map((r) => (
                     <button
-                      key={key}
-                      onClick={() => setFormData({ ...formData, type: key })}
+                      key={r.name}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, room: r.name })}
                       className={clsx(
-                        'py-3 rounded-xl text-xs font-medium border-2 transition-all',
-                        formData.type === key
-                          ? `bg-ps-primary text-white border-transparent shadow-md`
-                          : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
+                        'flex items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 text-xs font-medium transition-all',
+                        selectedRoom === r.name
+                          ? 'border-ps-accent/30 bg-ps-accent-soft text-ps-accent shadow-sm'
+                          : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
                       )}
                     >
-                      {cfg.label}
+                      <div className="flex items-center gap-2">
+                        <div className={clsx('h-2.5 w-2.5 shrink-0 rounded-full', selectedRoom === r.name ? 'bg-ps-accent' : 'bg-ps-ink-2/40')} />
+                        <span className="truncate">{r.name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="session-start" className="mb-2 block text-xs font-medium text-ps-ink-2">Start Time</label>
+                <select
+                  id="session-start"
+                  className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                  value={formData.startHour}
+                  onChange={e => setFormData({ ...formData, startHour: parseInt(e.target.value) })}
+                >
+                  {HOURS.slice(0, -1).map(h => <option key={h} value={h}>{formatHour(h)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-ps-ink-2">Duration</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {[1, 2, 3].map(d => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, span: d })}
+                      className={clsx(
+                        'rounded-xl border-2 py-3 text-xs font-medium transition-all',
+                        formData.span === d
+                          ? 'border-ps-accent bg-ps-primary text-white shadow-sm'
+                          : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
+                      )}
+                    >
+                      {d}h
                     </button>
                   ))}
                 </div>
               </div>
-              {/* Session Date */}
-              <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Session Date *</label>
-                <input
-                  type="date"
-                  value={formData.sessionDate}
-                  min={formatDateISO(new Date())}
-                  onChange={e => {
-                    setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
-                  }}
-                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
-                />
-                {formData.sessionDate && (
-                  <p className="text-xs text-ps-ink-2 font-medium mt-1">
-                    {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-                    {availableStaff.length > 0 && (
-                      <span className="text-ps-success ml-2">· {availableStaff.length} staff available</span>
-                    )}
-                  </p>
-                )}
-                {formData.sessionDate && !availableStaff.length && (
-                  <p className="text-xs text-ps-warn bg-ps-warn/10 dark:text-ps-warn font-medium mt-1 flex flex-wrap items-center gap-1 px-2 py-1 rounded-lg">
-                    <AlertCircle size={10} /> No staff marked available for this date — staff mark their own availability on their dashboard. Check back once someone marks the date.
-                    <button onClick={onOpenAvailability} className="ml-1 underline font-medium">View availability</button>
-                  </p>
-                )}
+            </div>
+
+            {conflictMessage && (
+              <div className="flex items-start gap-2 rounded-xl border border-ps-danger/20 bg-ps-danger/10 p-3">
+                <AlertCircle size={14} className="mt-0.5 shrink-0 text-ps-danger" />
+                <p className="text-xs font-semibold text-ps-danger">{conflictMessage}</p>
               </div>
+            )}
+
+            <div className={clsx('flex items-center gap-3 rounded-xl border-2 p-4', typeCfg.light, typeCfg.border)}>
+              <div className={clsx('w-1 self-stretch rounded-full', typeCfg.gradient)} />
               <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Provider / Therapist *</label>
-                <p className="text-xs text-ps-ink-2 font-medium mb-2 -mt-1">
-                  The staff member (therapist or teacher) responsible for conducting this session.
+                <p className={clsx('text-sm font-semibold', typeCfg.text)}>{formData.title || '(untitled)'}</p>
+                <p className="mt-0.5 text-xs text-ps-ink-2">
+                  {selectedRoom || 'No room'} · {formatHour(formData.startHour)} – {formatHour(formData.startHour + formData.span)} · {typeCfg.label}
                 </p>
-                <select
-                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
-                  value={formData.therapistId}
-                  onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
-                >
-                  <option value="">{availableStaff.length === 0 ? 'No staff available for this date' : 'Select staff member…'}</option>
-                  {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
-                </select>
-                {formData.sessionDate && availableStaff.length > 0 && (
-                  <p className="text-xs text-ps-success font-medium mt-1 flex items-center gap-1">
-                    <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </p>
-                )}
               </div>
-              <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Assign Students</label>
-                <select
-                  className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
-                  onChange={e => {
-                    const sid = e.target.value;
-                    if (sid && !formData.studentIds.includes(sid)) {
-                      setFormData({ ...formData, studentIds: [...formData.studentIds, sid] });
-                    }
-                  }}
-                  value=""
-                >
-                  <option value="" disabled hidden>— Add a student —</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.studentIds.map(sid => {
-                    const student = students.find(s => String(s.id) === String(sid));
-                    return (
-                      <span key={sid} className="px-2 py-1 bg-ps-accent-soft text-ps-accent text-xs font-medium rounded-lg flex items-center gap-1">
-                        {student?.name}
-                        <button onClick={() => setFormData({ ...formData, studentIds: formData.studentIds.filter(id => id !== sid) })}>
-                          <X size={12} />
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
+            </div>
+          </div>
+        )}
+      </div>
 
-          {step === 2 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Venue / Room</label>
-                <div className="grid grid-cols-2 max-h-[160px] overflow-y-auto pr-2 gap-2 pb-2">
-                  {rooms.map((r, idx) => {
-                    const rc = getRoomColor(idx);
-                    return (
-                      <button
-                        key={r.name}
-                        onClick={() => setFormData({ ...formData, room: r.name })}
-                        className={clsx(
-                          'px-4 py-3 rounded-xl text-xs font-medium border-2 flex items-center justify-between gap-2 transition-all',
-                          formData.room === r.name ? `${rc.bg} ${rc.border} ${rc.text} shadow-sm` : 'bg-ps-bg text-ps-ink-2 border-ps-border'
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={clsx('w-2.5 h-2.5 rounded-full shrink-0', rc.dot)} />
-                          <span className="truncate">{r.name}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Start Time</label>
-                  <select
-                    className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent text-sm font-semibold"
-                    value={formData.startHour}
-                    onChange={e => setFormData({ ...formData, startHour: parseInt(e.target.value) })}
-                  >
-                    {HOURS.slice(0, -1).map(h => <option key={h} value={h}>{formatHour(h)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ps-ink-2 mb-2 block">Duration</label>
-                  <div className="grid grid-cols-3 gap-1">
-                    {[1, 2, 3].map(d => (
-                      <button
-                        key={d}
-                        onClick={() => setFormData({ ...formData, span: d })}
-                        className={clsx(
-                          'py-3 rounded-xl text-xs font-medium border-2 transition-all',
-                          formData.span === d ? 'bg-ps-primary text-white border-ps-accent shadow-md' : 'bg-ps-bg text-ps-ink-2 border-ps-border'
-                        )}
-                      >
-                        {d}h
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {conflictMessage && (
-                  <div className="mt-4 p-3 bg-ps-danger/10 border border-ps-danger/20 rounded-xl flex items-start gap-2">
-                    <AlertCircle size={14} className="text-ps-danger shrink-0 mt-0.5" />
-                    <p className="text-xs font-semibold text-ps-danger">{conflictMessage}</p>
-                  </div>
-                )}
-              </div>
-              {/* Preview */}
-              <div className={clsx('p-4 rounded-xl border-2 flex items-center gap-3', typeCfg.light, typeCfg.border)}>
-                <div className={clsx('w-1 self-stretch rounded-full', typeCfg.gradient)} />
-                <div>
-                  <p className={clsx('font-semibold text-sm', typeCfg.text)}>{formData.title || '(untitled)'}</p>
-                  <p className="text-xs text-ps-ink-2 mt-0.5">
-                    {formData.room} · {formatHour(formData.startHour)} – {formatHour(formData.startHour + formData.span)} · {typeCfg.label}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </div>
-
-        <div className="px-6 pb-6 flex gap-3">
-          {step === 2 && (
-            <button onClick={() => setStep(1)} className="px-6 py-3 text-sm font-medium text-ps-ink-2 hover:bg-ps-bg rounded-xl transition-colors border border-ps-border">
-              Back
-            </button>
-          )}
-          {step === 1 ? (
-            <button
-              onClick={() => setStep(2)}
-              disabled={!formData.title || !formData.therapistId}
-              className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm"
-            >
-              Next: Choose Slot →
-            </button>
-          ) : (
-            <button
-              onClick={() => { onAdd(formData); reset(); onClose(); }}
-              disabled={!!conflictMessage}
-              className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default disabled:grayscale transition-all shadow-sm flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 size={16} /> Create Session
-            </button>
-          )}
-        </div>
-      </motion.div>
-    </div>
+      <div className="flex shrink-0 gap-3 border-t border-ps-border bg-ps-surface px-5 py-4 md:px-6">
+        {step === 2 && (
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="rounded-xl border border-ps-border px-5 py-3 text-sm font-medium text-ps-ink-2 transition-colors hover:bg-ps-bg"
+          >
+            Back
+          </button>
+        )}
+        {step === 1 ? (
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            disabled={!formData.title || !formData.therapistId}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ps-primary py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+          >
+            Next: Choose Slot <ArrowRight size={16} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { onAdd({ ...formData, room: selectedRoom }); handleClose(); }}
+            disabled={!!conflictMessage}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ps-primary py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50 disabled:grayscale"
+          >
+            <CheckCircle2 size={16} /> Create Session
+          </button>
+        )}
+      </div>
+    </AppModal>
   );
 };
