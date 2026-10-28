@@ -53,7 +53,7 @@ export const AppModal = ({ isOpen, onClose, labelledBy, children, maxWidth = 'ma
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm p-0 md:items-center md:p-4"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-0 md:items-center md:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -71,7 +71,7 @@ export const AppModal = ({ isOpen, onClose, labelledBy, children, maxWidth = 'ma
             transition={panelTransition}
             onClick={(event) => event.stopPropagation()}
             className={clsx(
-              'flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-ps-border/60 bg-ps-surface shadow-2xl md:max-h-[90vh] md:rounded-2xl',
+              'flex max-h-[92vh] w-full flex-col overflow-hidden border border-ps-border/60 bg-ps-surface md:max-h-[90vh]',
               maxWidth
             )}
           >
