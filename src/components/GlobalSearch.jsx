@@ -244,7 +244,7 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
               autoFocus
               placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
               aria-label="Global search"
-              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-base sm:text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-ps-ink-2 font-medium"
+              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-base sm:text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] font-medium"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

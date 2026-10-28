@@ -404,7 +404,7 @@ const UserManagement = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search by name or email..."
-                className="w-full sm:w-72 pl-9 pr-4 py-2 bg-ps-surface border border-ps-border rounded-lg text-sm text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                className="w-full sm:w-72 pl-9 pr-4 py-2 bg-ps-surface border border-ps-border rounded-lg text-sm text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
               />
             </div>
           </div>
@@ -771,7 +771,7 @@ const UserManagement = () => {
                         onBlur={() => validateField('password')}
                         placeholder="Min 8 characters"
                         className={clsx(
-                          "w-full px-4 py-3 pr-10 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
+                          "w-full py-3 pl-4 pr-12 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
                           errors.password
                             ? "border-ps-danger focus:ring-ps-danger/20"
                             : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
@@ -781,7 +781,7 @@ const UserManagement = () => {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-ps-ink-2 hover:text-ps-ink-1"
+                        className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-ps-ink-2 hover:text-ps-ink-1"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -941,10 +941,10 @@ const UserManagement = () => {
                 onClick={confirmDeleteUser}
                 disabled={deleteCountdown > 0}
                 className={clsx(
-                  "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
+                  "flex-1 py-2 font-medium rounded-lg text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
                   deleteCountdown > 0
                     ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
-                    : "bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white"
+                    : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
                 )}
               >
                 {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
@@ -993,10 +993,10 @@ const UserManagement = () => {
                 onClick={confirmSelfRoleChange}
                 disabled={selfRoleCountdown > 0}
                 className={clsx(
-                  "flex-1 py-2 font-medium rounded-lg text-sm transition-opacity flex items-center justify-center gap-2",
+                  "flex-1 py-2 font-medium rounded-lg text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
                   selfRoleCountdown > 0
                     ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
-                    : "bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white"
+                    : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
                 )}
               >
                 {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}

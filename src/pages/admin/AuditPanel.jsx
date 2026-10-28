@@ -39,7 +39,7 @@ export const AuditPanel = ({
             value={auditSearch}
             onChange={e => setAuditSearch(e.target.value)}
             placeholder="Search action, actor, or target..."
-            className="w-full pl-9 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-xs text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+            className="w-full pl-9 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-xs text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
           />
         </div>
         <div className="flex gap-1.5">

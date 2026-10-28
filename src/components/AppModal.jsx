@@ -89,16 +89,16 @@ export const ModalHeader = ({ titleId, eyebrow, title, description, onClose, cla
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/80">{eyebrow}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--sa-text-muted)]">{eyebrow}</p>
         )}
-        <h2 id={titleId} className="mt-1 truncate text-lg font-semibold text-white md:text-xl">{title}</h2>
-        {description && <p className="mt-1 text-xs font-medium text-white/80">{description}</p>}
+        <h2 id={titleId} className="mt-1 truncate text-lg font-semibold text-[var(--sa-text-primary)] md:text-xl">{title}</h2>
+        {description && <p className="mt-1 text-xs font-medium text-[var(--sa-text-muted)]">{description}</p>}
       </div>
       <button
         type="button"
         onClick={onClose}
         aria-label="Close dialog"
-        className="shrink-0 rounded-full bg-white/15 p-2 text-white transition-colors hover:bg-white/25"
+        className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
       >
         <X size={18} />
       </button>

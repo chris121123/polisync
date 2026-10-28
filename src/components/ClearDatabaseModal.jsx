@@ -103,10 +103,10 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                   onClick={() => setStep(2)}
                   disabled={countdown > 0}
                   className={clsx(
-                    "w-full sm:flex-1 py-3 px-4 font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-ps-accent",
+                    "w-full sm:flex-1 py-3 px-4 font-bold rounded-xl transition-colors text-[11px] uppercase tracking-[0.1em] focus-visible:outline-2 focus-visible:outline-ps-accent",
                     countdown > 0
                       ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed"
-                      : "bg-ps-danger dark:bg-red-700 hover:bg-ps-danger/90 text-white shadow-sm"
+                      : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
                   )}
                 >
                   {countdown > 0 ? `Wait ${countdown}s` : 'I Understand, Proceed'}
@@ -185,11 +185,11 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                 <button
                   onClick={handleVerifyAndClear}
                   disabled={loading || !email || !password}
-                  className="flex-[2] py-3 font-bold bg-ps-danger dark:bg-red-700 hover:bg-ps-danger/90 text-white rounded-xl shadow-sm transition-all disabled:opacity-50 flex justify-center items-center gap-2 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  className="flex-[2] py-3 font-bold border border-[var(--sa-danger)] text-[11px] uppercase tracking-[0.1em] text-[var(--sa-danger)] rounded-xl transition-colors disabled:opacity-50 flex justify-center items-center gap-2 focus-visible:outline-2 focus-visible:outline-ps-accent"
                 >
                   {loading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       Verifying...
                     </>
                   ) : (

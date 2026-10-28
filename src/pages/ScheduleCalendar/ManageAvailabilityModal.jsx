@@ -29,7 +29,7 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
         title="Staff Availability"
         description="Read-only — staff manage their own availability"
         onClose={onClose}
-        className="bg-ps-success dark:bg-emerald-700"
+        className="bg-[var(--sa-surface-warm)]"
       />
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 md:px-6">
@@ -65,7 +65,7 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
               >
                 <div className={clsx(
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                  isAvailable ? 'bg-ps-success text-white dark:bg-emerald-700' : 'bg-ps-bg text-ps-ink-2'
+                  isAvailable ? 'border border-[var(--sa-success)] text-[var(--sa-success)]' : 'bg-ps-bg text-ps-ink-2'
                 )}>
                   {isAvailable ? <CheckCircle2 size={16} /> : <UserCheck size={16} />}
                 </div>

@@ -46,7 +46,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
         title="Add Student Record"
         description="Create a student profile and program assignment."
         onClose={handleClose}
-        className="bg-purple-700"
+        className="bg-[var(--sa-surface-warm)]"
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
@@ -336,7 +336,7 @@ const Directory = () => {
           eyebrow="Directory"
           title="Delete student record"
           onClose={closeDeleteModal}
-          className="bg-ps-danger"
+          className="bg-[var(--sa-surface-warm)]"
         />
         <div className="px-5 py-5 md:px-6">
           <div className="flex items-start gap-3">
@@ -370,7 +370,7 @@ const Directory = () => {
             type="button"
             onClick={handleConfirmDelete}
             disabled={isDeleting}
-            className="flex-1 rounded-xl bg-ps-danger py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+            className="flex-1 rounded-xl border border-[var(--sa-danger)] py-3 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)] disabled:cursor-default disabled:opacity-50"
           >
             {isDeleting ? 'Deleting…' : 'Delete Student'}
           </button>

@@ -50,7 +50,7 @@ const SessionNotes = () => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-xl text-sm text-ps-ink-1 placeholder:text-ps-ink-2 focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+              className="w-full pl-10 pr-4 py-2 bg-ps-bg border border-ps-border rounded-xl text-sm text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
             />
           </div>
           <div className="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1 sm:pb-0">

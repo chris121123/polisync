@@ -84,13 +84,13 @@ const ForceChangePasswordModal = () => {
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
                 placeholder="Min 8 characters"
-                className="w-full pl-10 pr-10 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
+                className="w-full pl-10 pr-12 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ps-ink-2 hover:text-ps-ink-1 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center text-ps-ink-2 hover:text-ps-ink-1 focus-visible:outline-2 focus-visible:outline-ps-accent"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -117,10 +117,10 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={handleSubmit}
               disabled={loading || !newPassword || !confirmPassword}
-              className="w-full py-3 bg-ps-warn hover:bg-ps-warn/90 disabled:opacity-50 disabled:cursor-default disabled:hover:bg-ps-warn text-white font-bold rounded-xl transition-colors flex justify-center items-center h-[48px] focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="sa-btn sa-btn--primary sa-btn--block h-[48px] disabled:opacity-50 disabled:cursor-default"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 'Update Password'
               )}

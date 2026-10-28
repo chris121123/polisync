@@ -5,11 +5,11 @@ import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
 import { HOURS, formatHour, formatDateISO, TYPE_CONFIG } from './calendarMath.js';
 import { isTherapistOrTeacher } from './staff.js';
 
-// Header tones carry white text at AA contrast (bg-sped is too light behind white).
+// One neutral header tone: the session type is carried by its label, not a fill.
 const HEADER_TONES = {
-  sped: 'bg-purple-700',
-  rehab: 'bg-sky-700',
-  playschool: 'bg-ps-wood-deep',
+  sped: 'bg-[var(--sa-surface-warm)]',
+  rehab: 'bg-[var(--sa-surface-warm)]',
+  playschool: 'bg-[var(--sa-surface-warm)]',
 };
 
 const createEmptyForm = (rooms) => ({
@@ -90,10 +90,10 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         <div className="mt-5 flex gap-2">
           {[1, 2].map(s => (
             <div key={s} className="flex-1">
-              <div className={clsx('h-1 rounded-full transition-colors', s <= step ? 'bg-white' : 'bg-white/25')} />
+              <div className={clsx('h-1 rounded-full transition-colors', s <= step ? 'bg-[var(--sa-text-primary)]' : 'bg-[var(--sa-line-default)]')} />
               <p className={clsx(
                 'mt-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors',
-                s <= step ? 'text-white/90' : 'text-white/50'
+                s <= step ? 'text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
               )}>
                 {s === 1 ? 'Details' : 'Schedule'}
               </p>

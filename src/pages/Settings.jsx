@@ -377,7 +377,7 @@ const Settings = () => {
                     id="settings-clear-database"
                     onClick={() => setIsClearModalOpen(true)}
                     disabled={loading}
-                    className="px-5 py-2.5 bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2.5 border border-[var(--sa-danger)] text-[var(--sa-danger)] text-[11px] uppercase tracking-[0.1em] transition-colors hover:border-[var(--sa-line-strong)] cursor-pointer flex items-center gap-2"
                   >
                     <Trash2 size={16} />
                     Initiate Factory Wipe

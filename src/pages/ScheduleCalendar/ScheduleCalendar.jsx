@@ -662,24 +662,24 @@ const ScheduleCalendar = () => {
               const hasConflict = isConflicted(selectedSession.id);
               return (
                 <>
-                  <div className={clsx('p-5 relative overflow-hidden', selectedSession.type === 'rehab' ? 'bg-sky-700' : selectedSession.type === 'sped' ? 'bg-purple-700' : cfg.gradient)}>
+                  <div className="p-5 relative overflow-hidden bg-[var(--sa-surface-warm)]">
                     <div className="relative">
                       <div className="flex justify-between items-start mb-3">
-                        <span className="text-white/70 text-xs font-medium ">{cfg.label}</span>
+                        <span className="text-[var(--sa-text-muted)] text-xs font-medium ">{cfg.label}</span>
                         <div className="flex items-center gap-1">
                           {pendingDelete ? (
                             <>
                               <button
                                 onClick={() => { deleteSession(selectedSession.id); setSelectedSessionId(null); }}
                                 aria-label="Confirm delete session"
-                                className="px-2.5 py-1.5 rounded-lg bg-ps-danger dark:bg-red-700 hover:opacity-90 text-white text-xs font-medium transition-colors"
+                                className="px-3 py-2 border border-[var(--sa-danger)] text-[11px] uppercase tracking-[0.1em] text-[var(--sa-text-primary)] transition-colors hover:border-[var(--sa-line-strong)]"
                               >
                                 Confirm
                               </button>
                               <button
                                 onClick={() => setPendingDelete(false)}
                                 aria-label="Cancel delete"
-                                className="px-2.5 py-1.5 rounded-lg bg-ps-ink-2 hover:opacity-90 text-white text-xs font-medium transition-colors"
+                                className="sa-btn"
                               >
                                 Cancel
                               </button>
@@ -688,7 +688,7 @@ const ScheduleCalendar = () => {
                             <button
                               onClick={() => setPendingDelete(true)}
                               aria-label="Delete session"
-                              className="p-2 rounded-lg bg-white/20 hover:bg-ps-danger dark:hover:bg-red-700 text-white transition-colors"
+                              className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-danger)] hover:text-[var(--sa-danger)]"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -696,26 +696,26 @@ const ScheduleCalendar = () => {
                           <button
                             onClick={() => { setSelectedSessionId(null); setPendingDelete(false); }}
                             aria-label="Close session details"
-                            className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                            className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
                           >
                             <X size={14} />
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-white font-semibold text-lg leading-tight">{selectedSession.title}</h3>
+                      <h3 className="text-[var(--sa-text-primary)] font-semibold text-lg leading-tight">{selectedSession.title}</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="flex items-center gap-1 text-white/80 text-xs font-medium">
+                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium">
                           <Clock size={11} /> {formatHour(selectedSession.startHour)} – {formatHour(selectedSession.startHour + selectedSession.span)}
                         </span>
-                        <span className="flex items-center gap-1 text-white/80 text-xs font-medium">
+                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium">
                           <MapPin size={11} /> {selectedSession.room}
                         </span>
-                        {provider && <span className="flex items-center gap-1 text-white/80 text-xs font-medium"><Users size={11} /> {provider.name}</span>}
+                        {provider && <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium"><Users size={11} /> {provider.name}</span>}
                       </div>
                       {hasConflict && (
-                        <div className="mt-3 flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5">
-                          <AlertCircle size={13} className="text-white" />
-                          <span className="text-white text-xs font-medium">Scheduling Conflict Detected</span>
+                        <div className="mt-3 flex items-center gap-2 border border-[var(--sa-danger)] px-3 py-1.5 text-[var(--sa-text-primary)]">
+                          <AlertCircle size={13} className="text-[var(--sa-danger)]" />
+                          <span className="text-xs font-medium">Scheduling Conflict Detected</span>
                         </div>
                       )}
                     </div>
@@ -808,7 +808,7 @@ const ScheduleCalendar = () => {
                                       <span className="text-ps-success text-xs mx-1">→</span>
                                       <span className="font-medium text-ps-success text-sm">{formatHour(newHour + selectedSession.span)}</span>
                                     </div>
-                                    <span className="text-xs font-medium px-2.5 py-1 bg-ps-primary text-white rounded-lg transition-colors">
+                                    <span className="px-3 py-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] text-[11px] uppercase tracking-[0.1em] transition-colors">
                                       Move
                                     </span>
                                   </div>

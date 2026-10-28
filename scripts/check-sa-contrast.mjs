@@ -93,6 +93,13 @@ const PAIRS = [
   ['gold-light', 'bg-base', 'hover text', TEXT], // primary button on canvas
   ['danger', 'surface-1', 'text', TEXT],
   ['success', 'surface-1', 'text', TEXT],
+  // Neutral header (ModalHeader / session detail): warm fill, token inks, hairline controls.
+  ['text-primary', 'surface-warm', 'text', TEXT],
+  ['text-secondary', 'surface-warm', 'text', TEXT],
+  ['text-muted', 'surface-warm', 'text', TEXT],
+  // Danger on the warm header ships as a 3:1 graphical mark (border/icon), never as text:
+  // measured 4.12:1 in dark, below the 4.5 text floor.
+  ['danger', 'surface-warm', 'mark', UI],
   ['gold', 'surface-1', 'focus', UI],
   ['gold', 'bg-base', 'focus', UI],
   ['bar-accent', 'bar-track', 'mark', UI], // data marks, WCAG 1.4.11
@@ -181,6 +188,11 @@ for (const [label, selector] of BLOCKS) {
     check(`role-${role} on surface-1`, ink, vars['--sa-surface-1'], 'text', TEXT);
     check(`role-${role} on bg-base`, ink, vars['--sa-bg-base'], 'text', TEXT);
     check(`role-${role} on its 10% tint`, ink, mix(ink, vars['--sa-surface-1'], 0.1), 'text', TEXT);
+  }
+
+  // Semantic inks over their own 10% tint — the state chips (bg-ps-danger/10, bg-ps-success/10).
+  for (const ink of ['danger', 'success']) {
+    check(`${ink} on its 10% tint`, tokens[`--sa-${ink}`], mix(tokens[`--sa-${ink}`], vars['--sa-surface-1'], 0.1), 'text', TEXT);
   }
 
   for (const [fgName, bgName, kind, need] of VAR_PAIRS) {

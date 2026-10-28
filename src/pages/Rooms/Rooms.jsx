@@ -326,7 +326,7 @@ const Rooms = () => {
           eyebrow="Room management"
           title="Delete room"
           onClose={closeDeleteModal}
-          className="bg-ps-danger"
+          className="bg-[var(--sa-surface-warm)]"
         />
         <div className="space-y-3 px-5 py-5 md:px-6">
           <div className="flex items-start gap-3">
@@ -361,7 +361,7 @@ const Rooms = () => {
             type="button"
             onClick={handleDeleteRoom}
             disabled={isDeletingRoom || roomSessionCount > 0}
-            className="flex-1 rounded-xl bg-ps-danger py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+            className="flex-1 rounded-xl border border-[var(--sa-danger)] py-3 text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)] disabled:cursor-default disabled:opacity-50"
           >
             {isDeletingRoom ? 'Deleting…' : 'Delete Room'}
           </button>
