@@ -16,21 +16,25 @@ export const AUDIT_CATEGORIES = {
 };
 
 export const getAuditBadge = (action) => {
-  if (!action) return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
-  if (action.includes('delete')) return { color: 'bg-ps-danger/10 text-ps-danger', dot: 'bg-ps-danger' };
-  if (action.includes('activate') && !action.includes('deactivate')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
-  if (action.includes('deactivate')) return { color: 'bg-ps-warn/10 text-ps-warn', dot: 'bg-ps-warn' };
-  if (action.includes('role')) return { color: 'bg-ps-accent-soft text-ps-accent', dot: 'bg-ps-primary' };
-  if (action.includes('create')) return { color: 'bg-ps-success/10 text-ps-success', dot: 'bg-ps-success' };
-  return { color: 'bg-ps-bg text-ps-ink-2 border border-ps-border', dot: 'bg-ps-ink-2' };
+  if (!action) return { color: 'sa-badge', dot: 'sa-marker' };
+  if (action.includes('delete')) return { color: 'sa-badge sa-badge--warn', dot: 'sa-marker--danger' };
+  if (action.includes('activate') && !action.includes('deactivate')) return { color: 'sa-badge sa-badge--positive', dot: 'sa-marker--creative' };
+  if (action.includes('deactivate')) return { color: 'sa-badge sa-badge--warn', dot: 'sa-marker--danger' };
+  if (action.includes('role')) return { color: 'sa-badge', dot: 'sa-marker' };
+  if (action.includes('create')) return { color: 'sa-badge sa-badge--positive', dot: 'sa-marker--creative' };
+  return { color: 'sa-badge', dot: 'sa-marker' };
 };
 
+// ADR-R5 / D2: role identity is carried by the label, so every role shares the
+// one hairline active-cell treatment (gold 1px outline, primary ink).
+const ACTIVE_CELL = 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1';
+
 export const ROLE_PILL_COLORS = {
-  all: 'bg-ps-primary text-white',
-  superadmin: 'bg-role-superadmin/10 text-role-superadmin border border-role-superadmin/30',
-  admin: 'bg-role-admin/10 text-role-admin border border-role-admin/30',
-  teacher: 'bg-role-teacher/10 text-role-teacher border border-role-teacher/30',
-  therapist: 'bg-role-therapist/10 text-role-therapist border border-role-therapist/30',
-  parent: 'bg-role-parent/10 text-role-parent border border-role-parent/30',
+  all: ACTIVE_CELL,
+  superadmin: ACTIVE_CELL,
+  admin: ACTIVE_CELL,
+  teacher: ACTIVE_CELL,
+  therapist: ACTIVE_CELL,
+  parent: ACTIVE_CELL,
 };
-export const ROLE_PILL_INACTIVE = 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
+export const ROLE_PILL_INACTIVE = 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]';

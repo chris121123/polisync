@@ -38,6 +38,13 @@ const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const PHONE_PATTERN = /^09\d{9}$/;
 const normalizePhone = (phone) => phone.replace(/[\s-]/g, '');
 
+const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
+// The border colour is chosen, never raced: two border-* utilities in one
+// className resolve by CSS order, not by class order (Rooms does the same).
+const fieldTone = (invalid) => (invalid
+  ? 'border-[var(--sa-danger)]'
+  : 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]');
+
 const UserManagement = () => {
   const {
     staff,
@@ -341,33 +348,33 @@ const UserManagement = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">System Console</h1>
-          <p className="text-xs sm:text-sm text-ps-ink-2 mt-0.5">Identity, audit trail, and platform configuration</p>
+          <h1 className="sa-title">System Console</h1>
+          <p className="sa-sub">Identity, audit trail, and platform configuration</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-ps-primary text-white rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-sm focus-visible:outline-2 focus-visible:outline-ps-accent"
+            className="sa-btn sa-btn--primary"
           >
-            <UserPlus size={16} />
+            <UserPlus size={16} strokeWidth={1.5} />
             Create User
           </button>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 border-b border-ps-border pb-2 overflow-x-auto hide-scrollbar">
+      <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar w-fit max-w-full">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={clsx(
-              "px-4 py-2 rounded-t-lg text-sm font-medium transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent",
+              "px-3 py-1.5 text-xs whitespace-nowrap",
               activeTab === tab.id
-                ? "bg-ps-surface text-ps-accent border-b-2 border-ps-accent"
-                : "text-ps-ink-2 hover:text-ps-ink-1"
+                ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
+                : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
             )}
           >
             {tab.label}
@@ -379,14 +386,14 @@ const UserManagement = () => {
       {activeTab === 'users' && (
         <div className="space-y-4">
           {/* Role Filters + Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex gap-1.5 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:flex-wrap">
+            <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar">
               {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
                 <button
                   key={role}
                   onClick={() => setFilterRole(role)}
                   className={clsx(
-                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize focus-visible:outline-2 focus-visible:outline-ps-accent",
+                    "px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
                     filterRole === role
                       ? ROLE_PILL_COLORS[role]
                       : ROLE_PILL_INACTIVE
@@ -397,77 +404,70 @@ const UserManagement = () => {
               ))}
             </div>
 
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={16} />
+            <div className="relative sm:ml-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search by name or email..."
-                className="w-full sm:w-72 pl-9 pr-4 py-2 bg-ps-surface border border-ps-border rounded-lg text-sm text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+                className="w-full sm:w-72 pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
               />
             </div>
           </div>
 
           {/* User Table */}
-          <div className="overflow-x-auto bg-ps-surface rounded-xl shadow-sm border border-ps-border">
-            <table className="w-full min-w-[640px]">
+          <div className="border border-[var(--sa-line-default)] overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-ps-border bg-ps-bg/50">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">User</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">App Role</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Department</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Email</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Status</th>
-                  <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Actions</th>
+                <tr className="border-b border-[var(--sa-line-default)]">
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">User</th>
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">App Role</th>
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Department</th>
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Email</th>
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Status</th>
+                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)] text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ps-border">
-                {filteredStaff.map(member => (
-                  <tr key={member.id} className="hover:bg-ps-bg/40 transition-colors">
-                    <td className="px-6 py-4">
+              <tbody className="divide-y divide-[var(--sa-line-hairline)]">
+                {filteredStaff.map((member, index) => (
+                  <tr key={member.id} className="hover:bg-[var(--sa-surface-2)] transition-colors">
+                    <td className="px-6 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-ps-accent-soft text-ps-accent flex items-center justify-center font-semibold text-sm shrink-0">
+                        <div className="w-8 h-8 border border-[var(--sa-line-default)] sa-t-warm text-[11px] tabular-nums flex items-center justify-center shrink-0">
                           {member.name?.charAt(0) || 'U'}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-ps-ink-1 truncate">{member.name}</p>
-                          <p className="text-xs text-ps-ink-2 truncate">{member.email}</p>
+                          <p className="sa-row-title truncate">{member.name}</p>
+                          <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{member.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-3.5">
+                      <span className="sa-badge">{member.app_role || 'teacher'}</span>
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <span className="text-sm text-[var(--sa-text-muted)]">{member.department || 'General'}</span>
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <span className="text-sm text-[var(--sa-text-muted)]">{member.email}</span>
+                    </td>
+                    <td className="px-6 py-3.5">
                       <span className={clsx(
-                        "text-xs font-medium px-2.5 py-1 rounded-full",
-                        ROLE_PILL_COLORS[member.app_role || 'teacher']
-                      )}>
-                        {member.app_role || 'teacher'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-ps-ink-2">{member.department || 'General'}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-ps-ink-2">{member.email}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={clsx(
-                        "text-xs font-medium px-2 py-0.5 rounded-full",
-                        member.is_active === false
-                          ? "bg-ps-danger/10 text-ps-danger"
-                          : "bg-ps-success/10 text-ps-success"
+                        'sa-badge',
+                        member.is_active !== false && 'sa-badge--positive'
                       )}>
                         {member.is_active === false ? 'Inactive' : 'Active'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-3.5 text-right">
                       <div className="relative inline-block text-left">
                         <button
                           onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
                           aria-label={`Actions for ${member.name}`}
-                          className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                          className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] transition-colors"
                         >
-                          <MoreVertical size={16} />
+                          <MoreVertical size={16} strokeWidth={1.5} />
                         </button>
 
                         {openMenuId === member.id && (
@@ -476,20 +476,22 @@ const UserManagement = () => {
                               className="fixed inset-0 z-40"
                               onClick={() => setOpenMenuId(null)}
                             />
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-ps-surface rounded-lg shadow-md border border-ps-border z-50 p-1">
+                            <div className={clsx(
+                              'absolute right-0 w-48 bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] z-50 p-1',
+                              // The table scrolls (min-w), so it clips; the last rows open upward.
+                              index >= 2 && index >= filteredStaff.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'
+                            )}>
                               <button
                                 onClick={() => {
                                   handleToggleActive(member.id, member.is_active !== false);
                                   setOpenMenuId(null);
                                 }}
                                 className={clsx(
-                                  "w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-lg transition-colors text-left",
-                                  member.is_active === false
-                                    ? "text-ps-success hover:bg-ps-success/10"
-                                    : "text-ps-ink-1 hover:bg-ps-bg"
+                                  "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]",
+                                  member.is_active === false ? "sa-t-warm" : "text-[var(--sa-text-secondary)]"
                                 )}
                               >
-                                {member.is_active === false ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+                                {member.is_active === false ? <ToggleLeft size={16} strokeWidth={1.5} /> : <ToggleRight size={16} strokeWidth={1.5} />}
                                 {member.is_active === false ? 'Activate User' : 'Deactivate User'}
                               </button>
 
@@ -499,19 +501,19 @@ const UserManagement = () => {
                                   setSelectedRole(member.app_role || 'teacher');
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors text-left"
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left text-[var(--sa-text-secondary)] transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]"
                               >
-                                <Shield size={16} />
+                                <Shield size={16} strokeWidth={1.5} />
                                 Change Role
                               </button>
 
-                              <div className="h-px bg-ps-border my-1" />
+                              <div className="h-px bg-[var(--sa-line-hairline)] my-1" />
 
                               <button
                                 onClick={() => handleDeleteUser(member)}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ps-danger hover:bg-ps-danger/10 rounded-lg transition-colors text-left"
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left sa-t-danger transition-colors hover:bg-[var(--sa-surface-2)]"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={16} strokeWidth={1.5} />
                                 Delete User
                               </button>
                             </div>
@@ -525,25 +527,23 @@ const UserManagement = () => {
             </table>
 
             {filteredStaff.length === 0 && (
-              <div className="p-8 text-center">
-                <div className="w-10 h-10 rounded-full bg-ps-bg border border-ps-border flex items-center justify-center mx-auto mb-3">
-                  <Users size={18} className="text-ps-ink-2" />
-                </div>
+              <div className="px-6 py-12 text-center">
+                <Users size={18} strokeWidth={1.5} className="mx-auto mb-3 text-[var(--sa-text-muted)]" />
                 {staff.length === 0 ? (
                   <>
-                    <p className="text-sm font-semibold text-ps-ink-1">No users yet</p>
-                    <p className="text-xs text-ps-ink-2 mt-1 mb-4">Create your first platform account to get started.</p>
+                    <p className="sa-empty-title">No users yet</p>
+                    <p className="sa-empty-sub">Create your first platform account to get started.</p>
                     <button
                       onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-ps-primary text-white rounded-xl text-sm font-medium hover:opacity-90 transition-all"
+                      className="sa-btn sa-btn--primary mt-4"
                     >
-                      <UserPlus size={14} /> Create first user
+                      <UserPlus size={14} strokeWidth={1.5} /> Create first user
                     </button>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-semibold text-ps-ink-1">No users match this filter</p>
-                    <p className="text-xs text-ps-ink-2 mt-1">Try a different role filter or clear the search query.</p>
+                    <p className="sa-empty-title">No users match this filter</p>
+                    <p className="sa-empty-sub">Try a different role filter or clear the search query.</p>
                   </>
                 )}
               </div>
@@ -588,25 +588,25 @@ const UserManagement = () => {
           onClick={() => setShowRoleModal(null)}
         >
           <div
-            className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-md max-w-sm w-full p-5 sm:p-6 border border-ps-border max-h-[90vh] overflow-y-auto"
+            className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] max-w-sm w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-ps-ink-1 mb-2">Change User Role</h3>
+            <h3 className="text-lg text-[var(--sa-text-primary)] mb-2">Change User Role</h3>
             
             {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
-              <div className="mb-4 p-3 bg-ps-danger/10 border border-ps-danger/30 rounded-lg flex gap-3 items-start">
-                <ShieldAlert size={18} className="text-ps-danger shrink-0 mt-0.5" />
+              <div className="mb-4 border border-[var(--sa-danger)] p-3 flex gap-3 items-start">
+                <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-xs text-ps-danger font-semibold mb-1">Critical Warning</p>
-                  <p className="text-xs text-ps-danger leading-tight">
+                  <p className="text-xs sa-t-danger mb-1">Critical Warning</p>
+                  <p className="text-xs sa-t-danger leading-tight">
                     You are changing your OWN role. You will lose administrative access and be locked out of this console.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="mb-4 p-3 bg-ps-bg border border-ps-border rounded-lg flex gap-3 items-start">
-                <ShieldAlert size={16} className="text-ps-ink-2 shrink-0 mt-0.5" />
-                <p className="text-xs text-ps-ink-2 leading-tight">
+              <div className="mb-4 border border-[var(--sa-line-hairline)] p-3 flex gap-3 items-start">
+                <ShieldAlert size={16} strokeWidth={1.5} className="text-[var(--sa-text-muted)] shrink-0 mt-0.5" />
+                <p className="text-xs text-[var(--sa-text-muted)] leading-tight">
                   This will immediately update access permissions across the system.
                 </p>
               </div>
@@ -618,14 +618,14 @@ const UserManagement = () => {
                   key={role}
                   onClick={() => setSelectedRole(role)}
                   className={clsx(
-                    "w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors border",
+                    "w-full text-left px-4 py-3 text-sm transition-colors border",
                     selectedRole === role
-                      ? "border-ps-accent bg-ps-accent-soft text-ps-ink-1"
-                      : "border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1"
+                      ? "border-[var(--sa-gold)] text-[var(--sa-text-primary)]"
+                      : "border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
                   )}
                 >
                   <span className="capitalize block">{role === 'superadmin' ? 'Super Admin' : role}</span>
-                  <span className="text-xs text-ps-ink-2 font-normal block mt-0.5">
+                  <span className="text-[11px] text-[var(--sa-text-muted)] block mt-0.5">
                     {role === 'superadmin' ? 'Full system access + user management + platform config' :
                      role === 'admin' ? 'Schedule, directory, and room operations' :
                      role === 'teacher' ? 'Manage classes and attendance' :
@@ -639,13 +639,13 @@ const UserManagement = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => handleUpdateRole(showRoleModal)}
-                className="flex-1 py-2 bg-ps-primary hover:opacity-90 text-white font-medium rounded-lg text-sm transition-opacity"
+                className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
               >
                 Update Role
               </button>
               <button
                 onClick={() => setShowRoleModal(null)}
-                className="px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+                className="sa-btn justify-center min-h-11"
               >
                 Cancel
               </button>
@@ -665,42 +665,40 @@ const UserManagement = () => {
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
-              className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+              className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-4 md:p-6 relative shrink-0 bg-ps-primary">
-                <div className="relative flex justify-between items-start">
-                  <div>
-                    <p className="text-white/80 text-xs font-medium mb-1">New Account</p>
-                    <h3 className="text-white text-lg md:text-xl font-semibold">Create New User</h3>
-                    <p className="text-white/70 text-xs mt-1">Administrator-provisioned account</p>
+              <div className="relative shrink-0 bg-[var(--sa-surface-warm)] px-5 py-5 md:px-6">
+                <div className="relative flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="sa-micro">New Account</p>
+                    <h3 className="mt-1 text-lg text-[var(--sa-text-primary)] md:text-xl">Create New User</h3>
+                    <p className="mt-1 text-xs text-[var(--sa-text-muted)]">Administrator-provisioned account</p>
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelCreate}
                     aria-label="Close"
-                    className="p-2 cursor-pointer rounded-full bg-ps-surface/20 hover:bg-ps-surface/30 text-white transition-colors"
+                    className="shrink-0 cursor-pointer border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
                   >
-                    <X size={18} />
+                    <X size={18} strokeWidth={1.5} />
                   </button>
                 </div>
-                <div className="relative flex gap-2 mt-4">
-                  <div className="h-1 flex-1 rounded-full bg-ps-surface" />
-                </div>
+                <div className="mt-4 h-px bg-[var(--sa-line-hairline)]" />
               </div>
 
               {/* Body */}
-              <div className="flex-1 min-h-0 p-4 md:p-6 space-y-4 overflow-y-auto">
+              <div className="flex-1 min-h-0 px-5 py-5 md:px-6 space-y-4 overflow-y-auto">
                 {createError && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-danger/10 border border-ps-danger/30 text-ps-danger text-xs font-medium">
-                    <AlertCircle size={16} />
+                  <div className="sa-alert sa-alert--danger items-center">
+                    <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
                     {createError}
                   </div>
                 )}
                 {createSuccess && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-ps-success/10 border border-ps-success/30 text-ps-success text-xs font-medium">
-                    <CheckCircle2 size={16} />
+                  <div className="sa-alert sa-alert--success items-center">
+                    <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0" />
                     {createSuccess}
                   </div>
                 )}
@@ -708,7 +706,7 @@ const UserManagement = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                   {/* Name */}
                   <div>
-                    <label htmlFor="new_user_name" className="text-xs font-medium text-ps-ink-2 mb-2 block">Full Name</label>
+                    <label htmlFor="new_user_name" className="sa-label">Full Name</label>
                     <input
                       id="new_user_name"
                       type="text"
@@ -719,19 +717,14 @@ const UserManagement = () => {
                       }}
                       onBlur={() => validateField('name')}
                       placeholder="FirstName LastName"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.name
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
+                      className={clsx(fieldClass, fieldTone(errors.name))}
                     />
-                    {errors.name && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.name}</p>}
+                    {errors.name && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.name}</p>}
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="new_user_email" className="text-xs font-medium text-ps-ink-2 mb-2 block">Email Address</label>
+                    <label htmlFor="new_user_email" className="sa-label">Email Address</label>
                     <input
                       id="new_user_email"
                       type="email"
@@ -743,19 +736,14 @@ const UserManagement = () => {
                       }}
                       onBlur={() => validateField('email')}
                       placeholder="email@polisync.com"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.email
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
+                      className={clsx(fieldClass, fieldTone(errors.email))}
                     />
-                    {errors.email && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.email}</p>}
+                    {errors.email && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.email}</p>}
                   </div>
 
                   {/* Password */}
                   <div>
-                    <label htmlFor="temp_password_input" className="text-xs font-medium text-ps-ink-2 mb-2 block">Temporary Password</label>
+                    <label htmlFor="temp_password_input" className="sa-label">Temporary Password</label>
                     <div className="relative">
                       <input
                         id="temp_password_input"
@@ -770,30 +758,25 @@ const UserManagement = () => {
                         }}
                         onBlur={() => validateField('password')}
                         placeholder="Min 8 characters"
-                        className={clsx(
-                          "w-full py-3 pl-4 pr-12 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                          errors.password
-                            ? "border-ps-danger focus:ring-ps-danger/20"
-                            : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                        )}
+                        className={clsx(fieldClass, 'pr-12', fieldTone(errors.password))}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-ps-ink-2 hover:text-ps-ink-1"
+                        className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                       >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                       </button>
                     </div>
-                    {errors.password && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.password}</p>}
-                    {!errors.password && <p className="text-xs text-ps-ink-2 mt-1">User will be prompted to change password on initial login.</p>}
-                    <ul id="temp_password_rules" className="mt-2 rounded-lg border border-ps-border bg-ps-bg p-3 space-y-1.5">
+                    {errors.password && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.password}</p>}
+                    {!errors.password && <p className="text-[11px] text-[var(--sa-text-muted)] mt-1">User will be prompted to change password on initial login.</p>}
+                    <ul id="temp_password_rules" className="mt-2 border border-[var(--sa-line-hairline)] bg-[var(--sa-bg-base)] p-3 space-y-1.5">
                       {PASSWORD_RULES.map((rule) => {
                         const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
                         return (
-                          <li key={rule.id} className={clsx('flex items-center gap-1.5 text-xs', met ? 'text-ps-success' : 'text-ps-ink-2')}>
-                            {met ? <Check size={12} /> : <X size={12} />}
+                          <li key={rule.id} className={clsx('flex items-center gap-1.5 text-[11px]', met ? 'text-[var(--sa-success)]' : 'text-[var(--sa-text-muted)]')}>
+                            {met ? <Check size={12} strokeWidth={1.5} /> : <X size={12} strokeWidth={1.5} />}
                             {rule.label}
                           </li>
                         );
@@ -803,7 +786,7 @@ const UserManagement = () => {
 
                   {/* Role */}
                   <div>
-                    <p id="new_user_role_label" className="text-xs font-medium text-ps-ink-2 mb-2 block">Role</p>
+                    <p id="new_user_role_label" className="sa-label">Role</p>
                     <div role="group" aria-labelledby="new_user_role_label" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {[
                         { value: 'teacher', label: 'Teacher' },
@@ -818,10 +801,10 @@ const UserManagement = () => {
                           onClick={() => setNewUser(p => ({ ...p, role: value }))}
                           aria-pressed={newUser.role === value}
                           className={clsx(
-                            'py-3 rounded-xl text-xs font-medium border-2 transition-all cursor-pointer',
+                            'py-2.5 text-xs border cursor-pointer transition-colors',
                             newUser.role === value
-                              ? 'bg-ps-primary text-white border-transparent shadow-md'
-                              : 'bg-ps-bg text-ps-ink-2 border-ps-border hover:border-ps-border'
+                              ? 'border-[var(--sa-gold)] text-[var(--sa-text-primary)]'
+                              : 'border-[var(--sa-line-default)] text-[var(--sa-text-muted)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]'
                           )}
                         >
                           {label}
@@ -832,12 +815,12 @@ const UserManagement = () => {
 
                   {newUser.role !== 'parent' && (
                     <div>
-                      <label htmlFor="new_user_department" className="text-xs font-medium text-ps-ink-2 mb-2 block">Department</label>
+                      <label htmlFor="new_user_department" className="sa-label">Department</label>
                       <select
                         id="new_user_department"
                         value={newUser.department}
                         onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                        className="w-full px-4 py-3 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold transition-all"
+                        className={clsx(fieldClass, 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]')}
                       >
                         <option value="General">General</option>
                         <option value="SPED">SPED</option>
@@ -850,7 +833,7 @@ const UserManagement = () => {
 
                   {/* Phone */}
                   <div>
-                    <label htmlFor="phone_input" className="text-xs font-medium text-ps-ink-2 mb-2 block">Phone (optional)</label>
+                    <label htmlFor="phone_input" className="sa-label">Phone (optional)</label>
                     <input
                       id="phone_input"
                       type="tel"
@@ -862,24 +845,19 @@ const UserManagement = () => {
                       }}
                       onBlur={() => validateField('phone')}
                       placeholder="09XX XXX XXXX"
-                      className={clsx(
-                        "w-full px-4 py-3 bg-ps-bg border rounded-xl outline-none focus:ring-2 text-sm font-semibold transition-all",
-                        errors.phone
-                          ? "border-ps-danger focus:ring-ps-danger/20"
-                          : "border-ps-border focus:border-ps-accent focus:ring-ps-accent/20"
-                      )}
+                      className={clsx(fieldClass, fieldTone(errors.phone))}
                     />
-                    {errors.phone && <p className="text-xs text-ps-danger font-medium mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.phone}</p>}
+                    {errors.phone && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.phone}</p>}
                   </div>
                 </motion.div>
               </div>
 
               {/* Footer */}
-              <div className="px-6 pb-6 flex gap-3">
+              <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
                 <button
                   type="button"
                   onClick={handleCancelCreate}
-                  className="px-6 py-3 text-sm font-medium text-ps-ink-2 hover:bg-ps-bg rounded-xl transition-colors border border-ps-border cursor-pointer"
+                  className="sa-btn justify-center min-h-11 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -887,13 +865,13 @@ const UserManagement = () => {
                   type="button"
                   onClick={handleCreateUser}
                   disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
-                  className="flex-1 py-3 text-sm font-medium bg-ps-primary text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 disabled:cursor-default transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {createLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin border border-current border-t-transparent" />
                   ) : (
                     <>
-                      <UserPlus size={16} />
+                      <UserPlus size={16} strokeWidth={1.5} />
                       Create Account
                     </>
                   )}
@@ -911,21 +889,19 @@ const UserManagement = () => {
           onClick={() => setDeleteModalData(null)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
+            className="bg-[var(--sa-surface-1)] max-w-sm w-full p-6 border border-[var(--sa-line-default)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-ps-danger/10 flex items-center justify-center text-ps-danger shrink-0">
-                <AlertCircle size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-ps-ink-1">Delete User?</h3>
-                <p className="text-xs text-ps-ink-2 truncate">{deleteModalData.name}</p>
+              <AlertCircle size={18} strokeWidth={1.5} className="sa-t-danger shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-lg text-[var(--sa-text-primary)]">Delete User?</h3>
+                <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{deleteModalData.name}</p>
               </div>
             </div>
             
-            <div className="bg-ps-danger/10 border border-ps-danger/30 rounded-lg p-3.5 mb-6">
-              <p className="text-xs text-ps-danger leading-relaxed">
+            <div className="border border-[var(--sa-danger)] p-3.5 mb-6">
+              <p className="text-xs sa-t-danger leading-relaxed">
                 This action cannot be undone. This will permanently delete the user's account and revoke access immediately.
               </p>
             </div>
@@ -933,7 +909,7 @@ const UserManagement = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteModalData(null)}
-                className="flex-1 px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+                className="sa-btn flex-1 justify-center min-h-11"
               >
                 Cancel
               </button>
@@ -941,9 +917,9 @@ const UserManagement = () => {
                 onClick={confirmDeleteUser}
                 disabled={deleteCountdown > 0}
                 className={clsx(
-                  "flex-1 py-2 font-medium rounded-lg text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
+                  "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
                   deleteCountdown > 0
-                    ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
+                    ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
                     : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
                 )}
               >
@@ -961,21 +937,19 @@ const UserManagement = () => {
           onClick={() => setShowSelfRoleWarning(false)}
         >
           <div
-            className="bg-ps-surface rounded-xl shadow-md max-w-sm w-full p-6 border border-ps-border"
+            className="bg-[var(--sa-surface-1)] max-w-sm w-full p-6 border border-[var(--sa-line-default)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-ps-danger/10 flex items-center justify-center text-ps-danger shrink-0">
-                <ShieldAlert size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-ps-ink-1">Change Own Role?</h3>
-                <p className="text-xs text-ps-ink-2 truncate">Target Role: <span className="capitalize text-ps-accent font-medium">{selectedRole}</span></p>
+              <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-lg text-[var(--sa-text-primary)]">Change Own Role?</h3>
+                <p className="text-[11px] text-[var(--sa-text-muted)] truncate">Target Role: <span className="capitalize sa-t-warm">{selectedRole}</span></p>
               </div>
             </div>
             
-            <div className="bg-ps-danger/10 border border-ps-danger/30 rounded-lg p-3.5 mb-6">
-              <p className="text-xs text-ps-danger leading-relaxed">
+            <div className="border border-[var(--sa-danger)] p-3.5 mb-6">
+              <p className="text-xs sa-t-danger leading-relaxed">
                 You are stripping yourself of superadmin access.
                 This action is irreversible from this account.
                 You will be locked out immediately.
@@ -985,7 +959,7 @@ const UserManagement = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSelfRoleWarning(false)}
-                className="flex-1 px-4 py-2 border border-ps-border text-ps-ink-1 font-medium rounded-lg text-sm hover:bg-ps-bg transition-colors"
+                className="sa-btn flex-1 justify-center min-h-11"
               >
                 Cancel
               </button>
@@ -993,9 +967,9 @@ const UserManagement = () => {
                 onClick={confirmSelfRoleChange}
                 disabled={selfRoleCountdown > 0}
                 className={clsx(
-                  "flex-1 py-2 font-medium rounded-lg text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
+                  "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
                   selfRoleCountdown > 0
-                    ? "bg-ps-bg text-ps-ink-2 cursor-not-allowed border border-ps-border"
+                    ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
                     : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
                 )}
               >
