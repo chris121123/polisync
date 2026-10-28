@@ -64,19 +64,19 @@ const TherapistDashboard = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-ps-border/60">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+        <div>
+          <h1 className="sa-title">
             My Caseload
           </h1>
-          <p className="text-xs sm:text-sm text-ps-ink-2 font-medium">
+          <p className="sa-sub">
             Clinical management and developmental notes for your weekly students.
           </p>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard 
           title="Caseload Hours" 
           value={`${totalHoursThisWeek} hrs`} 
@@ -105,28 +105,23 @@ const TherapistDashboard = () => {
 
       <MyAvailabilityCard />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sessions Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-ps-surface rounded-2xl p-6 lg:p-8 shadow-md border border-ps-border">
+        <div className="lg:col-span-2">
+          <div className="sa-panel">
             {/* Header & Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-ps-border">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-ps-accent-soft text-ps-accent rounded-xl">
-                  <Activity size={20} />
-                </div>
-                <h2 className="text-lg font-display font-bold text-ps-ink-1">Daily Schedule</h2>
-              </div>
+            <div className="sa-panel-head">
+              <h2 className="sa-panel-title">Daily Schedule</h2>
               <button
                 onClick={() => navigate('/therapist/notes')}
-                className="text-xs font-bold text-ps-accent hover:underline flex items-center gap-1"
+                className="sa-link"
               >
                 All Clinical Notes →
               </button>
             </div>
 
             {/* Day Pill Selector */}
-            <div className="flex items-center gap-2 py-4 overflow-x-auto">
+            <div className="flex w-fit max-w-full py-1 divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] my-4 overflow-x-auto">
               {dayNames.map((day, idx) => {
                 const count = mySessions.filter(s => sessionDayIndex(s) === idx).length;
                 const isActive = selectedDay === idx + 1;
@@ -135,78 +130,68 @@ const TherapistDashboard = () => {
                     key={day}
                     onClick={() => setSelectedDay(idx + 1)}
                     className={clsx(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0",
-                      isActive 
-                        ? "bg-ps-primary text-white shadow-sm" 
-                        : "bg-ps-bg text-ps-ink-2 hover:bg-ps-border hover:text-ps-ink-1"
+                      "px-3 py-2 text-xs flex items-center gap-2 shrink-0",
+                      isActive
+                        ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
+                        : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                     )}
                   >
                     <span>{day.slice(0, 3)}</span>
-                    <span className={clsx(
-                      "w-5 h-5 rounded-full text-xs flex items-center justify-center font-bold",
-                      isActive ? "bg-black/25 text-white" : "bg-ps-surface text-ps-ink-2 shadow-xs"
-                    )}>
-                      {count}
-                    </span>
+                    <span className="tabular-nums">{count}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* Session List */}
-            <div className="space-y-4 pt-2">
+            <div className="sa-list">
               {todaySessions.length > 0 ? (
                 todaySessions.map((session, i) => (
                   <motion.div 
                     key={session.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.05 }}
-                    className="p-5 rounded-2xl border border-ps-border bg-ps-bg/30 hover:bg-ps-surface hover:shadow-sm transition-all group relative border-l-4 border-l-ps-accent flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="sa-row flex-col sm:flex-row border-l-2 border-l-[var(--sa-gold)] pl-3"
                   >
-                    <div className="flex items-start gap-4">
-                      {/* Time Badge */}
-                      <div className="w-14 h-14 rounded-2xl bg-ps-accent-soft text-ps-accent flex flex-col items-center justify-center shrink-0 border border-ps-accent/10">
-                        <span className="text-xs font-bold">{formatTime(session.startHour)}</span>
-                        <span className="text-xs font-medium opacity-70">{session.span}h</span>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {/* Time Column */}
+                      <div className="w-16 shrink-0">
+                        <p className="text-[13px] tabular-nums text-[var(--sa-text-primary)]">{formatTime(session.startHour)}</p>
+                        <p className="text-[11px] tabular-nums sa-t-muted">{session.span}h</p>
                       </div>
 
                       {/* Content */}
-                      <div className="space-y-1.5 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-base font-display font-bold text-ps-ink-1 leading-tight">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-2">
+                          <h3 className="sa-row-title leading-tight">
                             {session.title}
                           </h3>
                           {session.type && (
-                            <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-ps-accent-soft text-ps-accent">
+                            <span className="sa-badge">
                               {session.type}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs text-ps-ink-2">
+                        <p className="sa-row-meta flex flex-wrap items-center gap-2">
                           {session.room && (
-                            <span className="flex items-center gap-1 font-medium">
-                              <MapPin size={12} className="text-ps-accent" /> {session.room}
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin size={11} strokeWidth={1.5} /> {session.room}
                             </span>
                           )}
-                        </div>
+                        </p>
 
-                        {/* Students Avatar Clusters */}
+                        {/* Students */}
                         {session.studentIds?.length > 0 && (
-                          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                            {session.studentIds.map(sid => {
+                          <p className="text-[11px] sa-t-muted flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                            {session.studentIds.map((sid, i) => {
                               const student = getStudent(sid);
                               return student ? (
-                                <div key={sid} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-ps-surface border border-ps-border text-xs font-medium text-ps-ink-1">
-                                  <div className="w-4 h-4 rounded-full bg-ps-primary/10 text-ps-accent text-xs font-bold flex items-center justify-center">
-                                    {student.name.charAt(0)}
-                                  </div>
-                                  <span>{student.name}</span>
-                                </div>
+                                <span key={sid} className="whitespace-nowrap">{i > 0 && '· '}{student.name}</span>
                               ) : null;
                             })}
-                          </div>
+                          </p>
                         )}
                       </div>
                     </div>
@@ -214,20 +199,18 @@ const TherapistDashboard = () => {
                     {/* Add Note Action */}
                     <button
                       onClick={() => openNoteModal(session)}
-                      className="px-3 py-2 rounded-xl border border-ps-accent/20 dark:border-ps-accent/20 text-ps-accent font-bold text-xs hover:bg-ps-accent-soft dark:hover:bg-ps-accent-soft transition-all flex items-center gap-1.5 sm:opacity-0 group-hover:opacity-100 shrink-0 self-end sm:self-center"
+                      className="sa-btn shrink-0 sm:self-center"
                     >
-                      <Edit3 size={14} />
+                      <Edit3 size={13} strokeWidth={1.5} />
                       <span>Add Note</span>
                     </button>
                   </motion.div>
                 ))
               ) : (
-                <div className="p-12 text-center bg-ps-bg/20 rounded-2xl border-2 border-dashed border-ps-border">
-                  <div className="w-12 h-12 bg-ps-accent-soft text-ps-accent rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <Calendar size={24} />
-                  </div>
-                  <p className="text-sm font-bold text-ps-ink-1">No Clinical Sessions Scheduled</p>
-                  <p className="text-xs text-ps-ink-2 mt-1">Enjoy your open preparation time for {dayNames[selectedDay - 1]}.</p>
+                <div className="sa-empty mt-4">
+                  <Calendar size={16} strokeWidth={1.5} className="mx-auto mb-2 sa-t-muted" />
+                  <p className="sa-empty-title">No Clinical Sessions Scheduled</p>
+                  <p className="sa-empty-sub">Enjoy your open preparation time for {dayNames[selectedDay - 1]}.</p>
                 </div>
               )}
             </div>
@@ -237,29 +220,26 @@ const TherapistDashboard = () => {
         {/* Sidebar panels */}
         <div className="space-y-6">
           {/* Assigned Programs */}
-          <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-ps-accent-soft text-ps-accent rounded-xl">
-                <BookOpen size={18} />
-              </div>
-              <h3 className="font-display font-bold text-ps-ink-1">My Programs</h3>
+          <div className="sa-panel">
+            <div className="sa-panel-head">
+              <h2 className="sa-panel-title">My Programs</h2>
             </div>
             
-            <div className="space-y-2.5">
+            <div className="sa-list">
               {myAssignments.length > 0 ? (
                 myAssignments.map(a => (
-                  <div key={a.id} className="p-3.5 rounded-2xl border border-ps-border bg-ps-bg/30 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.programs?.color || '#4f46e5' }} />
-                      <span className="text-sm font-bold text-ps-ink-1">{a.programs?.name}</span>
-                    </div>
-                    <span className="text-xs font-bold uppercase tracking-wide text-ps-ink-2 bg-ps-surface px-2 py-0.5 rounded-full border border-ps-border">
+                  <div key={a.id} className="sa-row border-l-2 border-l-[var(--sa-gold)] pl-3">
+                    <p className="sa-row-title flex-1 min-w-0 truncate">{a.programs?.name}</p>
+                    <span className="sa-badge shrink-0">
                       Active
                     </span>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-ps-ink-2 py-2 text-center">No programs assigned currently.</p>
+                <div className="sa-empty mt-4">
+                  <BookOpen size={16} strokeWidth={1.5} className="mx-auto mb-2 sa-t-muted" />
+                  <p className="sa-empty-title">No programs assigned currently.</p>
+                </div>
               )}
             </div>
           </div>
@@ -274,29 +254,29 @@ const TherapistDashboard = () => {
             onClick={closeNoteModal}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-ps-surface rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 lg:p-8 border border-ps-border space-y-5 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="bg-ps-surface border border-ps-border max-w-lg w-full p-5 sm:p-6 lg:p-8 space-y-5 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between">
+              <div className="sa-panel-head">
                 <div>
-                  <h3 className="text-xl font-display font-bold text-ps-ink-1">Session Note</h3>
-                  <p className="text-xs text-ps-ink-2 mt-0.5">{selectedSession.title} • {sessionDayName(selectedSession)}</p>
+                  <h3 className="sa-panel-title">Session Note</h3>
+                  <p className="sa-panel-sub">{selectedSession.title} • {sessionDayName(selectedSession)}</p>
                 </div>
-                <button onClick={closeNoteModal} className="p-2 text-ps-ink-2 hover:bg-ps-bg rounded-xl">
-                  <X size={18} />
+                <button onClick={closeNoteModal} className="sa-btn">
+                  <X size={14} strokeWidth={1.5} />
                 </button>
               </div>
 
               {/* Student Select */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Select Student</label>
+              <div>
+                <label className="sa-label">Select Student</label>
                 <select
                   value={noteStudentId}
                   onChange={(e) => setNoteStudentId(e.target.value)}
-                  className="w-full p-3.5 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-ps-accent"
+                  className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
                 >
                   {(selectedSession.studentIds || []).map(sid => {
                     const student = getStudent(sid);
@@ -306,8 +286,8 @@ const TherapistDashboard = () => {
               </div>
 
               {/* Star Rating */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Progress & Engagement Rating</label>
+              <div>
+                <label className="sa-label">Progress & Engagement Rating</label>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(rating => (
                     <button
@@ -316,10 +296,10 @@ const TherapistDashboard = () => {
                       onMouseEnter={() => setHoverRating(rating)}
                       onMouseLeave={() => setHoverRating(0)}
                       onClick={() => setNoteRating(rating)}
-                      className="p-1 text-ps-warn hover:scale-110 transition-transform"
+                      className="p-1.5 text-ps-warn"
                     >
                       <Star 
-                        size={28} 
+                        size={22} 
                         fill={(hoverRating || noteRating) >= rating ? 'currentColor' : 'none'} 
                         strokeWidth={1.5}
                       />
@@ -329,14 +309,14 @@ const TherapistDashboard = () => {
               </div>
 
               {/* Clinical Note Content */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wide text-ps-ink-2">Clinical Observations & Plan</label>
+              <div>
+                <label className="sa-label">Clinical Observations & Plan</label>
                 <textarea
                   value={noteContent}
                   onChange={e => setNoteContent(e.target.value)}
                   placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
                   rows={4}
-                  className="w-full p-4 bg-ps-bg border border-ps-border rounded-xl text-sm font-medium text-ps-ink-1 outline-none focus:border-ps-accent resize-none"
+                  className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)] resize-none"
                 />
               </div>
 
@@ -345,13 +325,13 @@ const TherapistDashboard = () => {
                 <button
                   onClick={handleAddNote}
                   disabled={!noteContent.trim()}
-                  className="flex-1 py-3.5 bg-ps-primary hover:bg-ps-primary/90 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50"
+                  className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40"
                 >
                   Save Progress Note
                 </button>
                 <button
                   onClick={closeNoteModal}
-                  className="px-5 py-3.5 border border-ps-border text-ps-ink-2 font-bold rounded-xl hover:bg-ps-bg transition-all"
+                  className="sa-btn justify-center min-h-11"
                 >
                   Cancel
                 </button>
