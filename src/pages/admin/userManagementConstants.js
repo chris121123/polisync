@@ -16,13 +16,13 @@ export const AUDIT_CATEGORIES = {
 };
 
 export const getAuditBadge = (action) => {
-  if (!action) return { color: 'sa-badge', dot: 'sa-marker' };
-  if (action.includes('delete')) return { color: 'sa-badge sa-badge--warn', dot: 'sa-marker--danger' };
-  if (action.includes('activate') && !action.includes('deactivate')) return { color: 'sa-badge sa-badge--positive', dot: 'sa-marker--creative' };
-  if (action.includes('deactivate')) return { color: 'sa-badge sa-badge--warn', dot: 'sa-marker--danger' };
-  if (action.includes('role')) return { color: 'sa-badge', dot: 'sa-marker' };
-  if (action.includes('create')) return { color: 'sa-badge sa-badge--positive', dot: 'sa-marker--creative' };
-  return { color: 'sa-badge', dot: 'sa-marker' };
+  if (!action) return { color: 'sa-badge' };
+  if (action.includes('delete')) return { color: 'sa-badge sa-badge--warn' };
+  if (action.includes('activate') && !action.includes('deactivate')) return { color: 'sa-badge sa-badge--positive' };
+  if (action.includes('deactivate')) return { color: 'sa-badge sa-badge--warn' };
+  if (action.includes('role')) return { color: 'sa-badge' };
+  if (action.includes('create')) return { color: 'sa-badge sa-badge--positive' };
+  return { color: 'sa-badge' };
 };
 
 // ADR-R5 / D2: role identity is carried by the label, so every role shares the

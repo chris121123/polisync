@@ -128,7 +128,7 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                   <Lock size={20} strokeWidth={1.5} />
                   <h3 className="text-lg">Admin Verification</h3>
                 </div>
-                <button onClick={onClose} className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
+                <button onClick={onClose} aria-label="Close" className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
                   <X size={18} strokeWidth={1.5} />
                 </button>
               </div>
