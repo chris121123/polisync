@@ -1,7 +1,7 @@
 # polisync Agent Guidelines
 
 ## Commands
-- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint; `npm run test:golden` — 54 golden tests
+- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint; `npm run test:golden` — 100 golden tests
 - No typecheck script. Verify with `npm run test:golden` + `npm run lint` + `npm run build` + manual check in dev server
 - One-off: `node promote-superadmin.mjs` — promotes existing `admin` rows to `superadmin` (reads `.env`)
 
@@ -29,6 +29,7 @@
 
 ## Conventions
 - Styling: Tailwind 4 utilities; icons `lucide-react` ~18–20px; transitions via `motion` + `AnimatePresence`; toasts via `notify(msg, type)`
+- Theme: Atelier is app-wide — `sa-theme` on `<html>` (`src/main.jsx`, before first paint) and on `Layout`'s root for the direct-child shell rules; light is the default (`polisync_dark_mode`), dark is the same tokens. Tokens + component classes live in `src/styles/superadminTheme.css` (imported by `Layout`); reuse `.sa-panel`, `.sa-row`, `.sa-btn`, `.sa-badge`, `.sa-micro`, `.sa-kpi*` instead of new styles, add no hex and no `rounded-*`/`shadow-*` (the theme squares and flattens everything)
 - Dark mode: `document.documentElement.classList` + `localStorage polisync_dark_mode` (see `App.jsx`)
 - ESLint ignores `dist`; `no-unused-vars` ignores `^[A-Z_]|^motion$|^Icon$`
 - New pages/data types: index in `src/components/GlobalSearch.jsx`; scheduling conflicts via `conflicts` / `enhanceConflictDetection`
