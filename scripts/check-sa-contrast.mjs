@@ -9,7 +9,8 @@ const css = readFileSync(CSS_PATH, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 // ── Parse the two token blocks ───────────────────────────────────────
 function blockBody(selector) {
-  const match = new RegExp(`^${selector}\\s*\\{`, 'm').exec(css);
+  // Tolerates a comma-list selector: matches up to the block's opening brace.
+  const match = new RegExp(`^${selector}[^{]*\\{`, 'm').exec(css);
   if (!match) throw new Error(`token block not found: ${selector}`);
   let depth = 1;
   let i = css.indexOf('{', match.index) + 1;
@@ -58,6 +59,13 @@ const ratio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
+// Alpha composite, sRGB channels: what `bg-role-*/10` paints over a surface.
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const mix = (fg, bg, alpha) => {
+  const [f, b] = [rgb(fg), rgb(bg)];
+  return '#' + f.map((v, i) => Math.round(alpha * v + (1 - alpha) * b[i]).toString(16).padStart(2, '0')).join('');
+};
+
 // ── Pairs under test ─────────────────────────────────────────────────
 // Text (4.5:1) on the surfaces it actually sits on; gold also as focus/accent
 // and bar-accent as a data mark (3:1, WCAG 1.4.11).
@@ -92,30 +100,97 @@ const PAIRS = [
 
 const BLOCKS = [
   ['DARK  .sa-theme', '.sa-theme'],
-  ['LIGHT html:not(.dark) .sa-theme', 'html:not\\(\\.dark\\) \\.sa-theme'],
+  ['LIGHT html.sa-theme:not(.dark)', 'html\\.sa-theme:not\\(\\.dark\\)'],
+];
+
+// ── Remapped app/role tokens (ADR-R9 / ADR-R5) ───────────────────────
+// Each alias must resolve to a parsed --sa-* hex in both blocks; a rename
+// that silently drops one would leave the pairs below testing nothing.
+const EXPECTED_REMAPS = [
+  '--color-role-superadmin', '--color-role-admin', '--color-role-teacher',
+  '--color-role-therapist', '--color-role-parent',
+  '--ps-surface', '--ps-bg', '--ps-ink-1', '--ps-ink-2', '--ps-accent', '--ps-primary',
+];
+
+function aliasTargets(selector) {
+  const map = {};
+  const pattern = /--((?:color-)?(?:role|ps)-[a-z0-9-]+)\s*:\s*var\((--sa-[a-z0-9-]+)\)/g;
+  for (const [, name, target] of blockBody(selector).matchAll(pattern)) map[`--${name}`] = target;
+  return map;
+}
+
+// Role aliases are declared once in the base block and inherit into the light
+// block, so the base map is the fallback; hexes resolve per block.
+const BASE_ALIASES = aliasTargets('.sa-theme');
+
+function remapsOf(label, selector, saTokens) {
+  const targets = { ...BASE_ALIASES, ...aliasTargets(selector) };
+  const resolved = {};
+  for (const [name, target] of Object.entries(targets)) {
+    const hex = saTokens[target];
+    if (!hex) throw new Error(`${label}: ${name} points at unknown token ${target}`);
+    resolved[name] = hex;
+  }
+  const missing = EXPECTED_REMAPS.filter((name) => !resolved[name]);
+  if (missing.length) throw new Error(`${label}: missing remap(s) ${missing.join(', ')}`);
+  return resolved;
+}
+
+const ROLES = ['superadmin', 'admin', 'teacher', 'therapist', 'parent'];
+
+// White on the primary control surface (active nav item, primary button).
+const VAR_PAIRS = [
+  ['#FFFFFF', '--ps-primary', 'on primary control', TEXT],
+  ['--ps-ink-1', '--ps-surface', 'shell ink', TEXT],
+  ['--ps-ink-1', '--ps-bg', 'shell ink', TEXT],
+  ['--ps-ink-2', '--ps-surface', 'shell ink', TEXT],
+  ['--ps-accent', '--ps-surface', 'shell accent', TEXT],
+  ['--ps-accent', '--ps-bg', 'shell accent', TEXT],
+  ['--ps-ink-1', '--sa-surface-2', 'raised ink', TEXT],   // R1: modal/raised surface
+  ['--sa-text-secondary', '--sa-surface-2', 'raised ink', TEXT],
 ];
 
 let failures = 0;
 
+function check(pair, fg, bg, kind, need) {
+  if (!fg || !bg) throw new Error(`pair references a missing token: ${pair}`);
+  const value = ratio(fg, bg);
+  const pass = value >= need;
+  if (!pass) failures++;
+  console.log(
+    pair.padEnd(36) + fg.padEnd(10) + bg.padEnd(10) +
+    `${value.toFixed(2)}:1`.padEnd(8) + `${need.toFixed(1)}:1`.padEnd(7) + (pass ? 'PASS' : 'FAIL') +
+    (kind === 'focus' ? '  (focus/accent)' : kind === 'text' ? '' : `  (${kind})`)
+  );
+}
+
 for (const [label, selector] of BLOCKS) {
   const tokens = tokenBlock(label, selector);
+  const vars = { ...tokens, ...remapsOf(label, selector, tokens) };
   console.log(`\n${label}`);
   console.log('─'.repeat(66));
-  console.log('pair'.padEnd(30) + 'fg'.padEnd(10) + 'bg'.padEnd(10) + 'ratio'.padEnd(8) + 'need   result');
+  console.log('pair'.padEnd(36) + 'fg'.padEnd(10) + 'bg'.padEnd(10) + 'ratio'.padEnd(8) + 'need   result');
+
   for (const [fgName, bgName, kind, need] of PAIRS) {
-    const fg = tokens[`--sa-${fgName}`];
-    const bg = tokens[`--sa-${bgName}`];
-    if (!fg || !bg) throw new Error(`${label}: missing token --sa-${!fg ? fgName : bgName}`);
-    const value = ratio(fg, bg);
-    const pass = value >= need;
-    if (!pass) failures++;
-    const pair = `${fgName} on ${bgName}`;
-    console.log(
-      pair.padEnd(30) + fg.padEnd(10) + bg.padEnd(10) +
-      `${value.toFixed(2)}:1`.padEnd(8) + `${need.toFixed(1)}:1`.padEnd(7) + (pass ? 'PASS' : 'FAIL') +
-      (kind === 'focus' ? '  (focus/accent)' : kind === 'text' ? '' : `  (${kind})`)
-    );
+    check(`${fgName} on ${bgName}`, tokens[`--sa-${fgName}`], tokens[`--sa-${bgName}`], kind, need);
   }
+
+  // Role inks, plain and over their own 10% tint (bg-role-*/10) — risk R2.
+  for (const role of ROLES) {
+    const ink = vars[`--color-role-${role}`];
+    check(`role-${role} on surface-1`, ink, vars['--sa-surface-1'], 'text', TEXT);
+    check(`role-${role} on bg-base`, ink, vars['--sa-bg-base'], 'text', TEXT);
+    check(`role-${role} on its 10% tint`, ink, mix(ink, vars['--sa-surface-1'], 0.1), 'text', TEXT);
+  }
+
+  for (const [fgName, bgName, kind, need] of VAR_PAIRS) {
+    const plain = (name) => name.replace(/^--/, '');
+    const val = (name) => (name.startsWith('#') ? name : vars[name]);
+    check(`${plain(fgName)} on ${plain(bgName)}`, val(fgName), val(bgName), kind, need);
+  }
+
+  console.log('\nremaps');
+  for (const name of EXPECTED_REMAPS) console.log(`  ${name.padEnd(24)} ${vars[name]}`);
 }
 
 console.log(

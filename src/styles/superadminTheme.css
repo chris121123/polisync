@@ -1,10 +1,13 @@
 /* ─────────────────────────────────────────────────────────────────────
-   SuperAdmin "atelier" theme — role-scoped.
+   Atelier theme — app-wide (every role, every public page).
 
-   Every rule sits under .sa-theme, which Layout adds to its root only
-   while the signed-in role is superadmin. Without that class the file is
-   inert, so other roles and the public auth pages are untouched.
-   Contract: docs/plans/superadmin-atelier-plan.md §2–§3.
+   `sa-theme` is on <html>, added in src/main.jsx before the first paint,
+   so the canvas, body and portaled modals are themed. Layout also keeps
+   the class on its root because the direct-child shell rules
+   (`.sa-theme > header`, `.sa-theme > header h1`, `.sa-theme aside`)
+   need a wrapper that is not <html>. The name is historical (ADR-R2).
+   Contract: docs/plans/superadmin-atelier-plan.md §2–§3,
+   docs/plans/atelier-rollout-plan.md §2–§3.
    ───────────────────────────────────────────────────────────────────── */
 
 .sa-theme {
@@ -61,6 +64,26 @@
   --color-ps-warn: var(--sa-gold);
   --color-ps-danger: var(--sa-danger);
 
+  /* Legacy + role colors neutralized at token level (ADR-R5/D2) so
+     rolePalette.js and the color utilities keep working untouched.
+     These reference block-varying tokens, so they resolve per mode. */
+  --color-role-superadmin: var(--sa-gold);
+  --color-role-admin: var(--sa-text-primary);
+  --color-role-teacher: var(--sa-text-secondary);
+  --color-role-therapist: var(--sa-text-muted);
+  --color-role-parent: var(--sa-text-warm-dim);
+
+  /* On-media ink, not on a surface: the only consumer is the auth hero tagline
+     over a photograph, so it must stay light in both modes. */
+  --color-ps-sky: var(--sa-gold-light);
+  --color-ps-wood: var(--sa-gold-line);
+  --color-ps-wood-deep: var(--sa-surface-2);   /* solid band carrying white text */
+  --ps-wood-deep: var(--sa-surface-2);
+  --color-rehab: var(--sa-text-muted);
+  --color-sped: var(--sa-text-warm-dim);
+  --color-playschool: var(--sa-gold);
+  --color-staff: var(--sa-text-secondary);
+
   background: var(--sa-bg-base);
   color: var(--sa-text-primary);
   font-family: var(--font-sans);
@@ -70,6 +93,7 @@
 /* Light Atelier — same language on "Gallery White" (plan v3.1 §3, D3).
    Wins over .sa-theme only while the app toggle is light; the block above
    stays the dark fallback (L1/L4). Tokens only, no component rules. */
+html.sa-theme:not(.dark),
 html:not(.dark) .sa-theme {
   /* Surfaces */
   --sa-bg-base: #F6F5F2;
@@ -102,27 +126,36 @@ html:not(.dark) .sa-theme {
   --sa-danger: #A34A3D;
   --sa-success: #5F7355;
 
-  /* App tokens hand back to the native light palette (L2/D2) so shared
-     pages inside the frame look like the app's normal light mode. */
-  --ps-surface: #FFFFFF;
-  --ps-bg: #F7F5F1;
-  --ps-border: #E4E2DA;
-  --ps-ink-1: #1E2A5E;
-  --ps-ink-2: #5E6E96;
-  --ps-accent: #2563EB;
-  --ps-primary: #2563EB;
-  --ps-accent-soft: #EAF1FE;
-  --color-ps-surface: #FFFFFF;
-  --color-ps-bg: #F7F5F1;
-  --color-ps-border: #E4E2DA;
-  --color-ps-ink-1: #1E2A5E;
-  --color-ps-ink-2: #5E6E96;
-  --color-ps-accent: #2563EB;
-  --color-ps-primary: #2563EB;
-  --color-ps-accent-soft: #EAF1FE;
-  --color-ps-success: #35682C;
-  --color-ps-warn: #92400e;
-  --color-ps-danger: #b91c1c;
+  /* App tokens resolve to the Atelier palette (ADR-R9). While the theme
+     was role-scoped these handed back the native blue light palette so
+     non-themed pages looked normal; now the app has one theme. */
+  --ps-surface: var(--sa-surface-1);
+  --ps-bg: var(--sa-bg-base);
+  --ps-border: var(--sa-line-default);
+  --ps-ink-1: var(--sa-text-primary);
+  --ps-ink-2: var(--sa-text-muted);
+  --ps-accent: var(--sa-gold);
+  --ps-primary: var(--sa-bar-primary);      /* dark control surface: white text on it */
+  --ps-accent-soft: var(--sa-surface-warm);
+  --color-ps-surface: var(--sa-surface-1);
+  --color-ps-bg: var(--sa-bg-base);
+  --color-ps-border: var(--sa-line-default);
+  --color-ps-ink-1: var(--sa-text-primary);
+  --color-ps-ink-2: var(--sa-text-muted);
+  --color-ps-accent: var(--sa-gold);
+  --color-ps-primary: var(--sa-bar-primary);
+  --color-ps-accent-soft: var(--sa-surface-warm);
+  --color-ps-success: var(--sa-success);
+  --color-ps-warn: var(--sa-gold);
+  --color-ps-danger: var(--sa-danger);
+
+  /* The solid band carries white text, so it stays dark in light mode too. */
+  --color-ps-wood-deep: var(--sa-bar-primary);
+  --ps-wood-deep: var(--sa-bar-primary);
+
+  /* Same on-media ink as the dark block: light gold-light is deep, so pin an
+     explicit light hex that reads over the hero photograph (Phase 2 replaces it). */
+  --color-ps-sky: #D8D3C6;
 }
 
 /* ── Shape, motion, focus ───────────────────────────────────────────── */
@@ -133,6 +166,11 @@ html:not(.dark) .sa-theme {
   box-shadow: none;
   scrollbar-width: thin;
   scrollbar-color: var(--sa-line-default) var(--sa-bg-base);
+}
+
+/* True spinners stay round; the global square reset squares them. */
+.sa-theme .animate-spin {
+  border-radius: 9999px;
 }
 
 /* The avatar is the only circle in the theme. */
