@@ -265,7 +265,7 @@ const TherapistDashboard = () => {
                   <h3 className="sa-panel-title">Session Note</h3>
                   <p className="sa-panel-sub">{selectedSession.title} • {sessionDayName(selectedSession)}</p>
                 </div>
-                <button onClick={closeNoteModal} className="sa-btn">
+                <button onClick={closeNoteModal} aria-label="Close session note" className="sa-btn">
                   <X size={14} strokeWidth={1.5} />
                 </button>
               </div>

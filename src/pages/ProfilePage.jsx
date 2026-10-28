@@ -78,12 +78,7 @@ const ProfilePage = () => {
     : [];
 
   // Department / status identity is ink, never a fill.
-  const deptColors = {
-    SPED: 'sa-t-warm',
-    Rehab: '',
-    Playschool: 'sa-t-warm',
-    Admin: '',
-  };
+  const deptInk = profile.department === 'SPED' || profile.department === 'Playschool' ? 'sa-t-warm' : '';
 
   const statusColors = {
     Active: 'sa-badge--positive',
@@ -116,7 +111,7 @@ const ProfilePage = () => {
               <h1 className="sa-title mt-3 text-center">{profile.name}</h1>
               <p className="sa-sub text-center">{profile.role}</p>
               <div className="flex items-center gap-3 mt-3">
-                <span className={clsx("sa-badge", deptColors[profile.department] || deptColors.Admin)}>
+                <span className={clsx("sa-badge", deptInk)}>
                   {profile.department}
                 </span>
                 <span className={clsx("sa-badge", statusColors[profile.status] || statusColors.Active)}>

@@ -255,7 +255,7 @@ const TeacherDashboard = () => {
                   <h3 className="sa-panel-title">Attendance Record</h3>
                   <p className="sa-panel-sub">Session Overview & Student Status</p>
                 </div>
-                <button onClick={() => setShowAttendanceModal(null)} className="sa-btn">
+                <button onClick={() => setShowAttendanceModal(null)} aria-label="Close attendance" className="sa-btn">
                   <X size={14} strokeWidth={1.5} />
                 </button>
               </div>

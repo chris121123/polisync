@@ -154,7 +154,8 @@ html:not(.dark) .sa-theme {
   --ps-wood-deep: var(--sa-bar-primary);
 
   /* Same on-media ink as the dark block: light gold-light is deep, so pin an
-     explicit light hex that reads over the hero photograph (Phase 2 replaces it). */
+     explicit light hex that reads over the hero photograph. Phase 2 shipped
+     without replacing it — this hex is the shipped AA value (5.1:1 worst case). */
   --color-ps-sky: #D8D3C6;
 }
 
@@ -684,6 +685,11 @@ html:not(.dark) .sa-theme {
   font-size: 14px;
   font-weight: 400;
   outline: none;
+}
+
+/* Fields with a trailing reveal button. */
+.sa-input--reveal {
+  padding-right: 48px;
 }
 
 .sa-input::placeholder {

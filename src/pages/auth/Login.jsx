@@ -263,7 +263,7 @@ const Login = () => {
                   onBlur={() => validateField('password')}
                   placeholder="••••••••"
                   aria-invalid={fieldErrors.password ? 'true' : undefined}
-                  className="sa-input disabled:opacity-40"
+                  className="sa-input sa-input--reveal disabled:opacity-40"
                 />
                 <button
                   type="button"

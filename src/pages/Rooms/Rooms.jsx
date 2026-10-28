@@ -229,7 +229,7 @@ const Rooms = () => {
             >
               <div className="p-5 sm:p-6 border-b border-[var(--sa-line-hairline)] flex justify-between items-center shrink-0">
                 <h3 className="sa-panel-title">Add New Room</h3>
-                <button onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }} className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
+                <button onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }} aria-label="Close add room" className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
                   <X size={18} strokeWidth={1.5} />
                 </button>
               </div>

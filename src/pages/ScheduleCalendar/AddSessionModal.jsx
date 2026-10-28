@@ -6,11 +6,7 @@ import { HOURS, formatHour, formatDateISO, TYPE_CONFIG } from './calendarMath.js
 import { isTherapistOrTeacher } from './staff.js';
 
 // One neutral header tone: the session type is carried by its label, not a fill.
-const HEADER_TONES = {
-  sped: 'bg-[var(--sa-surface-warm)]',
-  rehab: 'bg-[var(--sa-surface-warm)]',
-  playschool: 'bg-[var(--sa-surface-warm)]',
-};
+const HEADER_TONE = 'bg-[var(--sa-surface-warm)]';
 
 const fieldCls = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
 const chipCls = 'px-3 py-3 text-xs border';
@@ -90,7 +86,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         eyebrow={`New session · Step ${step} of 2`}
         title={formData.title || 'Untitled session'}
         onClose={handleClose}
-        className={HEADER_TONES[formData.type]}
+        className={HEADER_TONE}
       >
         <div className="mt-5 flex gap-2">
           {[1, 2].map(s => (
