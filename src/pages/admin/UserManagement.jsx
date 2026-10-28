@@ -387,13 +387,13 @@ const UserManagement = () => {
         <div className="space-y-4">
           {/* Role Filters + Search */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:flex-wrap">
-            <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar">
+            <div className="flex flex-wrap gap-px sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
               {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
                 <button
                   key={role}
                   onClick={() => setFilterRole(role)}
                   className={clsx(
-                    "px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
+                    "border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
                     filterRole === role
                       ? ROLE_PILL_COLORS[role]
                       : ROLE_PILL_INACTIVE

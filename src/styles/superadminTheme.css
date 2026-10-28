@@ -711,6 +711,14 @@ html:not(.dark) .sa-theme {
   outline: none;
 }
 
+/* Native date/time pickers need a dark scheme for their glyphs and popup.
+   `.sa-theme` is on <html>, so this reaches portaled modals too. */
+html.dark.sa-theme input[type="date"],
+html.dark.sa-theme input[type="time"],
+html.dark.sa-theme input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
 .sa-field-icon {
   position: absolute;
   left: 12px;

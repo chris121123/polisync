@@ -63,10 +63,10 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
         height: `${session.span * 96 - 4}px`,
       }}
     >
-      {/* 3.5px solid left accent strip */}
+      {/* One accent tone for every type; conflict overrides it. */}
       <div className={clsx(
         'absolute left-0 top-0 bottom-0 w-1',
-        hasConflict ? 'bg-ps-danger' : cfg.gradient
+        hasConflict ? 'bg-ps-danger' : 'bg-[var(--sa-bar-primary)]'
       )} />
 
       <div className="relative z-10 p-2.5 pl-3.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
@@ -152,7 +152,7 @@ export const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict,
     >
       <div className={clsx(
         'absolute left-0 top-0 bottom-0 w-1',
-        hasConflict ? 'bg-ps-danger' : cfg.gradient
+        hasConflict ? 'bg-ps-danger' : 'bg-[var(--sa-bar-primary)]'
       )} />
 
       <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">

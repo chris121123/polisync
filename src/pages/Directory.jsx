@@ -25,7 +25,12 @@ const createEmptyRecord = () => ({
   joined: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
 });
 
-const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
+const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)]';
+// The border colour is chosen, never raced: two border-* utilities in one
+// className resolve by CSS order, not by class order (UserManagement does the same).
+const fieldTone = (invalid) => (invalid
+  ? 'border-[var(--sa-danger)]'
+  : 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]');
 const labelClass = 'sa-label';
 
 const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
@@ -56,7 +61,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
             <input
               id="record-name"
               data-autofocus
-              className={fieldClass}
+              className={clsx(fieldClass, fieldTone(false))}
               placeholder="FirstName LastName"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -72,7 +77,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
             <label htmlFor="record-role" className={labelClass}>Program / Role</label>
             <input
               id="record-role"
-              className={fieldClass}
+              className={clsx(fieldClass, fieldTone(false))}
               placeholder="e.g., ASD Program"
               value={formData.role}
               onChange={e => setFormData({ ...formData, role: e.target.value })}
@@ -83,7 +88,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
             <label htmlFor="record-department" className={labelClass}>Department</label>
             <select
               id="record-department"
-              className={fieldClass}
+              className={clsx(fieldClass, fieldTone(false))}
               value={formData.department}
               onChange={e => setFormData({ ...formData, department: e.target.value })}
             >
@@ -103,7 +108,7 @@ const AddRecordModal = ({ isOpen, onClose, onAdd }) => {
               type="email"
               className={clsx(
                 fieldClass,
-                formData.email && emailInvalid && 'border-[var(--sa-danger)]'
+                fieldTone(formData.email && emailInvalid)
               )}
               placeholder="email@polisync.com"
               value={formData.email}
@@ -199,7 +204,7 @@ const Directory = () => {
           />
         </div>
 
-        <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto w-full sm:w-auto hide-scrollbar">
+        <div className="flex flex-wrap gap-px w-full sm:w-auto sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
           {['All', 'Staff', 'Student', 'Rehab', 'SPED', 'Playschool', 'Admin'].map(f => {
             const count = f === 'All'
               ? combinedData.length
@@ -209,7 +214,7 @@ const Directory = () => {
                 key={f}
                 onClick={() => setFilterType(f)}
                 className={clsx(
-                  "px-3 py-1.5 text-xs whitespace-nowrap flex items-center gap-1.5",
+                  "border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs whitespace-nowrap flex items-center gap-1.5",
                   filterType === f
                     ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
                     : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"

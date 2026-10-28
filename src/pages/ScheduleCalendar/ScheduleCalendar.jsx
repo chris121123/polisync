@@ -311,7 +311,7 @@ const ScheduleCalendar = () => {
                 className="sa-btn"
               >
                 <UserCheck size={16} strokeWidth={1.5} />
-                <span className="hidden sm:inline">Availability</span>
+                <span>Availability</span>
                 {availableStaffCount > 0 && (
                   <span className="sa-badge tabular-nums">{availableStaffCount}</span>
                 )}
@@ -365,9 +365,9 @@ const ScheduleCalendar = () => {
                       selectedSessionId === session.id ? "border-[var(--sa-gold)]" : ""
                     )}
                   >
-                    <div className={clsx('absolute left-0 top-0 bottom-0 w-1', cfg.gradient)} />
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--sa-bar-primary)]" />
                     <div className="flex justify-between items-start mb-2 pl-2">
-                      <h3 className={clsx("text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
+                      <h3 className="text-base leading-tight pr-4 text-[var(--sa-text-primary)]">{session.title}</h3>
                       {hasConflict ? (
                         <span className="sa-badge sa-badge--warn shrink-0 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5}/> Conflict</span>
                       ) : (
@@ -469,17 +469,17 @@ const ScheduleCalendar = () => {
                 <div className="flex-1 flex relative border-l border-ps-border">
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 96}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 96}px` }} />
                     ))}
                     {HOURS.slice(0, -1).map((_, i) => (
-                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-ps-border/40 border-dashed" style={{ top: `${i * 96 + 48}px` }} />
+                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-dashed border-[var(--sa-line-hairline)]" style={{ top: `${i * 96 + 48}px` }} />
                     ))}
                     {/* Bottom closing border line */}
                     <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 96}px` }} />
                   </div>
 
                   {displayRooms.map((roomName, colIdx) => (
-                    <div key={roomName} className={clsx('flex-1 relative border-l border-ps-border')}>
+                    <div key={roomName} className={clsx('flex-1 relative border-l border-[var(--sa-line-hairline)]')}>
                       {colIdx === 0 && <NowIndicator rowHeight={96} />}
                       {filteredSessions.filter(s => s.room === roomName).map(session => (
                         <SessionCard
@@ -577,7 +577,7 @@ const ScheduleCalendar = () => {
                   {/* Hour grid lines */}
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-ps-border/60')} style={{ top: `${i * 64}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 64}px` }} />
                     ))}
                     {/* Bottom closing border line */}
                     <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 64}px` }} />

@@ -299,7 +299,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             )}
 
             <div className="flex items-center gap-3 border border-[var(--sa-line-default)] p-4">
-              <div className={clsx('w-1 self-stretch', typeCfg.gradient)} />
+              <div className="w-1 self-stretch bg-[var(--sa-bar-primary)]" />
               <div>
                 <p className="text-sm text-[var(--sa-text-primary)]">{formData.title || '(untitled)'}</p>
                 <p className="mt-0.5 text-[11px] tabular-nums sa-t-muted">

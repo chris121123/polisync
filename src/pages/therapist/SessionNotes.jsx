@@ -53,12 +53,12 @@ const SessionNotes = () => {
               className="w-full pl-10 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
             />
           </div>
-          <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar shrink-0">
+          <div className="flex flex-wrap gap-px shrink-0 sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
             {['all', 'progress', 'general', 'attendance', 'incident'].map(type => (
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-3 py-1.5 text-xs capitalize shrink-0 ${
+                className={`border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs capitalize shrink-0 ${
                   filter === type
                     ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
                     : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'

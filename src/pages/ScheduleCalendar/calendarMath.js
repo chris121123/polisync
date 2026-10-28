@@ -91,9 +91,9 @@ export const slotHasConflict = (sessions, session, hour) => {
 };
 
 // UI constants live here, not in the .jsx files: react-refresh rejects non-component exports from them.
+// Type identity is the label only: the strip and the title ink are theme tokens now (D2).
 export const TYPE_CONFIG = {
-  sped:       { gradient: 'bg-sped',  light: 'bg-sped/10',  border: 'border-sped/20 dark:border-sped/20',  text: 'text-sped dark:text-sped',  badge: 'bg-sped/10 text-sped',  label: 'SPED'       },
-  rehab:      { gradient: 'bg-rehab',       light: 'bg-rehab/10',     border: 'border-rehab/20 dark:border-rehab/20',     text: 'text-rehab dark:text-ps-ink-1',     badge: 'bg-rehab/10 text-rehab',        label: 'Rehab'      },
-  // wood-deep header band (5.48/7.88 white = AA) carries the modal text-white; text = ps-warn, not ps-wood (2.9:1)
-  playschool: { gradient: 'bg-ps-wood-deep',   light: 'bg-ps-wood/10',   border: 'border-ps-wood/30',   text: 'text-ps-warn',   badge: 'bg-ps-wood/10 text-ps-warn',   label: 'Playschool' },
+  sped:       { label: 'SPED' },
+  rehab:      { label: 'Rehab' },
+  playschool: { label: 'Playschool' },
 };
