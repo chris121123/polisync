@@ -1,34 +1,30 @@
 import React, { useState } from 'react';
-import { 
-  Users, UserCircle, DoorOpen, Calendar, AlertCircle, 
-  ArrowRight, CheckCircle2, Clock, MapPin, CalendarDays,
-  ShieldCheck, Activity, ChevronRight
+import {
+  Users, UserCircle, DoorOpen, Calendar,
+  ArrowRight, CheckCircle2, MapPin, CalendarDays,
+  ChevronRight, MoreVertical
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { countAvailableStaff } from '../ScheduleCalendar/staff';
 import { formatDateISO } from '../ScheduleCalendar/calendarMath';
 
-export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeColor }) => {
+export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeTone = '' }) => {
   return (
-    <div className="bg-ps-surface rounded-2xl p-5 shadow-md border border-ps-border flex flex-col justify-between transition-all hover:border-ps-border/80">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-ps-bg text-ps-ink-2 border border-ps-border">
-            <Icon size={16} strokeWidth={2} />
-          </div>
-          <p className="text-xs font-medium text-ps-ink-2">{title}</p>
-        </div>
-        {badge && (
-          <span className={clsx("text-xs font-medium px-2 py-0.5 rounded-full", badgeColor || "bg-ps-bg text-ps-ink-2")}>
-            {badge}
-          </span>
-        )}
+    <div className="sa-panel sa-kpi">
+      <div className="sa-kpi-head">
+        <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
+        <p className="sa-micro">{title}</p>
+        <span className="sa-kpi-kebab" aria-hidden="true">
+          <MoreVertical size={14} strokeWidth={1.5} />
+        </span>
       </div>
-      <div className="mt-4">
-        <p className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">{value}</p>
-        <p className="mt-1 text-xs text-ps-ink-2 font-medium">{subtext}</p>
+      <p className="sa-kpi-value tabular-nums">{value}</p>
+      <div className="sa-kpi-foot">
+        <p className="sa-kpi-sub">{subtext}</p>
+        {badge && (
+          <span className={badgeTone ? `sa-badge sa-badge--${badgeTone}` : 'sa-badge'}>{badge}</span>
+        )}
       </div>
     </div>
   );
@@ -67,35 +63,33 @@ const AdminDashboard = () => {
   const todaysSessions = [...sessions].slice(0, 4);
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
       {/* ── Page Header ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">Dashboard</h1>
-          <p className="text-xs text-ps-ink-2 font-medium mt-0.5">
+          <h1 className="sa-title">Dashboard</h1>
+          <p className="sa-sub">
             Real-time clinical operations, staff allocation, and facility load overview.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => navigate('/schedule')}
-            className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
-          >
-            <CalendarDays size={16} strokeWidth={2} />
-            <span>Open Schedule</span>
-          </button>
-        </div>
+        <button
+          onClick={() => navigate('/schedule')}
+          className="sa-btn sa-btn--primary self-start sm:self-auto"
+        >
+          <CalendarDays size={14} strokeWidth={1.5} />
+          <span>Open Schedule</span>
+        </button>
       </div>
 
       {/* ── Metric Cards Grid ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           title="Total Students"
           value={students.length}
           icon={Users}
           subtext={`${scheduledStudents} scheduled this week`}
           badge={`${students.length > 0 ? Math.round((scheduledStudents / students.length) * 100) : 0}% enrolled`}
-          badgeColor="bg-ps-accent-soft text-ps-accent"
+          badgeTone="positive"
         />
         <StatCard
           title="Active Staff"
@@ -103,7 +97,7 @@ const AdminDashboard = () => {
           icon={UserCircle}
           subtext={`${availableToday} available today`}
           badge={`${activeStaff}/${staff.length} active`}
-          badgeColor="bg-ps-success/10 text-ps-success"
+          badgeTone="positive"
         />
         <StatCard
           title="Room Occupancy"
@@ -111,7 +105,7 @@ const AdminDashboard = () => {
           icon={DoorOpen}
           subtext={`${Math.round((roomsInUseCount / (rooms.length || 1)) * 100)}% utilization rate`}
           badge={roomsInUseCount > (rooms.length || 6) * 0.8 ? "High Load" : "Optimal"}
-          badgeColor={roomsInUseCount > (rooms.length || 6) * 0.8 ? "bg-ps-warn/10 text-ps-warn" : "bg-ps-success/10 text-ps-success"}
+          badgeTone={roomsInUseCount > (rooms.length || 6) * 0.8 ? "warn" : "positive"}
         />
         <StatCard
           title="Weekly Sessions"
@@ -119,141 +113,120 @@ const AdminDashboard = () => {
           icon={Calendar}
           subtext={`${totalHours} clinical hours booked`}
           badge="In Progress"
-          badgeColor="bg-ps-bg text-ps-ink-2"
         />
       </div>
 
       {/* ── Main Operations Row: Conflicts & Load Chart ────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Live Conflicts & Clinical Triage */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border flex flex-col">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-display font-semibold text-ps-ink-1">Live Conflicts</h2>
-                {conflicts.length > 0 ? (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-ps-danger/10 text-ps-danger border border-ps-danger/20">
-                    {conflicts.length} Alert{conflicts.length === 1 ? '' : 's'}
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-ps-success/10 text-ps-success border border-ps-success/20">
-                    Clear
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-ps-ink-2 font-medium">Automatic Check</span>
-            </div>
 
-            <div className="space-y-3">
-              {conflicts.length > 0 ? conflicts.map((conflict, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-xl border border-ps-danger/20 bg-ps-danger/5"
-                >
-                  <div className="flex gap-3">
-                    <AlertCircle size={16} className="text-ps-danger shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-semibold text-ps-danger uppercase tracking-wide">
-                          {conflict.type === 'therapist' ? 'Therapist Double-Booked' : 'Room Capacity Overlap'}
-                        </p>
-                        <span className="text-xs font-mono font-medium text-ps-ink-2">
-                          {conflict.startHour}:00
-                        </span>
-                      </div>
-                      <p className="text-xs text-ps-ink-1 mt-1 leading-relaxed">
-                        {conflict.type === 'therapist'
-                          ? `${staff.find(s => String(s.id) === String(conflict.therapistId))?.name || 'Staff'} has 2 concurrent sessions.`
-                          : `${conflict.room} has overlapping therapy sessions.`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )) : (
-                <div className="p-6 rounded-xl border border-dashed border-ps-border text-center flex flex-col items-center justify-center bg-ps-bg/40">
-                  <div className="w-10 h-10 rounded-full bg-ps-success/10 text-ps-success flex items-center justify-center mb-2">
-                    <CheckCircle2 size={20} />
-                  </div>
-                  <p className="text-sm font-semibold text-ps-ink-1">All Systems Optimal</p>
-                  <p className="text-xs text-ps-ink-2 mt-1 max-w-[200px]">
-                    No therapist clashes or room overlaps detected across current schedules.
-                  </p>
-                </div>
-              )}
+        {/* Live Conflicts & Clinical Triage */}
+        <div className="sa-panel flex flex-col">
+          <div className="sa-panel-head">
+            <div>
+              <h2 className="sa-panel-title">Live Conflicts</h2>
+              <p className="sa-panel-sub">Automatic Check</p>
             </div>
+            {conflicts.length > 0 ? (
+              <span className="sa-badge sa-badge--warn">
+                {conflicts.length} Alert{conflicts.length === 1 ? '' : 's'}
+              </span>
+            ) : (
+              <span className="sa-badge sa-badge--positive">
+                Clear
+              </span>
+            )}
           </div>
 
-          <div className="pt-4 mt-auto border-t border-ps-border/70 flex items-center justify-between">
-            <span className="text-xs text-ps-ink-2 font-medium">Auto-scheduler active</span>
+          {conflicts.length > 0 ? (
+            <div className="sa-list">
+              {conflicts.map((conflict, idx) => (
+                <div key={idx} className="sa-row">
+                  <span className="sa-marker sa-marker--danger" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="sa-row-title">
+                        {conflict.type === 'therapist' ? 'Therapist Double-Booked' : 'Room Capacity Overlap'}
+                      </p>
+                      <span className="sa-row-meta tabular-nums">
+                        {conflict.startHour}:00
+                      </span>
+                    </div>
+                    <p className="sa-row-meta">
+                      {conflict.type === 'therapist'
+                        ? `${staff.find(s => String(s.id) === String(conflict.therapistId))?.name || 'Staff'} has 2 concurrent sessions.`
+                        : `${conflict.room} has overlapping therapy sessions.`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="sa-empty mt-4">
+              <CheckCircle2 size={16} strokeWidth={1.5} className="mx-auto mb-2 text-[var(--sa-success)]" />
+              <p className="sa-empty-title">All Systems Optimal</p>
+              <p className="sa-empty-sub">
+                No therapist clashes or room overlaps detected across current schedules.
+              </p>
+            </div>
+          )}
+
+          <div className="pt-4 mt-auto border-t border-[var(--sa-line-hairline)] flex items-center justify-between">
+            <span className="text-xs sa-t-muted">Auto-scheduler active</span>
             <button
               onClick={() => navigate('/schedule')}
-              className="flex items-center gap-1.5 py-1 text-xs font-semibold text-ps-accent hover:underline decoration-2 underline-offset-4"
+              className="sa-link"
             >
-              Manage in Schedule <ArrowRight size={13} />
+              Manage in Schedule <ArrowRight size={13} strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
         {/* Clinical Load Chart (Sessions by Hour) */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 sa-panel flex flex-col justify-between">
+          <div className="sa-panel-head">
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-display font-semibold text-ps-ink-1">Session Load by Hour</h2>
-                <Activity size={16} className="text-ps-ink-2" />
-              </div>
-              <p className="text-xs text-ps-ink-2 font-medium mt-0.5">
+              <h2 className="sa-panel-title">Session Load by Hour</h2>
+              <p className="sa-panel-sub">
                 Hourly session distribution across all therapy rooms
               </p>
             </div>
             {peakHourData.count > 0 && (
-              <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-ps-bg border border-ps-border text-ps-ink-1">
-                Peak: <strong className="text-ps-accent">{peakHourData.label}</strong> ({peakHourData.count} sessions)
+              <span className="text-xs sa-t-muted shrink-0">
+                Peak: <strong className="font-normal sa-t-warm tabular-nums">{peakHourData.label}</strong> ({peakHourData.count} sessions)
               </span>
             )}
           </div>
 
           {/* Interactive Histogram */}
           <div className="mt-4">
-            <div className="h-44 flex items-end justify-between gap-1 sm:gap-4 px-2 pb-2 border-b border-ps-border">
+            <div className="h-44 flex items-end justify-between gap-1 sm:gap-4 px-2 pb-2 border-b border-[var(--sa-line-default)]">
               {hourlyData.map((d, i) => {
                 const heightPercent = d.count > 0 ? (d.count / maxSessionCount) * 100 : 0;
                 const isHovered = hoveredHour === d.hour;
+                const isPeak = d === peakHourData && d.count > 0;
 
                 return (
-                  <div 
-                    key={i} 
+                  <div
+                    key={i}
                     className="flex flex-col items-center flex-1 min-w-0 h-full justify-end group cursor-pointer"
                     onMouseEnter={() => setHoveredHour(d.hour)}
                     onMouseLeave={() => setHoveredHour(null)}
                   >
                     {/* Tooltip / Counter */}
-                    <div className={clsx(
-                      "text-xs font-medium transition-all mb-1",
-                      isHovered ? "text-ps-accent font-semibold scale-110" : "text-ps-ink-2"
-                    )}>
+                    <div className={`text-xs tabular-nums mb-1 ${isHovered ? 'sa-t-warm' : 'sa-t-muted'}`}>
                       {d.count > 0 ? d.count : '—'}
                     </div>
 
-                    {/* Bar Track & Fill */}
-                    <div className="w-full h-32 flex items-end justify-center bg-ps-bg/80 rounded-t-md p-0.5">
+                    {/* Bar */}
+                    <div className="w-full h-32 flex items-end justify-center">
                       <div
-                        className={clsx(
-                          "w-full max-w-[36px] rounded-t transition-all duration-300",
-                          isHovered 
-                            ? "bg-ps-primary shadow-sm scale-y-105 origin-bottom" 
-                            : (d.count > 0 ? "bg-ps-primary/80 hover:bg-ps-primary" : "bg-transparent")
-                        )}
+                        className={`w-full max-w-[36px] ${isPeak ? 'bg-[var(--sa-bar-accent)]' : 'bg-[var(--sa-bar-primary)]'}`}
                         style={{ height: `${heightPercent}%` }}
                       />
                     </div>
 
                     {/* X-axis Label */}
-                    <span className={clsx(
-                      "text-xs mt-2 transition-colors",
-                      isHovered ? "text-ps-accent font-semibold" : "text-ps-ink-2"
-                    )}>
+                    <span className={`text-xs mt-2 ${isHovered ? 'sa-t-warm' : 'sa-t-muted'}`}>
                       <span className="xs:hidden">{d.hour}</span>
                       <span className="hidden xs:inline">{d.label}</span>
                     </span>
@@ -261,7 +234,7 @@ const AdminDashboard = () => {
                 );
               })}
             </div>
-            <div className="flex justify-between items-center text-xs text-ps-ink-2 font-medium px-2 pt-2">
+            <div className="flex justify-between items-center text-xs sa-t-muted px-2 pt-2">
               <span>Clinic Opens (8:00 AM)</span>
               <span>Clinic Closes (5:00 PM)</span>
             </div>
@@ -270,42 +243,36 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Lower Operational Row: Facilities & Schedule Peek ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
+
         {/* Room Facility Status Summary */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-display font-semibold text-ps-ink-1">Facility Status</h3>
+        <div className="sa-panel">
+          <div className="sa-panel-head">
+            <h2 className="sa-panel-title">Facility Status</h2>
             <button
               onClick={() => navigate('/rooms')}
-              className="py-1 text-xs font-medium text-ps-accent hover:underline flex items-center gap-1"
+              className="sa-link"
             >
-              View Rooms <ChevronRight size={13} />
+              View Rooms <ChevronRight size={13} strokeWidth={1.5} />
             </button>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="sa-list">
             {rooms.slice(0, 6).map((room) => {
               const roomSessions = sessions.filter(s => s.room === room.name);
               const isOccupied = roomSessions.length > 0;
               const isOverCapacity = room.currentOccupancy && room.maxCapacity && room.currentOccupancy > room.maxCapacity;
 
               return (
-                <div key={room.id} className="flex items-center justify-between p-2.5 rounded-xl bg-ps-bg border border-ps-border/70">
-                  <div className="flex items-center gap-2.5">
-                    <span className={clsx(
-                      "w-2 h-2 rounded-full shrink-0",
-                      isOverCapacity ? "bg-ps-danger" : (isOccupied ? "bg-ps-primary" : "bg-ps-success")
-                    )} />
-                    <div>
-                      <p className="text-xs font-semibold text-ps-ink-1 leading-tight">{room.name}</p>
-                      <p className="text-xs text-ps-ink-2 font-medium">{room.type || 'General SPED'}</p>
-                    </div>
+                <div key={room.id} className="sa-row">
+                  <span
+                    className={`sa-marker${isOverCapacity ? ' sa-marker--danger' : isOccupied ? '' : ' sa-marker--creative'}`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="sa-row-title truncate">{room.name}</p>
+                    <p className="sa-row-meta">{room.type || 'General SPED'}</p>
                   </div>
-                  <span className={clsx(
-                    "text-xs font-medium px-2 py-0.5 rounded-full",
-                    isOverCapacity ? "bg-ps-danger/10 text-ps-danger" : (isOccupied ? "bg-ps-accent-soft text-ps-accent" : "bg-ps-success/10 text-ps-success")
-                  )}>
+                  <span className={`text-xs shrink-0 ${isOverCapacity ? 'sa-t-danger' : 'sa-t-muted'}`}>
                     {isOverCapacity ? "Overload" : (isOccupied ? "In Use" : "Available")}
                   </span>
                 </div>
@@ -315,54 +282,48 @@ const AdminDashboard = () => {
         </div>
 
         {/* Live Today's Schedule Overview */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-md border border-ps-border">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 sa-panel">
+          <div className="sa-panel-head">
             <div>
-              <h3 className="text-sm font-display font-semibold text-ps-ink-1">Upcoming Program Sessions</h3>
-              <p className="text-xs text-ps-ink-2 font-medium">Scheduled therapy and classroom groups today</p>
+              <h2 className="sa-panel-title">Upcoming Program Sessions</h2>
+              <p className="sa-panel-sub">Scheduled therapy and classroom groups today</p>
             </div>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="sa-list">
             {todaysSessions.length > 0 ? todaysSessions.map((session) => {
               const provider = staff.find(s => String(s.id) === String(session.therapistId));
               return (
-                <div 
+                <div
                   key={session.id}
                   onClick={() => navigate('/schedule')}
-                  className="flex items-center justify-between p-3 rounded-xl bg-ps-bg border border-ps-border/70 hover:border-ps-accent/50 cursor-pointer transition-all group"
+                  className="sa-row cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-ps-accent-soft text-ps-accent flex items-center justify-center shrink-0">
-                      <Clock size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-ps-ink-1 truncate group-hover:text-ps-accent transition-colors">
-                        {session.title}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-ps-ink-2 font-medium mt-0.5">
-                        <span className="flex items-center gap-1"><MapPin size={11} /> {session.room}</span>
-                        <span>•</span>
-                        <span>{provider ? provider.name : 'Unassigned'}</span>
-                      </div>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="sa-row-title truncate">
+                      {session.title}
+                    </p>
+                    <p className="sa-row-meta flex flex-wrap items-center gap-2">
+                      <span className="flex items-center gap-1 whitespace-nowrap"><MapPin size={11} strokeWidth={1.5} /> {session.room}</span>
+                      <span className="whitespace-nowrap">• {provider ? provider.name : 'Unassigned'}</span>
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-ps-surface border border-ps-border text-ps-ink-2">
+                    <span className="text-xs sa-t-muted tabular-nums">
                       {session.startHour}:00 – {session.startHour + (session.span || 1)}:00
                     </span>
-                    <span className="text-xs font-semibold uppercase px-2 py-0.5 rounded-md bg-ps-accent-soft text-ps-accent">
+                    <span className="sa-badge">
                       {session.type || 'SPED'}
                     </span>
                   </div>
                 </div>
               );
             }) : (
-              <div className="p-8 text-center bg-ps-bg/50 rounded-xl border border-dashed border-ps-border">
-                <Calendar size={28} className="mx-auto mb-2 text-ps-ink-2 opacity-40" />
-                <p className="text-xs font-semibold text-ps-ink-1">No sessions currently active</p>
-                <p className="text-xs text-ps-ink-2 mt-0.5">Check schedule calendar to assign therapists.</p>
+              <div className="sa-empty mt-4">
+                <Calendar size={20} strokeWidth={1.5} className="mx-auto mb-2 sa-t-muted" />
+                <p className="sa-empty-title">No sessions currently active</p>
+                <p className="sa-empty-sub">Check schedule calendar to assign therapists.</p>
               </div>
             )}
           </div>
@@ -374,4 +335,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
