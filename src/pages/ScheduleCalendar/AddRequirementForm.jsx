@@ -4,8 +4,8 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import { isTherapistOrTeacher } from './staff.js';
 
 const EMPTY = { studentId: '', programId: '', sessionsPerWeek: 1, preferredDurationHours: 1, priority: 5, assignedTeacherId: '' };
-const fieldCls = 'w-full px-3 py-2.5 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold text-ps-ink-1 transition-all';
-const labelCls = 'text-xs font-medium text-ps-ink-2 mb-1.5 block';
+const fieldCls = 'w-full px-3 py-2.5 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
+const labelCls = 'sa-label';
 
 export const AddRequirementForm = () => {
   const { students, programs, staff, addStudentProgram, notify } = useGlobalState();
@@ -33,7 +33,7 @@ export const AddRequirementForm = () => {
   };
 
   return (
-    <section className="bg-ps-surface border border-ps-border rounded-2xl">
+    <section className="border border-[var(--sa-line-default)]">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -41,14 +41,14 @@ export const AddRequirementForm = () => {
         aria-controls="add-requirement-form"
         className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
       >
-        <span className="flex items-center gap-2 text-sm font-semibold text-ps-ink-1">
-          <Plus size={16} className="text-ps-ink-2" /> Add requirement
+        <span className="flex items-center gap-2 sa-panel-title">
+          <Plus size={16} strokeWidth={1.5} className="sa-t-muted" /> Add requirement
         </span>
-        {open ? <ChevronUp size={16} className="text-ps-ink-2" /> : <ChevronDown size={16} className="text-ps-ink-2" />}
+        {open ? <ChevronUp size={16} strokeWidth={1.5} className="sa-t-muted" /> : <ChevronDown size={16} strokeWidth={1.5} className="sa-t-muted" />}
       </button>
 
       {open && (
-        <form id="add-requirement-form" onSubmit={submit} className="px-4 pb-4 pt-4 border-t border-ps-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <form id="add-requirement-form" onSubmit={submit} className="px-4 pb-4 pt-4 border-t border-[var(--sa-line-hairline)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label htmlFor="req-student" className={labelCls}>Student *</label>
             <select id="req-student" required value={form.studentId} onChange={e => set({ studentId: e.target.value })} className={fieldCls}>
@@ -95,9 +95,9 @@ export const AddRequirementForm = () => {
             <button
               type="submit"
               disabled={saving || !form.studentId || !form.programId}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-ps-primary text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="sa-btn sa-btn--primary disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Plus size={16} /> {saving ? 'Adding…' : 'Add requirement'}
+              <Plus size={16} strokeWidth={1.5} /> {saving ? 'Adding…' : 'Add requirement'}
             </button>
           </div>
         </form>

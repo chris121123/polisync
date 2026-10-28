@@ -6,8 +6,8 @@ import { AddRequirementForm } from './AddRequirementForm.jsx';
 import { AvailabilityEditor } from './AvailabilityEditor.jsx';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const primaryBtn = 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-ps-primary text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm';
-const ghostBtn = 'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all';
+const primaryBtn = 'sa-btn sa-btn--primary disabled:opacity-40 disabled:cursor-not-allowed';
+const ghostBtn = 'sa-btn disabled:opacity-40 disabled:cursor-not-allowed';
 
 export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
   const { studentPrograms, sessions, students, programs, staff, studentAvailability, smartSchedule, notify } = useGlobalState();
@@ -66,24 +66,24 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-ps-ink-1 flex items-center gap-2">
-            <CalendarClock size={18} className="text-ps-ink-2" /> Pending requirements
+          <h2 className="sa-panel-title flex items-center gap-2">
+            <CalendarClock size={16} strokeWidth={1.5} className="sa-t-muted" /> Pending requirements
           </h2>
-          <p className="text-xs text-ps-ink-2 font-medium mt-0.5">
+          <p className="sa-panel-sub">
             {pending.length} awaiting sessions · whole week spreads them across Mon–Fri
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1" role="group" aria-label="Scheduling scope">
+          <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]" role="group" aria-label="Scheduling scope">
             {[['whole-week', 'Whole week'], ['selected-day', 'This day only']].map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setScope(key)}
                 aria-pressed={scope === key}
-                className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                  scope === key ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1')}
+                className={clsx('px-3 py-1.5 text-xs',
+                  scope === key ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]')}
               >
                 {label}
               </button>
@@ -91,63 +91,63 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
           </div>
 
           <button type="button" onClick={() => run(selected)} disabled={blocked || selected.length === 0} className={primaryBtn}>
-            {running ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+            {running ? <Loader2 size={16} strokeWidth={1.5} className="animate-spin" /> : <Zap size={16} strokeWidth={1.5} />}
             Schedule selected ({selected.length})
           </button>
           <button type="button" onClick={() => run()} disabled={blocked || pending.length === 0} className={ghostBtn}>
-            <CalendarCheck size={16} /> Schedule all pending
+            <CalendarCheck size={16} strokeWidth={1.5} /> Schedule all pending
           </button>
         </div>
       </div>
 
       {scope === 'selected-day' && isWeekend && (
-        <p className="text-xs font-medium text-ps-warn">Mon–Fri only — pick a weekday to schedule just one day.</p>
+        <p className="text-[11px] sa-t-warm">Mon–Fri only — pick a weekday to schedule just one day.</p>
       )}
 
       {pending.length === 0 ? (
-        <div className="p-8 text-center bg-ps-surface border border-dashed border-ps-border rounded-2xl">
-          <p className="text-sm font-semibold text-ps-ink-1">No pending requirements</p>
-          <p className="text-xs text-ps-ink-2 font-medium mt-1">Every requirement has its weekly sessions. Add one below to schedule more.</p>
+        <div className="sa-empty">
+          <p className="sa-empty-title">No pending requirements</p>
+          <p className="sa-empty-sub">Every requirement has its weekly sessions. Add one below to schedule more.</p>
         </div>
       ) : (
-        <div className="bg-ps-surface border border-ps-border rounded-2xl overflow-x-auto">
+        <div className="border border-[var(--sa-line-default)] overflow-x-auto">
           <table className="w-full text-sm">
             <caption className="sr-only">Pending student requirements</caption>
             <thead>
-              <tr className="text-left text-xs font-medium text-ps-ink-2 border-b border-ps-border">
+              <tr className="text-left text-xs text-[var(--sa-text-muted)] border-b border-[var(--sa-line-default)]">
                 <th scope="col" className="px-3 py-2.5 w-10">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all pending requirements" className="accent-ps-primary" />
                 </th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Student</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Program</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Scheduled</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Priority</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Teacher</th>
-                <th scope="col" className="px-3 py-2.5 font-medium">Availability</th>
-                <th scope="col" className="px-3 py-2.5 font-medium text-right">Actions</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Student</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Program</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Scheduled</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Priority</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Teacher</th>
+                <th scope="col" className="px-3 py-2.5 font-normal">Availability</th>
+                <th scope="col" className="px-3 py-2.5 font-normal text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {pending.map(sp => {
                 const days = dayChips(sp.student_id);
                 return (
-                  <tr key={sp.id} className="border-b border-ps-border/60 last:border-0">
+                  <tr key={sp.id} className="border-b border-[var(--sa-line-hairline)] last:border-0">
                     <td className="px-3 py-2.5">
                       <input type="checkbox" checked={selected.includes(sp.id)} onChange={() => toggle(sp.id)}
                         aria-label={`Select ${studentName(sp.student_id)} — ${programName(sp.program_id)}`} className="accent-ps-primary" />
                     </td>
-                    <td className="px-3 py-2.5 font-medium text-ps-ink-1">{studentName(sp.student_id)}</td>
-                    <td className="px-3 py-2.5 font-medium text-ps-ink-2">{programName(sp.program_id)}</td>
-                    <td className="px-3 py-2.5 tabular-nums text-ps-ink-1">{linkedCount(sp.id)}/{sp.sessions_per_week || 1}</td>
-                    <td className="px-3 py-2.5 tabular-nums text-ps-ink-2">{sp.priority ?? 5}</td>
-                    <td className="px-3 py-2.5 text-ps-ink-2">{staff.find(p => p.id === sp.assigned_teacher_id)?.name ?? '—'}</td>
+                    <td className="px-3 py-2.5 text-[var(--sa-text-primary)]">{studentName(sp.student_id)}</td>
+                    <td className="px-3 py-2.5 text-[var(--sa-text-muted)]">{programName(sp.program_id)}</td>
+                    <td className="px-3 py-2.5 tabular-nums text-[var(--sa-text-primary)]">{linkedCount(sp.id)}/{sp.sessions_per_week || 1}</td>
+                    <td className="px-3 py-2.5 tabular-nums text-[var(--sa-text-muted)]">{sp.priority ?? 5}</td>
+                    <td className="px-3 py-2.5 text-[var(--sa-text-muted)]">{staff.find(p => p.id === sp.assigned_teacher_id)?.name ?? '—'}</td>
                     <td className="px-3 py-2.5">
                       {days.length === 0 ? (
-                        <span className="text-ps-ink-2">—</span>
+                        <span className="text-[var(--sa-text-muted)]">—</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {days.map(d => (
-                            <span key={d} className="px-1.5 py-0.5 rounded-md bg-ps-bg border border-ps-border text-xs font-medium text-ps-ink-2">
+                            <span key={d} className="px-1.5 py-0.5 border border-[var(--sa-line-hairline)] text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                               {DAY_NAMES[d] ?? d}
                             </span>
                           ))}
@@ -156,7 +156,7 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <button type="button" onClick={() => setAvailabilityFor({ id: sp.student_id, name: studentName(sp.student_id) })}
-                        className="text-xs font-medium text-ps-accent hover:underline">Availability</button>
+                        className="sa-link">Availability</button>
                     </td>
                   </tr>
                 );
@@ -167,18 +167,18 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
       )}
 
       {lastRun && (
-        <div aria-live="polite" className="bg-ps-surface border border-ps-border rounded-2xl p-4 space-y-1.5">
-          <p className="text-xs font-semibold text-ps-ink-1 flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-ps-success" /> Last run
+        <div aria-live="polite" className="border border-[var(--sa-line-default)] p-4 space-y-1.5">
+          <p className="sa-micro flex items-center gap-2">
+            <CheckCircle2 size={14} strokeWidth={1.5} className="text-[var(--sa-success)]" /> Last run
           </p>
           {lastRun.success ? (
             <>
-              <p className="text-xs font-medium text-ps-ink-2">
-                Scheduled: <span className="text-ps-ink-1 font-semibold">{lastRun.scheduled?.length ?? 0}</span>
-                {' · '}Already scheduled: <span className="text-ps-ink-1 font-semibold">{lastRun.alreadyScheduled?.length ?? 0}</span>
+              <p className="text-[11px] sa-t-muted">
+                Scheduled: <span className="tabular-nums text-[var(--sa-text-primary)]">{lastRun.scheduled?.length ?? 0}</span>
+                {' · '}Already scheduled: <span className="tabular-nums text-[var(--sa-text-primary)]">{lastRun.alreadyScheduled?.length ?? 0}</span>
               </p>
               {unscheduled.length > 0 && (
-                <ul className="text-xs font-medium text-ps-ink-2 space-y-0.5 list-disc pl-4">
+                <ul className="text-[11px] sa-t-muted space-y-0.5 list-disc pl-4">
                   {unscheduled.map(u => (
                     <li key={`${u.studentId}-${u.reason}`}>{studentName(u.studentId)} — {u.reason}</li>
                   ))}
@@ -186,7 +186,7 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
               )}
             </>
           ) : (
-            <p className="text-xs font-medium text-ps-danger">{lastRun.error || 'Scheduling failed'}</p>
+            <p className="text-[11px] sa-t-danger">{lastRun.error || 'Scheduling failed'}</p>
           )}
         </div>
       )}

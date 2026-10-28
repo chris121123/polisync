@@ -53,10 +53,10 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
       whileHover={{ scale: 1.01, zIndex: 30 }}
       whileDrag={{ scale: 1.03, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
       className={clsx(
-        'absolute left-1.5 right-1.5 rounded-xl cursor-grab transition-all duration-200 select-none overflow-hidden',
-        'bg-ps-surface border shadow-xs hover:shadow-md',
-        isSelected ? 'ring-2 ring-ps-accent ring-offset-1 z-20 border-transparent' : 'border-ps-border hover:border-ps-accent/40 z-10',
-        hasConflict ? 'border-ps-danger/50 ring-1 ring-ps-danger/50 bg-ps-danger/5' : ''
+        'absolute left-1.5 right-1.5 cursor-grab select-none overflow-hidden',
+        'bg-[var(--sa-surface-1)] border',
+        isSelected ? 'border-[var(--sa-gold)] z-20' : 'border-[var(--sa-line-default)] hover:border-[var(--sa-line-strong)] z-10',
+        hasConflict ? 'border-[var(--sa-danger)]' : ''
       )}
       style={{
         top: `${(session.startHour - 8) * 96 + 2}px`,
@@ -83,12 +83,12 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
 
             <div className="flex items-center gap-1 shrink-0">
               {hasConflict ? (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-ps-danger/15 text-ps-danger border border-ps-danger/30">
-                  <AlertCircle size={10} className="shrink-0" />
+                <span className="inline-flex items-center gap-1 sa-badge sa-badge--warn">
+                  <AlertCircle size={10} strokeWidth={1.5} className="shrink-0" />
                   <span>{conflictLabel}</span>
                 </span>
               ) : (
-                <span className={clsx('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-md shrink-0', cfg.badge)}>
+                <span className="sa-badge shrink-0">
                   {cfg.label}
                 </span>
               )}
@@ -140,10 +140,10 @@ export const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict,
       whileHover={{ scale: 1.02, zIndex: 30 }}
       whileDrag={{ scale: 1.04, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
       className={clsx(
-        'absolute left-1 right-1 rounded-lg cursor-grab select-none overflow-hidden transition-all duration-200',
-        'bg-ps-surface border shadow-xs hover:shadow-md',
-        isSelected ? 'ring-2 ring-ps-accent z-20 border-transparent' : 'border-ps-border z-10',
-        hasConflict ? 'border-ps-danger/60 ring-1 ring-ps-danger/60 bg-ps-danger/5' : ''
+        'absolute left-1 right-1 cursor-grab select-none overflow-hidden',
+        'bg-[var(--sa-surface-1)] border',
+        isSelected ? 'border-[var(--sa-gold)] z-20' : 'border-[var(--sa-line-default)] z-10',
+        hasConflict ? 'border-[var(--sa-danger)]' : ''
       )}
       style={{
         top: `${(session.startHour - 8) * 64 + 2}px`,
@@ -165,24 +165,24 @@ export const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict,
               {session.title}
             </p>
             {hasConflict ? (
-              <span className="text-[9px] font-semibold px-1 rounded bg-ps-danger/15 text-ps-danger">
+              <span className="sa-badge sa-badge--warn">
                 {conflictLabel}
               </span>
             ) : (
-              <span className={clsx('text-[9px] font-semibold uppercase px-1 rounded shrink-0', cfg.badge)}>
+              <span className="sa-badge shrink-0">
                 {cfg.label}
               </span>
             )}
           </div>
-          <p className="text-[10px] font-medium text-ps-ink-2 mt-0.5 flex items-center gap-1">
-            <Clock size={9} className="opacity-70" />
+          <p className="text-[11px] tabular-nums sa-t-muted mt-0.5 flex items-center gap-1">
+            <Clock size={9} strokeWidth={1.5} />
             {formatHour(session.startHour).replace(':00', '')}–{formatHour(session.startHour + session.span).replace(':00', '')}
           </p>
         </div>
 
         {provider && (
-          <p className="text-[10px] font-medium text-ps-ink-1 truncate pt-0.5 border-t border-ps-border/40 flex items-center gap-1">
-            <User size={9} className="shrink-0 text-ps-ink-2" />
+          <p className="text-[11px] sa-t-muted truncate pt-0.5 border-t border-[var(--sa-line-hairline)] flex items-center gap-1">
+            <User size={9} strokeWidth={1.5} className="shrink-0" />
             <span className="truncate">{provider.name}</span>
           </p>
         )}

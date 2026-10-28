@@ -12,6 +12,11 @@ const HEADER_TONES = {
   playschool: 'bg-[var(--sa-surface-warm)]',
 };
 
+const fieldCls = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
+const chipCls = 'px-3 py-3 text-xs border';
+const chipOn = 'border-[var(--sa-gold)] text-[var(--sa-text-primary)]';
+const chipOff = 'border-[var(--sa-line-default)] text-[var(--sa-text-muted)] hover:border-[var(--sa-line-strong)]';
+
 const createEmptyForm = (rooms) => ({
   title: '',
   therapistId: '',
@@ -90,9 +95,9 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         <div className="mt-5 flex gap-2">
           {[1, 2].map(s => (
             <div key={s} className="flex-1">
-              <div className={clsx('h-1 rounded-full transition-colors', s <= step ? 'bg-[var(--sa-text-primary)]' : 'bg-[var(--sa-line-default)]')} />
+              <div className={clsx('h-1 transition-colors', s <= step ? 'bg-[var(--sa-text-primary)]' : 'bg-[var(--sa-line-default)]')} />
               <p className={clsx(
-                'mt-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors',
+                'mt-1.5 text-[11px] uppercase tracking-[0.1em] transition-colors',
                 s <= step ? 'text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
               )}>
                 {s === 1 ? 'Details' : 'Schedule'}
@@ -106,11 +111,11 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <label htmlFor="session-title" className="mb-2 block text-xs font-medium text-ps-ink-2">Session Title *</label>
+              <label htmlFor="session-title" className="sa-label">Session Title *</label>
               <input
                 id="session-title"
                 data-autofocus
-                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                className={fieldCls}
                 placeholder="e.g., SPED Group B Morning"
                 value={formData.title}
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
@@ -118,7 +123,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-medium text-ps-ink-2">Category</label>
+              <label className="sa-label">Category</label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.entries(TYPE_CONFIG).map(([key, cfg]) => (
                   <button
@@ -126,10 +131,8 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                     type="button"
                     onClick={() => setFormData({ ...formData, type: key })}
                     className={clsx(
-                      'rounded-xl border-2 py-3 text-xs font-medium transition-all',
-                      formData.type === key
-                        ? 'border-transparent bg-ps-primary text-white shadow-sm'
-                        : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
+                      chipCls,
+                      formData.type === key ? chipOn : chipOff
                     )}
                   >
                     {cfg.label}
@@ -139,7 +142,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             </div>
 
             <div>
-              <label htmlFor="session-date" className="mb-2 block text-xs font-medium text-ps-ink-2">Session Date *</label>
+              <label htmlFor="session-date" className="sa-label">Session Date *</label>
               <input
                 id="session-date"
                 type="date"
@@ -148,20 +151,20 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                 onChange={e => {
                   setFormData({ ...formData, sessionDate: e.target.value, therapistId: '' });
                 }}
-                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                className={fieldCls}
               />
               {formData.sessionDate && (
-                <p className="mt-1 text-xs font-medium text-ps-ink-2">
+                <p className="mt-1 text-[11px] sa-t-muted">
                   {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                   {availableStaff.length > 0 && (
-                    <span className="ml-2 text-ps-success">· {availableStaff.length} staff available</span>
+                    <span className="ml-2 text-[var(--sa-success)]">· {availableStaff.length} staff available</span>
                   )}
                 </p>
               )}
               {formData.sessionDate && !availableStaff.length && (
-                <div className="mt-2 flex items-start gap-2 rounded-xl border border-ps-warn/20 bg-ps-warn/10 px-3 py-2.5">
-                  <AlertCircle size={14} className="mt-0.5 shrink-0 text-ps-warn" />
-                  <div className="text-xs font-medium text-ps-warn">
+                <div className="mt-2 flex items-start gap-2 border border-[var(--sa-gold)] px-3 py-2.5">
+                  <AlertCircle size={14} strokeWidth={1.5} className="mt-0.5 shrink-0" />
+                  <div className="text-[11px] sa-t-warm">
                     No staff marked available for this date — staff mark their own availability on their dashboard.
                     <button type="button" onClick={onOpenAvailability} className="ml-1 underline">
                       View availability
@@ -172,13 +175,13 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             </div>
 
             <div>
-              <label htmlFor="session-provider" className="mb-1 block text-xs font-medium text-ps-ink-2">Provider / Therapist *</label>
-              <p className="mb-2 text-xs font-medium text-ps-ink-2">
+              <label htmlFor="session-provider" className="sa-label">Provider / Therapist *</label>
+              <p className="mb-2 text-[11px] sa-t-muted">
                 The staff member (therapist or teacher) responsible for conducting this session.
               </p>
               <select
                 id="session-provider"
-                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                className={fieldCls}
                 value={formData.therapistId}
                 onChange={e => setFormData({ ...formData, therapistId: e.target.value })}
               >
@@ -186,17 +189,17 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                 {availableStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
               </select>
               {formData.sessionDate && availableStaff.length > 0 && (
-                <p className="mt-1 flex items-center gap-1 text-xs font-medium text-ps-success">
-                  <UserCheck size={10} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-[var(--sa-success)]">
+                  <UserCheck size={10} strokeWidth={1.5} /> Showing only available staff for {new Date(formData.sessionDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="session-students" className="mb-2 block text-xs font-medium text-ps-ink-2">Assign Students</label>
+              <label htmlFor="session-students" className="sa-label">Assign Students</label>
               <select
                 id="session-students"
-                className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                className={fieldCls}
                 onChange={e => {
                   const sid = e.target.value;
                   if (sid && !formData.studentIds.includes(sid)) {
@@ -212,15 +215,15 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                 {formData.studentIds.map(sid => {
                   const student = students.find(s => String(s.id) === String(sid));
                   return (
-                    <span key={sid} className="flex items-center gap-1 rounded-lg bg-ps-accent-soft px-2 py-1 text-xs font-medium text-ps-accent">
+                    <span key={sid} className="flex items-center gap-1 border border-[var(--sa-line-default)] px-2 py-1 text-[11px] text-[var(--sa-text-secondary)]">
                       {student?.name}
                       <button
                         type="button"
                         aria-label={`Remove ${student?.name || 'student'}`}
                         onClick={() => setFormData({ ...formData, studentIds: formData.studentIds.filter(id => id !== sid) })}
-                        className="rounded-sm transition-opacity hover:opacity-70"
+                        className="text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                       >
-                        <X size={12} />
+                        <X size={12} strokeWidth={1.5} />
                       </button>
                     </span>
                   );
@@ -233,9 +236,9 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         {step === 2 && (
           <div className="space-y-5">
             <div>
-              <label className="mb-2 block text-xs font-medium text-ps-ink-2">Venue / Room</label>
+              <label className="sa-label">Venue / Room</label>
               {rooms.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-ps-border bg-ps-bg px-4 py-3 text-xs font-medium text-ps-ink-2">
+                <p className="border border-dashed border-[var(--sa-line-default)] px-3 py-2.5 text-[11px] sa-t-muted">
                   No rooms available. Add a room first.
                 </p>
               ) : (
@@ -246,14 +249,12 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                       type="button"
                       onClick={() => setFormData({ ...formData, room: r.name })}
                       className={clsx(
-                        'flex items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 text-xs font-medium transition-all',
-                        selectedRoom === r.name
-                          ? 'border-ps-accent/30 bg-ps-accent-soft text-ps-accent shadow-sm'
-                          : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
+                        'flex items-center justify-between gap-2 border px-3 py-2.5 text-xs',
+                        selectedRoom === r.name ? chipOn : chipOff
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={clsx('h-2.5 w-2.5 shrink-0 rounded-full', selectedRoom === r.name ? 'bg-ps-accent' : 'bg-ps-ink-2/40')} />
+                        <div className={clsx('h-1.5 w-1.5 shrink-0', selectedRoom === r.name ? 'bg-[var(--sa-gold)]' : 'bg-[var(--sa-line-strong)]')} />
                         <span className="truncate">{r.name}</span>
                       </div>
                     </button>
@@ -264,10 +265,10 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="session-start" className="mb-2 block text-xs font-medium text-ps-ink-2">Start Time</label>
+                <label htmlFor="session-start" className="sa-label">Start Time</label>
                 <select
                   id="session-start"
-                  className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20"
+                  className={fieldCls}
                   value={formData.startHour}
                   onChange={e => setFormData({ ...formData, startHour: parseInt(e.target.value) })}
                 >
@@ -275,7 +276,7 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                 </select>
               </div>
               <div>
-                <label className="mb-2 block text-xs font-medium text-ps-ink-2">Duration</label>
+                <label className="sa-label">Duration</label>
                 <div className="grid grid-cols-3 gap-1">
                   {[1, 2, 3].map(d => (
                     <button
@@ -283,10 +284,8 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
                       type="button"
                       onClick={() => setFormData({ ...formData, span: d })}
                       className={clsx(
-                        'rounded-xl border-2 py-3 text-xs font-medium transition-all',
-                        formData.span === d
-                          ? 'border-ps-accent bg-ps-primary text-white shadow-sm'
-                          : 'border-ps-border bg-ps-bg text-ps-ink-2 hover:border-ps-accent/40'
+                        'py-3 text-xs border',
+                        formData.span === d ? chipOn : chipOff
                       )}
                     >
                       {d}h
@@ -297,17 +296,17 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             </div>
 
             {conflictMessage && (
-              <div className="flex items-start gap-2 rounded-xl border border-ps-danger/20 bg-ps-danger/10 p-3">
-                <AlertCircle size={14} className="mt-0.5 shrink-0 text-ps-danger" />
-                <p className="text-xs font-semibold text-ps-danger">{conflictMessage}</p>
+              <div className="flex items-start gap-2 border border-[var(--sa-danger)] p-3 sa-t-danger">
+                <AlertCircle size={14} strokeWidth={1.5} className="mt-0.5 shrink-0" />
+                <p className="text-[11px]">{conflictMessage}</p>
               </div>
             )}
 
-            <div className={clsx('flex items-center gap-3 rounded-xl border-2 p-4', typeCfg.light, typeCfg.border)}>
-              <div className={clsx('w-1 self-stretch rounded-full', typeCfg.gradient)} />
+            <div className="flex items-center gap-3 border border-[var(--sa-line-default)] p-4">
+              <div className={clsx('w-1 self-stretch', typeCfg.gradient)} />
               <div>
-                <p className={clsx('text-sm font-semibold', typeCfg.text)}>{formData.title || '(untitled)'}</p>
-                <p className="mt-0.5 text-xs text-ps-ink-2">
+                <p className="text-sm text-[var(--sa-text-primary)]">{formData.title || '(untitled)'}</p>
+                <p className="mt-0.5 text-[11px] tabular-nums sa-t-muted">
                   {selectedRoom || 'No room'} · {formatHour(formData.startHour)} – {formatHour(formData.startHour + formData.span)} · {typeCfg.label}
                 </p>
               </div>
@@ -316,12 +315,12 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
         )}
       </div>
 
-      <div className="flex shrink-0 gap-3 border-t border-ps-border bg-ps-surface px-5 py-4 md:px-6">
+      <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
         {step === 2 && (
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="rounded-xl border border-ps-border px-5 py-3 text-sm font-medium text-ps-ink-2 transition-colors hover:bg-ps-bg"
+            className="sa-btn justify-center min-h-11"
           >
             Back
           </button>
@@ -331,18 +330,18 @@ export const AddSessionModal = ({ isOpen, onClose, onAdd, staff, students, rooms
             type="button"
             onClick={() => setStep(2)}
             disabled={!formData.title || !formData.therapistId}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ps-primary py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50"
+            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Next: Choose Slot <ArrowRight size={16} />
+            Next: Choose Slot <ArrowRight size={16} strokeWidth={1.5} />
           </button>
         ) : (
           <button
             type="button"
             onClick={() => { onAdd({ ...formData, room: selectedRoom }); handleClose(); }}
             disabled={!!conflictMessage}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ps-primary py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-50 disabled:grayscale"
+            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <CheckCircle2 size={16} /> Create Session
+            <CheckCircle2 size={16} strokeWidth={1.5} /> Create Session
           </button>
         )}
       </div>

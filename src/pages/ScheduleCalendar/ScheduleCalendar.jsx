@@ -183,22 +183,20 @@ const ScheduleCalendar = () => {
       >
 
         {/* ── Toolbar ───────── */}
-        <div className="flex-shrink-0 border-b border-ps-border bg-ps-surface">
+        <div className="flex-shrink-0 border-b border-[var(--sa-line-default)] bg-[var(--sa-surface-1)]">
           {/* Top row */}
           <div className="px-6 py-3.5 sm:py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-ps-primary flex items-center justify-center">
-                  <CalendarIcon size={18} className="text-white" />
-                </div>
+                <CalendarIcon size={16} strokeWidth={1.5} className="text-[var(--sa-text-secondary)]" />
                 <div>
-                  <h1 className="text-lg font-semibold text-ps-ink-1 leading-none">Schedule</h1>
-                  <p className="text-xs text-ps-ink-2 font-medium">{calendarView === 'daily' ? 'Daily view' : 'Weekly view'}</p>
+                  <h1 className="sa-title leading-none">Schedule</h1>
+                  <p className="sa-sub">{calendarView === 'daily' ? 'Daily view' : 'Weekly view'}</p>
                 </div>
               </div>
 
               {/* Section tabs: Calendar / Pending */}
-              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1" role="group" aria-label="Schedule section">
+              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]" role="group" aria-label="Schedule section">
                 {[['calendar', 'Calendar'], ['pending', 'Pending']].map(([key, label]) => (
                   <button
                     key={key}
@@ -206,8 +204,8 @@ const ScheduleCalendar = () => {
                     onClick={() => setTab(key)}
                     aria-pressed={tab === key}
                     className={clsx(
-                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                      tab === key ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
+                      'px-3 py-1.5 text-xs',
+                      tab === key ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
                     )}
                   >
                     {label}
@@ -216,12 +214,12 @@ const ScheduleCalendar = () => {
               </div>
 
               {/* View toggle: Daily / Weekly */}
-              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1">
+              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
                 <button
                   onClick={() => setCalendarView('daily')}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                    calendarView === 'daily' ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
+                    'px-3 py-1.5 text-xs',
+                    calendarView === 'daily' ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
                   )}
                 >
                   Daily
@@ -229,8 +227,8 @@ const ScheduleCalendar = () => {
                 <button
                   onClick={() => setCalendarView('weekly')}
                   className={clsx(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                    calendarView === 'weekly' ? 'bg-ps-surface text-ps-ink-1 shadow-sm' : 'text-ps-ink-2 hover:text-ps-ink-1'
+                    'px-3 py-1.5 text-xs',
+                    calendarView === 'weekly' ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
                   )}
                 >
                   Weekly
@@ -238,14 +236,14 @@ const ScheduleCalendar = () => {
               </div>
 
               {/* Date nav */}
-              <div className="flex items-center bg-ps-bg rounded-xl p-1 gap-1">
+              <div className="flex items-center border border-[var(--sa-line-default)]">
                 <button 
                   onClick={() => calendarView === 'daily' ? navigateDate(-1) : navigateWeek(-1)}
-                  className="p-1.5 rounded-lg hover:bg-ps-bg hover:shadow-sm text-ps-ink-2 transition-all"
+                  className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={16} strokeWidth={1.5} />
                 </button>
-                <span className="px-3 text-sm font-medium text-ps-ink-1">
+                <span className="px-3 text-[13px] tabular-nums text-[var(--sa-text-primary)]">
                   {calendarView === 'daily'
                     ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
                     : `Week of ${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
@@ -253,15 +251,15 @@ const ScheduleCalendar = () => {
                 </span>
                 <button 
                   onClick={() => calendarView === 'daily' ? navigateDate(1) : navigateWeek(1)}
-                  className="p-1.5 rounded-lg hover:bg-ps-bg hover:shadow-sm text-ps-ink-2 transition-all"
+                  className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} strokeWidth={1.5} />
                 </button>
               </div>
 
               <button 
                 onClick={goToToday}
-                className="px-3 py-1.5 text-xs font-medium text-ps-accent bg-ps-accent-soft hover:bg-ps-accent-soft border border-ps-accent/20 rounded-lg transition-colors"
+                className="sa-btn"
               >
                 Today
               </button>
@@ -269,7 +267,7 @@ const ScheduleCalendar = () => {
 
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto xl:shrink-0 xl:flex-nowrap mt-2 xl:mt-0">
               {/* Type filters */}
-              <div className="flex items-center gap-1 bg-ps-bg rounded-xl p-1">
+              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'sped', label: 'SPED' },
@@ -280,10 +278,10 @@ const ScheduleCalendar = () => {
                     key={f.key}
                     onClick={() => setFilterType(f.key)}
                     className={clsx(
-                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                      'px-3 py-1.5 text-xs',
                       filterType === f.key
-                        ? 'bg-ps-surface text-ps-ink-1 shadow-sm'
-                        : 'text-ps-ink-2 hover:text-ps-ink-1'
+                        ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
+                        : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
                     )}
                   >
                     {f.label}
@@ -296,53 +294,51 @@ const ScheduleCalendar = () => {
                 disabled={isAutoScheduling || isWeekend}
                 title={isWeekend ? 'Scheduling is Monday–Friday only' : undefined}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-                  isAutoScheduling || isWeekend
-                    ? "bg-ps-border text-ps-ink-2 cursor-not-allowed" 
-                    : "border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent"
+                  "sa-btn",
+                  (isAutoScheduling || isWeekend) && "cursor-not-allowed opacity-40"
                 )}
               >
                 {isAutoScheduling ? (
-                  <RefreshCw size={16} className="animate-spin" />
+                  <RefreshCw size={16} strokeWidth={1.5} className="animate-spin" />
                 ) : (
-                  <Zap size={16} strokeWidth={2.5} />
+                  <Zap size={16} strokeWidth={1.5} />
                 )}
                 {isAutoScheduling ? 'Scheduling...' : isWeekend ? 'Mon–Fri only' : 'Auto-Schedule'}
               </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAvailabilityModalOpen(true); }}
-                className="flex items-center gap-2 border border-ps-border text-ps-ink-2 hover:border-ps-accent hover:text-ps-accent px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                className="sa-btn"
               >
-                <UserCheck size={16} strokeWidth={2.5} />
+                <UserCheck size={16} strokeWidth={1.5} />
                 <span className="hidden sm:inline">Availability</span>
                 {availableStaffCount > 0 && (
-                  <span className="bg-ps-accent-soft text-ps-accent text-xs font-medium px-1.5 py-0.5 rounded-full">{availableStaffCount}</span>
+                  <span className="sa-badge tabular-nums">{availableStaffCount}</span>
                 )}
               </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); }}
-                className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
+                className="sa-btn sa-btn--primary"
               >
-                <Plus size={16} strokeWidth={2.5} /> Add Session
+                <Plus size={16} strokeWidth={1.5} /> Add Session
               </button>
             </div>
           </div>
 
           {/* Stats strip */}
-          <div className="px-6 py-2.5 border-t border-ps-border/60 flex flex-wrap items-center gap-4 sm:gap-6 bg-ps-bg/30">
+          <div className="px-6 py-2.5 border-t border-[var(--sa-line-hairline)] flex flex-wrap items-center gap-4 sm:gap-6">
             {[
-              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-ps-ink-1' },
-              { label: 'Students', value: totalStudents, icon: Users, color: 'text-ps-ink-1' },
-              { label: 'Rooms Utilized', value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-ps-ink-1' },
-              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'text-ps-success font-semibold' : 'text-ps-ink-2' },
-              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'text-ps-danger font-semibold' : 'text-ps-ink-2' },
+              { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-[var(--sa-text-primary)]' },
+              { label: 'Students', value: totalStudents, icon: Users, color: 'text-[var(--sa-text-primary)]' },
+              { label: 'Rooms Utilized', value: `${activeRooms}/${rooms.length}`, icon: MapPin, color: 'text-[var(--sa-text-primary)]' },
+              { label: 'Available Staff', value: availableStaffCount, icon: UserCheck, color: availableStaffCount > 0 ? 'sa-t-warm' : 'text-[var(--sa-text-muted)]' },
+              { label: 'Conflicts', value: conflicts.length, icon: AlertCircle, color: conflicts.length > 0 ? 'sa-t-danger' : 'text-[var(--sa-text-muted)]' },
             ].map(stat => (
               <div key={stat.label} className="flex items-center gap-1.5">
-                <stat.icon size={13} className="text-ps-ink-2 shrink-0" />
-                <span className="text-xs text-ps-ink-2 font-medium">{stat.label}:</span>
-                <span className={clsx('text-xs font-medium', stat.color)}>{stat.value}</span>
+                <stat.icon size={13} strokeWidth={1.5} className="text-[var(--sa-text-muted)] shrink-0" />
+                <span className="text-[11px] text-[var(--sa-text-muted)]">{stat.label}:</span>
+                <span className={clsx('text-[11px] tabular-nums', stat.color)}>{stat.value}</span>
               </div>
             ))}
           </div>
@@ -364,30 +360,30 @@ const ScheduleCalendar = () => {
                     key={session.id} 
                     onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); setPendingDelete(false); }}
                     className={clsx(
-                      "bg-ps-surface p-4 rounded-2xl border shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform",
-                      hasConflict ? "border-ps-danger/20 ring-2 ring-ps-danger/20" : cfg.border,
-                      selectedSessionId === session.id ? "ring-2 ring-ps-accent" : ""
+                      "bg-[var(--sa-surface-1)] p-4 border relative overflow-hidden",
+                      hasConflict ? "border-[var(--sa-danger)]" : "border-[var(--sa-line-default)]",
+                      selectedSessionId === session.id ? "border-[var(--sa-gold)]" : ""
                     )}
                   >
-                    <div className={clsx('absolute left-0 top-0 bottom-0 w-1.5', cfg.gradient)} />
+                    <div className={clsx('absolute left-0 top-0 bottom-0 w-1', cfg.gradient)} />
                     <div className="flex justify-between items-start mb-2 pl-2">
-                      <h3 className={clsx("font-semibold text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
+                      <h3 className={clsx("text-base leading-tight pr-4", cfg.text)}>{session.title}</h3>
                       {hasConflict ? (
-                        <span className="shrink-0 px-2 py-1 bg-ps-danger/10 text-ps-danger text-xs font-medium rounded-lg flex items-center gap-1"><AlertCircle size={10}/> Conflict</span>
+                        <span className="sa-badge sa-badge--warn shrink-0 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5}/> Conflict</span>
                       ) : (
-                        <span className={clsx('text-xs font-medium px-2 py-1 rounded-lg shrink-0', cfg.badge)}>{cfg.label}</span>
+                        <span className="sa-badge shrink-0">{cfg.label}</span>
                       )}
                     </div>
                     <div className="space-y-1.5 pl-2 mt-3">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
-                        <Clock size={14} className="opacity-70" /> {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
+                      <div className="flex items-center gap-2 text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                        <Clock size={14} strokeWidth={1.5} /> {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
                       </div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
-                        <MapPin size={14} className="opacity-70" /> {session.room}
+                      <div className="flex items-center gap-2 text-[11px] text-[var(--sa-text-muted)]">
+                        <MapPin size={14} strokeWidth={1.5} /> {session.room}
                       </div>
                       {provider && (
-                        <div className="flex items-center gap-2 text-xs font-semibold text-ps-ink-2">
-                          <Users size={14} className="opacity-70" /> {provider.name}
+                        <div className="flex items-center gap-2 text-[11px] text-[var(--sa-text-muted)]">
+                          <Users size={14} strokeWidth={1.5} /> {provider.name}
                         </div>
                       )}
                     </div>
@@ -395,9 +391,9 @@ const ScheduleCalendar = () => {
                 );
               })}
               {filteredSessions.length === 0 && (
-                <div className="text-center p-8 bg-ps-surface rounded-2xl border border-dashed border-ps-border text-ps-ink-2">
-                  <CalendarIcon size={32} className="mx-auto mb-3 opacity-20" />
-                  <p className="font-semibold text-sm">No sessions found</p>
+                <div className="sa-empty text-[var(--sa-text-muted)]">
+                  <CalendarIcon size={20} strokeWidth={1.5} className="mx-auto mb-3" />
+                  <p className="sa-empty-title">No sessions found</p>
                 </div>
               )}
             </div>
@@ -407,34 +403,34 @@ const ScheduleCalendar = () => {
               {calendarView === 'daily' && (
                 <div className="min-w-[760px] pb-10">
               {/* Room header row */}
-              <div className="flex sticky top-0 z-30 bg-ps-surface border-b border-ps-border shadow-sm">
-                <div className="w-20 shrink-0 bg-ps-surface border-r border-ps-border flex flex-col justify-center items-center gap-1">
-                  <div className="flex bg-ps-bg rounded-lg p-0.5">
+              <div className="flex sticky top-0 z-30 bg-[var(--sa-surface-1)] border-b border-[var(--sa-line-default)]">
+                <div className="w-20 shrink-0 bg-[var(--sa-surface-1)] border-r border-[var(--sa-line-hairline)] flex flex-col justify-center items-center gap-1">
+                  <div className="flex border border-[var(--sa-line-default)]">
                     <button 
                       onClick={() => setRoomPage(Math.max(0, roomPage - 1))}
                       disabled={roomPage === 0}
-                      className="p-1 rounded text-ps-ink-2 hover:bg-ps-bg disabled:opacity-30 disabled:hover:bg-transparent"
-                    ><ChevronLeft size={14}/></button>
+                      className="p-1 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] disabled:opacity-30"
+                    ><ChevronLeft size={14} strokeWidth={1.5}/></button>
                     <button 
                       onClick={() => setRoomPage(Math.min(maxRoomPages - 1, roomPage + 1))}
                       disabled={roomPage === maxRoomPages - 1}
-                      className="p-1 rounded text-ps-ink-2 hover:bg-ps-bg disabled:opacity-30 disabled:hover:bg-transparent"
-                    ><ChevronRight size={14}/></button>
+                      className="p-1 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] disabled:opacity-30"
+                    ><ChevronRight size={14} strokeWidth={1.5}/></button>
                   </div>
-                  <span className="text-xs font-medium text-ps-ink-2 text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
+                  <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)] text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
                 </div>
                 {displayRooms.map((roomName) => {
                   const roomSessions = sessions.filter(s => s.room === roomName).length;
                   return (
-                    <div key={roomName} className="flex-1 px-3 py-2.5 flex items-center justify-between border-l border-ps-border bg-ps-surface">
+                    <div key={roomName} className="flex-1 px-4 py-2.5 flex items-center justify-between border-l border-[var(--sa-line-hairline)]">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={clsx(
-                          'w-2 h-2 rounded-full shrink-0',
-                          roomSessions > 0 ? 'bg-ps-primary' : 'bg-ps-ink-2/40'
+                          'w-2 h-2 shrink-0',
+                          roomSessions > 0 ? 'bg-[var(--sa-gold)]' : 'bg-[var(--sa-line-strong)]'
                         )} />
-                        <span className="text-xs font-semibold text-ps-ink-1 truncate capitalize">{roomName}</span>
+                        <span className="text-xs text-[var(--sa-text-primary)] truncate capitalize">{roomName}</span>
                       </div>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 bg-ps-bg text-ps-ink-2 border border-ps-border">
+                      <span className="text-[11px] tabular-nums shrink-0 text-[var(--sa-text-muted)]">
                         {roomSessions} {roomSessions === 1 ? 'session' : 'sessions'}
                       </span>
                     </div>
@@ -455,7 +451,7 @@ const ScheduleCalendar = () => {
                       )}
                       style={{ top: i === 0 ? '1px' : `${i * 96}px` }}
                     >
-                      <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                      <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                         {formatHour(hour)}
                       </span>
                     </div>
@@ -464,7 +460,7 @@ const ScheduleCalendar = () => {
                     className="absolute right-0 pr-3 flex items-center justify-end -translate-y-1/2"
                     style={{ top: `${HOURS.length * 96}px` }}
                   >
-                    <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                    <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                       {formatHour(18)}
                     </span>
                   </div>
@@ -514,7 +510,7 @@ const ScheduleCalendar = () => {
           {calendarView === 'weekly' && (
             <div className="min-w-[800px]">
               {/* Day header row */}
-              <div className="flex sticky top-0 z-30 bg-ps-surface border-b border-ps-border shadow-sm">
+              <div className="flex sticky top-0 z-30 bg-[var(--sa-surface-1)] border-b border-[var(--sa-line-default)]">
                 <div className="w-16 shrink-0" />
                 {WEEKDAYS.map((day, idx) => {
                   const dayDate = weekDates[idx];
@@ -524,23 +520,23 @@ const ScheduleCalendar = () => {
 
                   return (
                     <div key={day} className={clsx(
-                      'flex-1 px-3 py-3 flex items-center justify-between border-l border-ps-border',
-                      isToday ? 'bg-ps-accent-soft/70' : 'bg-ps-surface'
+                      'flex-1 px-3 py-3 flex items-center justify-between border-l border-[var(--sa-line-hairline)]',
+                      isToday ? 'bg-[var(--sa-surface-warm)]' : ''
                     )}>
                       <div className="flex items-center gap-2">
                         <div className={clsx(
-                          'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium',
-                          isToday ? 'bg-ps-primary text-white shadow-sm' : 'bg-ps-bg text-ps-ink-2'
+                          'w-8 h-8 flex items-center justify-center text-sm tabular-nums',
+                          isToday ? 'border border-[var(--sa-gold)] text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
                         )}>
                           {dateNum}
                         </div>
                         <div>
-                          <span className={clsx('text-xs font-medium ', isToday ? 'text-ps-accent' : 'text-ps-ink-2')}>
+                          <span className={clsx('text-[11px]', isToday ? 'sa-t-warm' : 'text-[var(--sa-text-muted)]')}>
                             {WEEKDAYS_SHORT[idx]}
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-ps-bg text-ps-ink-2 border border-ps-border">
+                      <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                         {sessionCount}
                       </span>
                     </div>
@@ -561,7 +557,7 @@ const ScheduleCalendar = () => {
                       )}
                       style={{ top: i === 0 ? '1px' : `${i * 64}px` }}
                     >
-                      <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                      <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                         {formatHour(hour).replace(':00', '')}
                       </span>
                     </div>
@@ -570,7 +566,7 @@ const ScheduleCalendar = () => {
                     className="absolute right-0 pr-2 flex items-center justify-end -translate-y-1/2"
                     style={{ top: `${HOURS.length * 64}px` }}
                   >
-                    <span className="text-xs font-medium text-ps-ink-2 tabular-nums">
+                    <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                       {formatHour(18).replace(':00', '')}
                     </span>
                   </div>
@@ -592,9 +588,8 @@ const ScheduleCalendar = () => {
                     const isToday = formatDateISO(dayDate) === formatDateISO(new Date());
                     return (
                       <div key={day} className={clsx(
-                        'flex-1 relative border-l border-ps-border',
-                        dayIdx === 0 && 'border-l-0',
-                        isToday && 'bg-ps-accent-soft/20'
+                        'flex-1 relative border-l border-[var(--sa-line-hairline)]',
+                        dayIdx === 0 && 'border-l-0'
                       )}>
                         {isToday && <NowIndicator rowHeight={64} />}
 
@@ -650,10 +645,10 @@ const ScheduleCalendar = () => {
               exit={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className={clsx(
-                "bg-ps-surface flex flex-col z-50",
+                "bg-[var(--sa-surface-1)] flex flex-col z-50",
                 isMobile 
-                  ? "fixed bottom-0 left-0 right-0 h-[85vh] rounded-t-2xl shadow-md" 
-                  : "w-[360px] shrink-0 border-l border-ps-border h-full relative"
+                  ? "fixed bottom-0 left-0 right-0 h-[85vh]" 
+                  : "w-[360px] shrink-0 border-l border-[var(--sa-line-default)] h-full relative"
               )}
             >
             {(() => {
@@ -665,7 +660,7 @@ const ScheduleCalendar = () => {
                   <div className="p-5 relative overflow-hidden bg-[var(--sa-surface-warm)]">
                     <div className="relative">
                       <div className="flex justify-between items-start mb-3">
-                        <span className="text-[var(--sa-text-muted)] text-xs font-medium ">{cfg.label}</span>
+                        <span className="sa-badge">{cfg.label}</span>
                         <div className="flex items-center gap-1">
                           {pendingDelete ? (
                             <>
@@ -702,27 +697,27 @@ const ScheduleCalendar = () => {
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-[var(--sa-text-primary)] font-semibold text-lg leading-tight">{selectedSession.title}</h3>
+                      <h3 className="text-[var(--sa-text-primary)] text-lg leading-tight">{selectedSession.title}</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium">
-                          <Clock size={11} /> {formatHour(selectedSession.startHour)} – {formatHour(selectedSession.startHour + selectedSession.span)}
+                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-[11px] tabular-nums">
+                          <Clock size={11} strokeWidth={1.5} /> {formatHour(selectedSession.startHour)} – {formatHour(selectedSession.startHour + selectedSession.span)}
                         </span>
-                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium">
-                          <MapPin size={11} /> {selectedSession.room}
+                        <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-[11px]">
+                          <MapPin size={11} strokeWidth={1.5} /> {selectedSession.room}
                         </span>
-                        {provider && <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-xs font-medium"><Users size={11} /> {provider.name}</span>}
+                        {provider && <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-[11px]"><Users size={11} strokeWidth={1.5} /> {provider.name}</span>}
                       </div>
                       {hasConflict && (
-                        <div className="mt-3 flex items-center gap-2 border border-[var(--sa-danger)] px-3 py-1.5 text-[var(--sa-text-primary)]">
-                          <AlertCircle size={13} className="text-[var(--sa-danger)]" />
-                          <span className="text-xs font-medium">Scheduling Conflict Detected</span>
+                        <div className="mt-3 flex items-center gap-2 border border-[var(--sa-danger)] px-3 py-1.5 sa-t-danger">
+                          <AlertCircle size={13} strokeWidth={1.5} />
+                          <span className="text-[11px]">Scheduling Conflict Detected</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex border-b border-ps-border">
+                  <div className="flex border-b border-[var(--sa-line-hairline)]">
                     {[
                       { key: 'info', label: 'Details', icon: Info },
                       { key: 'reschedule', label: 'Reschedule', icon: RefreshCw },
@@ -731,14 +726,14 @@ const ScheduleCalendar = () => {
                         key={tab.key}
                         onClick={() => setDetailTab(tab.key)}
                         className={clsx(
-                          'flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium border-b-2 transition-colors',
-                          detailTab === tab.key ? 'text-ps-accent border-ps-accent' : 'text-ps-ink-2 border-transparent hover:text-ps-ink-2'
+                          'flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] uppercase tracking-[0.1em] border-b-2 transition-colors',
+                          detailTab === tab.key ? 'text-[var(--sa-text-primary)] border-[var(--sa-gold)]' : 'text-[var(--sa-text-muted)] border-transparent hover:text-[var(--sa-text-primary)]'
                         )}
                       >
-                        <tab.icon size={13} />
+                        <tab.icon size={13} strokeWidth={1.5} />
                         {tab.label}
                         {tab.key === 'reschedule' && hasConflict && (
-                          <span className="w-2 h-2 rounded-full bg-ps-danger/100" />
+                          <span className="w-1.5 h-1.5 bg-[var(--sa-danger)]" />
                         )}
                       </button>
                     ))}
@@ -747,21 +742,19 @@ const ScheduleCalendar = () => {
                   {/* Tab content */}
                   <div className="flex-1 overflow-y-auto p-5 space-y-4">
                     {detailTab === 'info' && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="sa-list">
                         {[
                           { icon: Users, label: 'Provider', value: provider?.name ?? '—', sub: provider?.role },
                           { icon: Clock, label: 'Time Slot', value: `${formatHour(selectedSession.startHour)} – ${formatHour(selectedSession.startHour + selectedSession.span)}`, sub: `${selectedSession.span}h duration` },
                           { icon: MapPin, label: 'Venue', value: selectedSession.room },
                           { icon: TrendingUp, label: 'Students', value: `${selectedSession.studentIds?.length ?? 0} enrolled` },
                         ].map(row => (
-                          <div key={row.label} className="flex items-start gap-3 p-3 bg-ps-bg rounded-xl">
-                            <div className="p-2 bg-ps-surface rounded-lg border border-ps-border shrink-0">
-                              <row.icon size={14} className="text-ps-ink-2" />
-                            </div>
+                          <div key={row.label} className="sa-row">
+                            <row.icon size={14} strokeWidth={1.5} className="mt-0.5 shrink-0 sa-t-muted" />
                             <div>
-                              <p className="text-xs font-medium  text-ps-ink-2">{row.label}</p>
-                              <p className="text-sm font-medium text-ps-ink-1 mt-0.5">{row.value}</p>
-                              {row.sub && <p className="text-xs text-ps-ink-2 font-medium">{row.sub}</p>}
+                              <p className="sa-row-meta">{row.label}</p>
+                              <p className="text-sm tabular-nums text-[var(--sa-text-primary)]">{row.value}</p>
+                              {row.sub && <p className="text-[11px] sa-t-muted">{row.sub}</p>}
                             </div>
                           </div>
                         ))}
@@ -771,19 +764,19 @@ const ScheduleCalendar = () => {
                     {detailTab === 'reschedule' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                         {hasConflict && (
-                          <div className="p-4 bg-ps-danger/10 border border-ps-danger/20 rounded-xl">
-                            <p className="text-xs font-medium text-ps-danger flex items-center gap-2 mb-1">
-                              <AlertCircle size={13} /> Conflict Detected
+                          <div className="p-4 border border-[var(--sa-danger)] space-y-1 sa-t-danger">
+                            <p className="text-[11px] flex items-center gap-2">
+                              <AlertCircle size={13} strokeWidth={1.5} /> Conflict Detected
                             </p>
-                            <p className="text-xs text-ps-danger font-medium leading-relaxed">
+                            <p className="text-[11px] leading-relaxed">
                               This session overlaps with another session for the same therapist or room.
                             </p>
                           </div>
                         )}
 
                         <div>
-                          <h5 className="text-xs font-semibold text-ps-ink-2  mb-3 flex items-center gap-2">
-                            <Zap size={12} className="text-ps-warn" /> Smart Suggestions
+                          <h5 className="sa-micro mb-3 flex items-center gap-2">
+                            <Zap size={12} strokeWidth={1.5} /> Smart Suggestions
                           </h5>
                           <div className="space-y-2">
                             {(() => {
@@ -792,27 +785,26 @@ const ScheduleCalendar = () => {
                                 .filter(newHour => newHour + selectedSession.span <= 17 && !slotHasConflict(newHour));
                               if (suggestions.length === 0) {
                                 return (
-                                  <p className="text-xs text-ps-ink-2 font-medium">No suggested slots left today (last start 17:00) — drag the session to another room or day.</p>
+                                  <p className="text-[11px] sa-t-muted">No suggested slots left today (last start 17:00) — drag the session to another room or day.</p>
                                 );
                               }
                               return suggestions.map(newHour => (
                                 <motion.button
                                   key={newHour}
-                                  whileHover={{ scale: 1.01 }}
                                   onClick={() => handleReschedule(newHour)}
-                                  className="w-full text-left p-3.5 rounded-xl border-2 border-ps-success/20 bg-ps-success/5 hover:border-ps-success/40 hover:shadow-sm transition-all group"
+                                  className="w-full text-left p-3.5 border border-[var(--sa-line-default)] hover:border-[var(--sa-line-strong)] sa-t-warm"
                                 >
                                   <div className="flex justify-between items-center">
                                     <div>
-                                      <span className="font-medium text-ps-success text-sm">{formatHour(newHour)}</span>
-                                      <span className="text-ps-success text-xs mx-1">→</span>
-                                      <span className="font-medium text-ps-success text-sm">{formatHour(newHour + selectedSession.span)}</span>
+                                      <span className="text-sm tabular-nums">{formatHour(newHour)}</span>
+                                      <span className="text-[11px] mx-1">→</span>
+                                      <span className="text-sm tabular-nums">{formatHour(newHour + selectedSession.span)}</span>
                                     </div>
-                                    <span className="px-3 py-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] text-[11px] uppercase tracking-[0.1em] transition-colors">
+                                    <span className="px-3 py-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] text-[11px] uppercase tracking-[0.1em]">
                                       Move
                                     </span>
                                   </div>
-                                  <p className="text-xs text-ps-success font-semibold mt-1">{selectedSession.room} · no conflict at this time</p>
+                                  <p className="text-[11px] mt-1">{selectedSession.room} · no conflict at this time</p>
                                 </motion.button>
                               ));
                             })()}
@@ -820,9 +812,9 @@ const ScheduleCalendar = () => {
                         </div>
 
                         {!hasConflict && (
-                          <div className="p-4 bg-ps-accent-soft border border-ps-accent/20 rounded-xl flex items-center gap-3">
-                            <CheckCircle2 size={18} className="text-ps-accent shrink-0" />
-                            <p className="text-xs text-ps-accent font-semibold">No conflicts — session is optimally placed.</p>
+                          <div className="p-4 border border-[var(--sa-line-default)] flex items-center gap-3 sa-t-warm">
+                            <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0" />
+                            <p className="text-[11px]">No conflicts — session is optimally placed.</p>
                           </div>
                         )}
                       </motion.div>

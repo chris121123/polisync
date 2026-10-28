@@ -3,8 +3,8 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const fieldCls = 'w-full px-3 py-2.5 bg-ps-bg border border-ps-border rounded-xl outline-none focus:border-ps-accent focus:ring-2 focus:ring-ps-accent/20 text-sm font-semibold text-ps-ink-1 transition-all';
-const labelCls = 'text-xs font-medium text-ps-ink-2 mb-1.5 block';
+const fieldCls = 'w-full px-3 py-2.5 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
+const labelCls = 'sa-label';
 const hhmm = (t) => String(t).slice(0, 5);
 
 export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
@@ -45,44 +45,44 @@ export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="availability-editor-title"
-        className="bg-ps-surface rounded-t-2xl md:rounded-2xl shadow-md w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 md:p-5 border-b border-ps-border flex items-start justify-between gap-3">
+        <div className="p-4 md:p-5 border-b border-[var(--sa-line-hairline)] flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-ps-ink-2">Student availability</p>
-            <h2 id="availability-editor-title" className="text-lg font-semibold text-ps-ink-1">{studentName}</h2>
+            <p className="sa-micro">Student availability</p>
+            <h2 id="availability-editor-title" className="sa-panel-title mt-1">{studentName}</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close availability editor" className="p-2 rounded-full hover:bg-ps-bg text-ps-ink-2 transition-colors">
-            <X size={18} />
+          <button type="button" onClick={onClose} aria-label="Close availability editor" className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
+            <X size={18} strokeWidth={1.5} />
           </button>
         </div>
 
         <div className="p-4 md:p-5 space-y-4 overflow-y-auto">
           {windows.length === 0 ? (
-            <p className="text-sm font-medium text-ps-ink-2">No availability windows yet — the scheduler cannot place this student until one exists.</p>
+            <p className="sa-empty-sub">No availability windows yet — the scheduler cannot place this student until one exists.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="sa-list">
               {windows.map(w => (
-                <li key={w.id} className="flex items-center justify-between gap-3 p-3 bg-ps-bg rounded-xl">
-                  <span className="text-sm font-medium text-ps-ink-1">
+                <li key={w.id} className="sa-row justify-between">
+                  <span className="text-sm tabular-nums text-[var(--sa-text-primary)]">
                     {DAYS[w.day_of_week] ?? w.day_of_week} · {hhmm(w.start_time)}–{hhmm(w.end_time)}
                   </span>
                   <button
                     type="button"
                     onClick={() => remove(w.id)}
                     aria-label={`Remove ${DAYS[w.day_of_week] ?? w.day_of_week} ${hhmm(w.start_time)}–${hhmm(w.end_time)}`}
-                    className="p-2 rounded-lg text-ps-ink-2 hover:text-ps-danger hover:bg-ps-surface transition-colors"
+                    className="p-2 text-[var(--sa-text-muted)] hover:text-[var(--sa-danger)]"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={16} strokeWidth={1.5} />
                   </button>
                 </li>
               ))}
             </ul>
           )}
 
-          <form onSubmit={add} className="space-y-3 border-t border-ps-border pt-4">
-            <h3 className="text-xs font-semibold text-ps-ink-1">Add window</h3>
+          <form onSubmit={add} className="space-y-3 border-t border-[var(--sa-line-hairline)] pt-4">
+            <h3 className="sa-micro">Add window</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label htmlFor="avail-day" className={labelCls}>Day</label>
@@ -99,13 +99,13 @@ export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
                 <input id="avail-end" type="time" required value={endTime} onChange={e => setEndTime(e.target.value)} className={fieldCls} />
               </div>
             </div>
-            {invalid && <p className="text-xs font-medium text-ps-danger">End time must be after start time.</p>}
+            {invalid && <p className="text-[11px] sa-t-danger">End time must be after start time.</p>}
             <button
               type="submit"
               disabled={saving || invalid}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-ps-primary text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="sa-btn sa-btn--primary justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Plus size={16} /> {saving ? 'Adding…' : 'Add window'}
+              <Plus size={16} strokeWidth={1.5} /> {saving ? 'Adding…' : 'Add window'}
             </button>
           </form>
         </div>
