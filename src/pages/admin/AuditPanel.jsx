@@ -17,41 +17,41 @@ export const AuditPanel = ({
   staff,
   getAuditBadge,
 }) => (
-  <div className="bg-ps-surface rounded-xl shadow-sm border border-ps-border overflow-hidden">
-    <div className="px-6 py-4 border-b border-ps-border">
-      <div className="flex items-center justify-between mb-3">
+  <div className="border border-[var(--sa-line-default)] bg-[var(--sa-surface-1)] overflow-hidden">
+    <div className="px-6 py-4 border-b border-[var(--sa-line-hairline)]">
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <h2 className="text-base font-semibold text-ps-ink-1">System Activity Log</h2>
-          <p className="text-xs text-ps-ink-2 mt-0.5">Immutable audit trail of administrative and identity events</p>
+          <h2 className="sa-panel-title">System Activity Log</h2>
+          <p className="sa-panel-sub">Immutable audit trail of administrative and identity events</p>
         </div>
         <button
           onClick={fetchAuditLogs}
-          className="text-xs font-medium text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+          className="sa-link shrink-0"
         >
           Refresh
         </button>
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={14} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
           <input
             type="text"
             value={auditSearch}
             onChange={e => setAuditSearch(e.target.value)}
             placeholder="Search action, actor, or target..."
-            className="w-full pl-9 pr-4 py-2 bg-ps-bg border border-ps-border rounded-lg text-xs text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] focus:outline-none focus:ring-2 focus:ring-ps-accent/20 focus:border-ps-accent"
+            className="w-full pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar shrink-0">
           {[['all','All'],['account','Accounts'],['role','Role Changes'],['status','Status']].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setAuditCategory(id)}
               className={clsx(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent',
+                'px-3 py-1.5 text-xs whitespace-nowrap',
                 auditCategory === id
-                  ? 'bg-ps-primary text-white'
-                  : 'bg-ps-surface border border-ps-border text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1'
+                  ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
+                  : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
               )}
             >
               {label}
@@ -64,22 +64,22 @@ export const AuditPanel = ({
     <div className="overflow-x-auto">
       {auditLoading && (
         <div className="p-12 text-center">
-          <div className="w-6 h-6 border-2 border-ps-accent border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-6 h-6 border-2 border-[var(--sa-gold)] border-t-transparent animate-spin mx-auto" />
         </div>
       )}
 
       {!auditLoading && auditLogs.length > 0 && (
-        <table className="w-full min-w-[700px]">
+        <table className="w-full min-w-[700px] text-left border-collapse">
           <thead>
-            <tr className="border-b border-ps-border bg-ps-bg/50">
-              <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Timestamp</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Action</th>
-              <th className="text-left px-6 py-3 text-xs font-medium text-ps-ink-2">Performed By</th>
-              <th className="hidden md:table-cell text-left px-6 py-3 text-xs font-medium text-ps-ink-2">IP Address</th>
-              <th className="text-right px-6 py-3 text-xs font-medium text-ps-ink-2">Details</th>
+            <tr className="border-b border-[var(--sa-line-default)]">
+              <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Timestamp</th>
+              <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Action</th>
+              <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Performed by</th>
+              <th className="hidden md:table-cell text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">IP address</th>
+              <th className="text-right px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Details</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-ps-border text-sm">
+          <tbody className="divide-y divide-[var(--sa-line-hairline)]">
             {filteredAuditLogs.map(log => {
               const { action, actor, target } = auditLine(log, staff);
               const badge = getAuditBadge(log.action);
@@ -88,42 +88,42 @@ export const AuditPanel = ({
 
               return (
                 <React.Fragment key={log.id}>
-                  <tr className="hover:bg-ps-bg/40 transition-colors">
-                    <td className="px-6 py-3.5 text-xs text-ps-ink-2 whitespace-nowrap">
+                  <tr className="hover:bg-[var(--sa-surface-2)] transition-colors">
+                    <td className="px-6 py-3.5 text-xs tabular-nums text-[var(--sa-text-muted)] whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full shrink-0', badge.color)}>
+                        <span className={clsx('text-xs', badge.color)}>
                           {action}
                         </span>
-                        {target && <span className="text-xs text-ps-ink-2 font-normal">→ {target}</span>}
+                        {target && <span className="text-xs text-[var(--sa-text-muted)]">→ {target}</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-3.5 text-xs text-ps-ink-2">
+                    <td className="px-6 py-3.5 text-xs text-[var(--sa-text-muted)]">
                       {actor}
                     </td>
-                    <td className="hidden md:table-cell px-6 py-3.5 text-xs text-ps-ink-2 font-mono">
+                    <td className="hidden md:table-cell px-6 py-3.5 text-xs tabular-nums sa-mono">
                       {log.ip_address || '—'}
                     </td>
                     <td className="px-6 py-3.5 text-right">
                       {hasDetails ? (
                         <button
                           onClick={() => toggleExpandLog(log.id)}
-                          className="inline-flex items-center gap-1 text-xs text-ps-accent hover:underline focus-visible:outline-2 focus-visible:outline-ps-accent"
+                          className="sa-link inline-flex"
                         >
-                          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          {isExpanded ? <ChevronDown size={14} strokeWidth={1.5} /> : <ChevronRight size={14} strokeWidth={1.5} />}
                           {isExpanded ? 'Hide' : 'View'}
                         </button>
                       ) : (
-                        <span className="text-xs text-ps-ink-2/60">—</span>
+                        <span className="text-xs text-[var(--sa-text-subtle)]">—</span>
                       )}
                     </td>
                   </tr>
                   {isExpanded && hasDetails && (
-                    <tr className="bg-ps-bg/60">
+                    <tr className="bg-[var(--sa-bg-base)]">
                       <td colSpan={5} className="px-6 py-3">
-                        <pre className="text-xs bg-ps-surface p-3 rounded-lg border border-ps-border text-ps-ink-2 overflow-x-auto font-mono">
+                        <pre className="sa-mono border border-[var(--sa-line-hairline)] p-3 overflow-x-auto">
                           {JSON.stringify(log.details, null, 2)}
                         </pre>
                       </td>
@@ -134,7 +134,7 @@ export const AuditPanel = ({
             })}
             {filteredAuditLogs.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-xs text-ps-ink-2">
+                <td colSpan={5} className="px-6 py-8 text-center text-xs text-[var(--sa-text-muted)]">
                   No entries match your search or filter.
                 </td>
               </tr>
@@ -144,10 +144,10 @@ export const AuditPanel = ({
       )}
 
       {!auditLoading && auditLogs.length === 0 && (
-        <div className="p-8 text-center text-ps-ink-2">
-          <Clock size={28} className="mx-auto mb-2 opacity-50" />
-          <p className="text-sm font-medium">No activity logs recorded</p>
-          <p className="text-xs mt-1">Actions like user creation and role changes will appear here.</p>
+        <div className="sa-empty m-4">
+          <Clock size={18} strokeWidth={1.5} className="mx-auto mb-2 text-[var(--sa-text-muted)]" />
+          <p className="sa-empty-title">No activity logs recorded</p>
+          <p className="sa-empty-sub">Actions like user creation and role changes will appear here.</p>
         </div>
       )}
     </div>

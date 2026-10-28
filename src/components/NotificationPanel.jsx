@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
-import { ROLE_COLORS, ROLE_LABELS } from '../lib/rolePalette';
+import { ROLE_LABELS } from '../lib/rolePalette';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -28,29 +28,28 @@ const timeAgo = (dateStr) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-// All rows collapse onto the five semantic ps-* tokens; the tint comes from
-// the token itself so light/dark need no separate class pair.
+// Every row shares one ink scale; type identity is carried by the label, not a tint.
 const NOTIFICATION_CONFIG = {
-  schedule_created: { icon: CalendarDays, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Schedule' },
-  schedule_updated: { icon: CalendarDays, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Schedule' },
-  schedule_cancelled: { icon: AlertTriangle, color: 'text-ps-danger', bg: 'bg-ps-danger/10', label: 'Cancelled' },
-  session_moved: { icon: Clock, color: 'text-ps-warn', bg: 'bg-ps-warn/10', label: 'Rescheduled' },
-  user_created: { icon: UserPlus, color: 'text-ps-success', bg: 'bg-ps-success/10', label: 'New User' },
-  role_changed: { icon: ShieldAlert, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Role Change' },
-  account_updated: { icon: Settings, color: 'text-ps-ink-2', bg: 'bg-ps-bg', label: 'Account' },
-  account_deactivated: { icon: BellOff, color: 'text-ps-danger', bg: 'bg-ps-danger/10', label: 'Deactivated' },
-  account_activated: { icon: Check, color: 'text-ps-success', bg: 'bg-ps-success/10', label: 'Activated' },
-  note_added: { icon: FileText, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Note' },
-  attendance_marked: { icon: BookUser, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Attendance' },
-  document_uploaded: { icon: FileText, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Document' },
-  room_updated: { icon: DoorOpen, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Room' },
-  child_update: { icon: GraduationCap, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Student' },
-  assignment_update: { icon: Stethoscope, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Assignment' },
-  system: { icon: Info, color: 'text-ps-ink-2', bg: 'bg-ps-bg', label: 'System' },
-  info: { icon: Info, color: 'text-ps-accent', bg: 'bg-ps-accent-soft', label: 'Info' },
-  warning: { icon: AlertTriangle, color: 'text-ps-warn', bg: 'bg-ps-warn/10', label: 'Warning' },
-  success: { icon: Check, color: 'text-ps-success', bg: 'bg-ps-success/10', label: 'Success' },
-  error: { icon: AlertTriangle, color: 'text-ps-danger', bg: 'bg-ps-danger/10', label: 'Error' },
+  schedule_created: { icon: CalendarDays, label: 'Schedule' },
+  schedule_updated: { icon: CalendarDays, label: 'Schedule' },
+  schedule_cancelled: { icon: AlertTriangle, label: 'Cancelled' },
+  session_moved: { icon: Clock, label: 'Rescheduled' },
+  user_created: { icon: UserPlus, label: 'New User' },
+  role_changed: { icon: ShieldAlert, label: 'Role Change' },
+  account_updated: { icon: Settings, label: 'Account' },
+  account_deactivated: { icon: BellOff, label: 'Deactivated' },
+  account_activated: { icon: Check, label: 'Activated' },
+  note_added: { icon: FileText, label: 'Note' },
+  attendance_marked: { icon: BookUser, label: 'Attendance' },
+  document_uploaded: { icon: FileText, label: 'Document' },
+  room_updated: { icon: DoorOpen, label: 'Room' },
+  child_update: { icon: GraduationCap, label: 'Student' },
+  assignment_update: { icon: Stethoscope, label: 'Assignment' },
+  system: { icon: Info, label: 'System' },
+  info: { icon: Info, label: 'Info' },
+  warning: { icon: AlertTriangle, label: 'Warning' },
+  success: { icon: Check, label: 'Success' },
+  error: { icon: AlertTriangle, label: 'Error' },
 };
 
 const getConfig = (notif) => {
@@ -122,12 +121,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
 
   const unreadCount = (notifications || []).filter((n) => !n.is_read).length;
 
-  const getRoleBadge = () => {
-    const colors = ROLE_COLORS[appRole] || ROLE_COLORS.teacher;
-    return { text: ROLE_LABELS[appRole] || ROLE_LABELS.teacher, cls: `${colors.bg} ${colors.text}` };
-  };
-
-  const badge = getRoleBadge();
+  const roleLabel = ROLE_LABELS[appRole] || ROLE_LABELS.teacher;
 
   return (
     <AnimatePresence>
@@ -150,64 +144,57 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
             className={clsx(
               "fixed md:absolute right-2 md:right-0 top-14 md:top-full md:mt-2 z-[100]",
               "w-[calc(100vw-16px)] md:w-[420px]",
-              "bg-ps-surface border border-ps-border",
-              "rounded-2xl shadow-md",
+              "bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)]",
               "flex flex-col max-h-[calc(100vh-80px)] md:max-h-[600px]",
               "overflow-hidden"
             )}
           >
             {/* ── Header ─────────────────────────────────────── */}
-            <div className="px-5 pt-5 pb-3 border-b border-ps-border">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-ps-accent-soft flex items-center justify-center">
-                    <Bell size={18} className="text-ps-accent" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-ps-ink-1 text-sm">Notifications</h3>
-                    <span className={clsx('text-xs font-semibold px-1.5 py-0.5 rounded-md', badge.cls)}>
-                      {badge.text}
-                    </span>
-                  </div>
+            <div className="border-b border-[var(--sa-line-hairline)] px-5 pt-4 pb-3">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <h2 className="flex items-center gap-2 text-sm text-[var(--sa-text-primary)]">
+                    <Bell size={16} strokeWidth={1.5} className="shrink-0 text-[var(--sa-text-muted)]" />
+                    Notifications
+                  </h2>
+                  <span className="sa-micro mt-1 block">{roleLabel}</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-2">
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllNotificationsRead}
-                      className="flex items-center gap-1 text-xs font-semibold text-ps-accent hover:bg-ps-accent-soft px-2.5 py-1.5 rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                      className="sa-link min-h-6"
                       title="Mark all as read"
                     >
-                      <CheckCheck size={14} />
+                      <CheckCheck size={14} strokeWidth={1.5} />
                       <span className="hidden sm:inline">Read all</span>
                     </button>
                   )}
                   <button
                     onClick={onClose}
-                    className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg rounded-lg transition-colors md:hidden focus-visible:outline-2 focus-visible:outline-ps-accent"
+                    className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] md:hidden"
                   >
-                    <X size={16} />
+                    <X size={16} strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
 
-              {/* Filter Tabs */}
-              <div className="flex gap-1 bg-ps-bg rounded-lg p-0.5">
+              {/* Filter Tabs — square hairline segmented control */}
+              <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
                 {FILTER_TABS.map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setFilter(tab.key)}
                     className={clsx(
-                      "flex-1 text-xs font-semibold py-1.5 rounded-md transition-all focus-visible:outline-2 focus-visible:outline-ps-accent",
+                      "flex-1 px-3 py-1.5 text-xs",
                       filter === tab.key
-                        ? "bg-ps-surface text-ps-ink-1 shadow-sm"
-                        : "text-ps-ink-2 hover:text-ps-ink-1"
+                        ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
+                        : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                     )}
                   >
                     {tab.label}
                     {tab.key === 'unread' && unreadCount > 0 && (
-                      <span className="ml-1 text-xs bg-ps-danger/10 text-ps-danger px-1.5 py-0.5 rounded-full">
-                        {unreadCount}
-                      </span>
+                      <span className="ml-1 text-[11px] tabular-nums">{unreadCount}</span>
                     )}
                   </button>
                 ))}
@@ -217,71 +204,51 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
             {/* ── Notification List ──────────────────────────── */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {filteredNotifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-ps-bg flex items-center justify-center mb-3">
-                    <BellOff size={24} className="text-ps-ink-2" />
-                  </div>
-                  <p className="text-sm font-semibold text-ps-ink-2">
+                <div className="sa-empty m-4">
+                  <BellOff size={18} strokeWidth={1.5} className="mx-auto mb-2 text-[var(--sa-text-muted)]" />
+                  <span className="sa-empty-title block">
                     {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
-                  </p>
-                  <p className="text-xs text-ps-ink-2 mt-1">
+                  </span>
+                  <span className="sa-empty-sub block">
                     {filter === 'unread'
                       ? "You've read all your notifications"
                       : 'Notifications will appear here when there are updates'}
-                  </p>
+                  </span>
                 </div>
               ) : (
-                <div className="py-1">
+                <div className="sa-list">
                   {filteredNotifications.map((notif) => {
                     const config = getConfig(notif);
                     const Icon = config.icon;
                     return (
                       <motion.div
                         key={notif.id}
-                        className={clsx(
-                          "group flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150",
-                          "hover:bg-ps-bg",
-                          !notif.is_read && "bg-ps-accent-soft border-l-2 border-ps-accent",
-                          notif.is_read && "border-l-2 border-transparent"
-                        )}
+                        className="sa-row group cursor-pointer px-5"
                         onClick={() => {
                           if (!notif.is_read) markNotificationRead(notif.id);
                         }}
                       >
-                        {/* Icon */}
-                        <div className={clsx(
-                          "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5",
-                          config.bg
-                        )}>
-                          <Icon size={16} className={config.color} />
-                        </div>
+                        {/* Unread marker — a 2px square, never a tinted row */}
+                        <span className={clsx('sa-marker', notif.is_read && 'invisible')} />
+
+                        <Icon size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)]" />
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={clsx(
-                              "text-sm leading-snug",
-                              !notif.is_read
-                                ? "font-semibold text-ps-ink-1"
-                                : "font-medium text-ps-ink-2"
-                            )}>
-                              {notif.title}
-                            </p>
-                            {!notif.is_read && (
-                              <span className="w-2 h-2 rounded-full bg-ps-primary flex-shrink-0 mt-1.5" />
-                            )}
-                          </div>
-                          <p className="text-xs text-ps-ink-2 mt-0.5 line-clamp-2 leading-relaxed">
+                          <span className={clsx(
+                            "block text-sm leading-snug",
+                            notif.is_read
+                              ? "text-[var(--sa-text-secondary)]"
+                              : "text-[var(--sa-text-primary)]"
+                          )}>
+                            {notif.title}
+                          </span>
+                          <span className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-[var(--sa-text-muted)]">
                             {notif.message}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className={clsx(
-                              "text-xs font-medium px-1.5 py-0.5 rounded",
-                              config.bg, config.color
-                            )}>
-                              {config.label}
-                            </span>
-                            <span className="text-xs text-ps-ink-2">
+                          </span>
+                          <div className="mt-1.5 flex items-center gap-3">
+                            <span className="sa-micro">{config.label}</span>
+                            <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                               {timeAgo(notif.created_at)}
                             </span>
                           </div>
@@ -293,10 +260,10 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                             e.stopPropagation();
                             deleteNotification(notif.id);
                           }}
-                          className="p-1.5 text-ps-ink-2 hover:text-ps-danger opacity-0 group-hover:opacity-100 max-md:opacity-100 focus-visible:opacity-100 transition-all rounded-lg hover:bg-ps-danger/10 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                          className="shrink-0 p-1.5 text-[var(--sa-text-muted)] opacity-0 transition-opacity hover:text-[var(--sa-danger)] focus-visible:opacity-100 group-hover:opacity-100 max-md:opacity-100"
                           title="Delete notification"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={14} strokeWidth={1.5} />
                         </button>
                       </motion.div>
                     );
@@ -307,11 +274,11 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
 
             {/* ── Footer ─────────────────────────────────────── */}
             {filteredNotifications.length > 0 && (
-              <div className="px-5 py-3 border-t border-ps-border bg-ps-bg">
-                <p className="text-xs text-ps-ink-2 text-center font-medium">
+              <div className="border-t border-[var(--sa-line-hairline)] px-5 py-3">
+                <span className="block text-center text-[11px] tabular-nums text-[var(--sa-text-muted)]">
                   Showing {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''}
                   {unreadCount > 0 && ` · ${unreadCount} unread`}
-                </p>
+                </span>
               </div>
             )}
           </motion.div>

@@ -235,50 +235,50 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-2xl bg-ps-surface rounded-2xl shadow-md border border-ps-border overflow-hidden max-h-[85vh] flex flex-col"
+          className="w-full max-w-2xl bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] overflow-hidden max-h-[85vh] flex flex-col"
         >
-          <div className="relative border-b border-ps-border p-3 sm:p-4 shrink-0">
-            <Search className="absolute left-5 sm:left-6 top-1/2 -translate-y-1/2 text-ps-ink-2" size={22} />
+          <div className="relative border-b border-[var(--sa-line-hairline)] p-3 sm:p-4 shrink-0">
+            <Search className="absolute left-5 sm:left-6 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={18} strokeWidth={1.5} />
             <input
               type="text"
               autoFocus
               placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
               aria-label="Global search"
-              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-base sm:text-lg bg-transparent border-none outline-none focus:ring-0 focus-visible:outline-2 focus-visible:outline-ps-accent text-ps-ink-1 placeholder:text-[var(--sa-text-subtle)] font-medium"
+              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-transparent border-none outline-none text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             {isSearching && (
-              <Loader2 className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 text-ps-accent animate-spin" size={20} />
+              <Loader2 className="absolute right-5 sm:right-6 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)] animate-spin" size={18} strokeWidth={1.5} />
             )}
           </div>
 
-          <div className="p-2 overflow-y-auto bg-ps-bg flex-1">
+          <div className="overflow-y-auto flex-1">
             {!query && (
-              <div className="p-8 text-center text-ps-ink-2">
-                <p className="text-sm font-medium">{isParent ? 'Search your linked children by name.' : 'Search for students, staff, rooms, sessions, or diagnoses.'}</p>
-                <p className="text-xs mt-2 text-ps-ink-2">{isParent ? "Try: your child's first name" : 'Try: "Room 5", "autism", "therapist", "speech"'}</p>
+              <div className="sa-empty m-3">
+                <p className="sa-empty-title">{isParent ? 'Search your linked children by name.' : 'Search for students, staff, rooms, sessions, or diagnoses.'}</p>
+                <p className="sa-empty-sub">{isParent ? "Try: your child's first name" : 'Try: "Room 5", "autism", "therapist", "speech"'}</p>
               </div>
             )}
             
-            {results.map((result) => (
-              <button
-                key={result.id}
-                onClick={() => handleResultClick(result)}
-                className="w-full flex items-start gap-4 p-4 text-left rounded-xl hover:bg-ps-surface hover:shadow-sm transition-all group focus-visible:outline-2 focus-visible:outline-ps-accent"
-              >
-                <div className="p-2.5 rounded-lg bg-ps-surface border border-ps-border group-hover:border-ps-accent text-ps-ink-2 group-hover:text-ps-accent shadow-sm">
-                  <result.icon size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-ps-ink-1 truncate">{result.title}</h4>
-                  <p className="text-xs font-medium text-ps-ink-2 mt-0.5 truncate">{result.sub}</p>
-                </div>
-                {result.action && (
-                  <ArrowRight size={16} className="text-ps-ink-2 group-hover:text-ps-accent shrink-0 mt-1 transition-colors" />
-                )}
-              </button>
-            ))}
+            <div className="sa-list">
+              {results.map((result) => (
+                <button
+                  key={result.id}
+                  onClick={() => handleResultClick(result)}
+                  className="sa-row w-full px-4 text-left group"
+                >
+                  <result.icon size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)]" />
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-sm text-[var(--sa-text-primary)]">{result.title}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-[var(--sa-text-muted)]">{result.sub}</p>
+                  </div>
+                  {result.action && (
+                    <ArrowRight size={14} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)] transition-colors group-hover:text-[var(--sa-text-primary)]" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
       </motion.div>

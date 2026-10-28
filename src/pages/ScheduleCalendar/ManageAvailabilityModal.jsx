@@ -34,50 +34,45 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 md:px-6">
         <div>
-          <label htmlFor="availability-date" className="mb-2 block text-xs font-medium text-ps-ink-2">Select Date</label>
+          <label htmlFor="availability-date" className="sa-label">Select Date</label>
           <input
             id="availability-date"
             data-autofocus
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            className="w-full rounded-xl border border-ps-border bg-ps-bg px-4 py-3 text-sm font-semibold text-ps-ink-1 outline-none transition-all focus:border-ps-success focus:ring-2 focus:ring-ps-success/20"
+            className="w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
           />
-          <p className="mt-1 text-xs font-medium text-ps-ink-2">{dayLabel}</p>
+          <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">{dayLabel}</p>
         </div>
 
-        <p className="text-sm font-semibold text-ps-ink-2">
-          <span className="font-medium text-ps-success">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
+        <p className="text-sm text-[var(--sa-text-secondary)]">
+          <span className="tabular-nums sa-t-warm">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
         </p>
 
-        <ul className="max-h-[300px] space-y-2 overflow-y-auto">
+        <ul className="max-h-[300px] overflow-y-auto border border-[var(--sa-line-default)] sa-list">
           {therapistsAndTeachers.map(person => {
             const isAvailable = availableIdsForDate.includes(person.id);
             return (
               <li
                 key={person.id}
-                className={clsx(
-                  'flex items-center gap-3 rounded-xl border-2 p-3',
-                  isAvailable
-                    ? 'border-ps-success/20 bg-ps-success/10'
-                    : 'border-ps-border bg-ps-surface'
-                )}
+                className="flex items-center gap-3 px-4 py-3"
               >
-                <div className={clsx(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                  isAvailable ? 'border border-[var(--sa-success)] text-[var(--sa-success)]' : 'bg-ps-bg text-ps-ink-2'
-                )}>
-                  {isAvailable ? <CheckCircle2 size={16} /> : <UserCheck size={16} />}
-                </div>
+                {isAvailable
+                  ? <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0 sa-t-warm" />
+                  : <UserCheck size={16} strokeWidth={1.5} className="shrink-0 text-[var(--sa-text-subtle)]" />}
                 <div className="min-w-0 flex-1">
-                  <p className={clsx('truncate text-sm font-semibold', isAvailable ? 'text-ps-success' : 'text-ps-ink-2')}>
+                  <p className={clsx(
+                    'truncate text-sm',
+                    isAvailable ? 'text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
+                  )}>
                     {person.name}
                   </p>
-                  <p className="truncate text-xs font-medium text-ps-ink-2">{person.role} · {person.department || 'General'}</p>
+                  <p className="truncate text-[11px] text-[var(--sa-text-muted)]">{person.role} · {person.department || 'General'}</p>
                 </div>
                 <span className={clsx(
-                  'shrink-0 rounded-lg px-2 py-1 text-xs font-medium',
-                  isAvailable ? 'bg-ps-success/10 text-ps-success' : 'bg-ps-bg text-ps-ink-2'
+                  'sa-badge shrink-0',
+                  isAvailable && 'sa-badge--positive'
                 )}>
                   {isAvailable ? 'Available' : 'Not marked'}
                 </span>
@@ -87,11 +82,11 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
         </ul>
       </div>
 
-      <div className="shrink-0 border-t border-ps-border bg-ps-surface px-5 py-4 md:px-6">
+      <div className="shrink-0 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
         <button
           type="button"
           onClick={onClose}
-          className="w-full rounded-xl bg-ps-primary py-3 text-sm font-medium text-white shadow-sm transition-all hover:opacity-90"
+          className="sa-btn w-full justify-center min-h-11"
         >
           Close
         </button>
