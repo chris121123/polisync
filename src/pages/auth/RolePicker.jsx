@@ -45,11 +45,11 @@ const RolePicker = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-white/95 dark:bg-ps-surface/95 backdrop-blur rounded-2xl max-w-md w-full p-6 sm:p-8 space-y-6 my-auto"
+        className="w-full max-w-[420px] bg-ps-surface border border-ps-border p-6 sm:p-8 space-y-6"
       >
-        <div className="flex flex-col items-start space-y-2">
-          <h2 className="font-display font-semibold text-3xl text-ps-ink-1">Sign in to PoliSync</h2>
-          <p className="text-ps-ink-2 text-sm">Choose the account type you use.</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl text-ps-ink-1">Sign in to PoliSync</h1>
+          <p className="text-sm text-ps-ink-2">Choose the account type you use.</p>
           <p className="text-xs text-ps-ink-2">Accounts are created by the center’s administrator.</p>
         </div>
 
@@ -61,31 +61,29 @@ const RolePicker = () => {
                 key={role.id}
                 type="button"
                 onClick={() => navigate(`/login/${role.id}`)}
-                className="w-full flex items-center gap-3 min-h-[44px] p-3 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+                className="w-full flex items-center gap-3 min-h-[52px] px-4 border border-ps-border bg-transparent text-left transition-colors cursor-pointer hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)]"
               >
-                <span className="p-2 rounded-lg bg-ps-surface text-ps-ink-1 shrink-0">
-                  <Icon size={18} />
-                </span>
+                <Icon size={16} strokeWidth={1.5} className="shrink-0 text-ps-ink-2" />
                 <span className="flex-1">
-                  <span className="block text-sm font-semibold text-ps-ink-1">{role.label}</span>
+                  <span className="block text-sm text-ps-ink-1">{role.label}</span>
                   <span className="block text-xs text-ps-ink-2">{role.hint}</span>
                 </span>
-                <ArrowRight size={16} className="shrink-0 text-ps-ink-2" />
+                <ArrowRight size={14} strokeWidth={1.5} className="shrink-0 text-ps-ink-2" />
               </button>
             );
           })}
         </nav>
 
         {demoAccounts.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <button
               type="button"
               onClick={() => setShowDemo((s) => !s)}
               aria-expanded={showDemo}
               aria-controls="demo-accounts-grid"
-              className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+              className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-3 border border-ps-border bg-transparent transition-colors cursor-pointer hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)]"
             >
-              <span className="block text-xs font-semibold uppercase tracking-wide text-ps-ink-2">Demo accounts</span>
+              <span className="block text-xs text-ps-ink-1">Demo accounts</span>
               <span className="block text-xs text-ps-ink-2">{showDemo ? 'Tap a role to sign in.' : 'Tap to show demo accounts.'}</span>
             </button>
             {showDemo && (
@@ -96,7 +94,7 @@ const RolePicker = () => {
                     type="button"
                     onClick={() => handleDemoLogin(account)}
                     disabled={demoLoading}
-                    className="min-h-[44px] px-2 rounded-xl border border-ps-border bg-ps-bg hover:bg-ps-accent-soft text-xs font-medium text-ps-ink-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                    className="min-h-[44px] px-2 border border-ps-border bg-transparent text-xs text-ps-ink-1 hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
                   </button>
@@ -104,19 +102,19 @@ const RolePicker = () => {
               </div>
             )}
             {showDemo && demoError && (
-              <p className="text-xs text-ps-danger font-medium text-center">{demoError}</p>
+              <p className="text-xs text-ps-danger text-center">{demoError}</p>
             )}
           </div>
         )}
 
-        <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3 text-xs text-ps-ink-2 font-medium">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-ps-success" />
+        <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3">
+          <p className="flex items-center gap-2 text-[11px] text-ps-ink-2">
+            <ShieldCheck size={14} strokeWidth={1.5} className="text-ps-success" />
             <span>Secure access • Role-based • SPED Center</span>
-          </div>
+          </p>
           <nav aria-label="About PoliSync" className="flex items-center gap-4">
-            <Link to="/about" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">About this system</Link>
-            <Link to="/faq" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">FAQ</Link>
+            <Link to="/about" className="sa-link min-h-[44px]">About this system</Link>
+            <Link to="/faq" className="sa-link min-h-[44px]">FAQ</Link>
           </nav>
         </div>
       </motion.div>

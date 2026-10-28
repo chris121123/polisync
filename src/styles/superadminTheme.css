@@ -231,8 +231,10 @@ html:not(.dark) .sa-theme {
   border-bottom: 1px solid var(--sa-line-hairline);
 }
 
-/* Wordmark: uppercase, hairline tracked, weight 300, outlined gold mark. */
-.sa-theme > header h1 {
+/* Wordmark: uppercase, hairline tracked, weight 300, outlined gold mark.
+   `.sa-wordmark` reuses it on the public auth plate. */
+.sa-theme > header h1,
+.sa-wordmark {
   font-size: 16px;
   font-weight: 300;
   line-height: 1.2;
@@ -241,7 +243,8 @@ html:not(.dark) .sa-theme {
   color: var(--sa-text-primary);
 }
 
-.sa-theme > header h1::after {
+.sa-theme > header h1::after,
+.sa-wordmark::after {
   content: '';
   display: inline-block;
   width: 6px;
@@ -658,4 +661,91 @@ html:not(.dark) .sa-theme {
 
 .sa-link:hover {
   color: var(--sa-text-primary);
+}
+
+/* ── Auth primitives (public login / recovery pages) ────────────────── */
+.sa-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+.sa-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 12px 11px 40px;
+  border: 1px solid var(--sa-line-default);
+  background: var(--sa-bg-base);
+  color: var(--sa-text-primary);
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+}
+
+.sa-input::placeholder {
+  color: var(--sa-text-subtle);
+}
+
+/* Declared before :focus so an invalid field still turns gold while focused;
+   otherwise the danger border would be its only focus mark and the outline is off. */
+.sa-input[aria-invalid="true"] {
+  border-color: var(--sa-danger);
+}
+
+.sa-input:focus {
+  border-color: var(--sa-gold);
+}
+
+/* The gold border is the field's focus mark; the app-wide outline would draw a second ring. */
+.sa-theme .sa-input:focus-visible {
+  outline: none;
+}
+
+.sa-field-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sa-text-muted);
+  pointer-events: none;
+}
+
+.sa-btn--block {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+}
+
+/* State panels: hairline + ink, never a tinted fill. */
+.sa-alert {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--sa-line-default);
+  font-size: 13px;
+  color: var(--sa-text-secondary);
+}
+
+.sa-alert--danger {
+  border-color: var(--sa-danger);
+  color: var(--sa-danger);
+}
+
+.sa-alert--success {
+  border-color: var(--sa-success);
+  color: var(--sa-success);
+}
+
+/* Failed-attempt marks: a square bar, not a dot. */
+.sa-attempt {
+  width: 2px;
+  height: 16px;
+  background: var(--sa-line-default);
+}
+
+.sa-attempt--spent {
+  background: var(--sa-danger);
 }

@@ -35,22 +35,22 @@ const ForgotPassword = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="bg-white/95 dark:bg-ps-surface/95 backdrop-blur rounded-2xl max-w-md w-full space-y-6 my-auto p-6 sm:p-8"
+        className="w-full max-w-[420px] bg-ps-surface border border-ps-border p-6 sm:p-8 space-y-6"
       >
-        <div className="flex flex-col items-start space-y-2">
-          <h2 className="font-display font-semibold text-3xl text-ps-ink-1">Forgot password</h2>
-          <p className="text-ps-ink-2 text-sm">We will email you a link to set a new password.</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl text-ps-ink-1">Forgot password</h1>
+          <p className="text-sm text-ps-ink-2">We will email you a link to set a new password.</p>
         </div>
 
         {sent ? (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-ps-success/10 border border-ps-success/20 flex items-center gap-3 text-sm text-ps-success font-medium">
-              <ShieldCheck size={18} className="shrink-0" />
+            <div className="sa-alert sa-alert--success items-center">
+              <ShieldCheck size={16} strokeWidth={1.5} className="shrink-0" />
               <span>If an account exists for that address, a recovery email has been sent.</span>
             </div>
             <Link
               to="/login"
-              className="w-full inline-flex items-center justify-center min-h-[44px] rounded-lg text-xs font-medium text-ps-accent hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="sa-link w-full justify-center min-h-[44px]"
             >
               Back to sign in
             </Link>
@@ -58,18 +58,18 @@ const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-4 rounded-xl bg-ps-danger/10 border border-ps-danger/20 flex items-center gap-3 text-ps-danger text-sm">
-                <AlertCircle size={18} className="shrink-0 text-ps-danger" />
+              <div className="sa-alert sa-alert--danger items-center">
+                <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <label htmlFor="forgot-email" className="block text-xs font-medium text-ps-ink-2">
+            <div>
+              <label htmlFor="forgot-email" className="sa-label">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
+                <Mail className="sa-field-icon" size={16} strokeWidth={1.5} />
                 <input
                   id="forgot-email"
                   name="email"
@@ -79,7 +79,7 @@ const ForgotPassword = () => {
                   disabled={sending}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@center.com"
-                  className="w-full pl-11 pr-4 py-3 bg-ps-surface border border-ps-border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 focus:border-ps-accent focus:ring-4 focus:ring-ps-accent/10"
+                  className="sa-input disabled:opacity-40"
                 />
               </div>
             </div>
@@ -87,21 +87,21 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={sending}
-              className="w-full py-3.5 bg-ps-primary hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {sending ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--sa-gold)] border-t-transparent animate-spin" />
               ) : (
                 <>
                   <span>Send recovery link</span>
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={14} strokeWidth={1.5} />
                 </>
               )}
             </button>
 
             <Link
               to="/login"
-              className="w-full inline-flex items-center justify-center min-h-[44px] rounded-lg text-xs font-medium text-ps-accent hover:underline cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="sa-link w-full justify-center min-h-[44px]"
             >
               Back to sign in
             </Link>

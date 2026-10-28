@@ -136,20 +136,20 @@ const Login = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-white/95 dark:bg-ps-surface/95 backdrop-blur rounded-2xl max-w-md w-full space-y-6 sm:space-y-8 my-auto p-6 sm:p-8"
+          className="w-full max-w-[420px] bg-ps-surface border border-ps-border p-6 sm:p-8 space-y-6"
         >
           {/* Form Header */}
-          <div className="flex flex-col items-start space-y-2">
+          <div className="flex flex-col items-start gap-2">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-medium text-ps-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+              className="sa-link min-h-[44px]"
             >
-              <ArrowLeft size={14} /> Choose a different role
+              <ArrowLeft size={14} strokeWidth={1.5} /> Choose a different role
             </Link>
-            <h2 className="font-display font-semibold text-3xl text-ps-ink-1">
+            <h1 className="text-2xl text-ps-ink-1">
               Sign in
-            </h2>
-            <p className="text-ps-ink-2 text-sm">
+            </h1>
+            <p className="text-sm text-ps-ink-2">
               Signing in as {activeRole.label}.
             </p>
           </div>
@@ -159,38 +159,36 @@ const Login = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-5 rounded-2xl bg-ps-danger/10 border border-ps-danger/20 space-y-3"
+              className="sa-alert sa-alert--danger flex-col"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-ps-danger/10 text-ps-danger rounded-xl">
-                  <ShieldOff size={20} />
-                </div>
+                <ShieldOff size={16} strokeWidth={1.5} className="shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-ps-ink-1">Account Access Locked</p>
-                  <p className="text-xs text-ps-danger">Multiple failed attempts detected.</p>
+                  <p className="text-sm">Account Access Locked</p>
+                  <p className="text-xs">Multiple failed attempts detected.</p>
                 </div>
               </div>
-              <p className="text-xs text-ps-danger leading-relaxed">
+              <p className="text-xs leading-relaxed">
                 For security reasons, your login has been temporarily disabled.
               </p>
               {resetSent ? (
-                <div className="text-xs text-ps-success font-medium bg-ps-success/10 p-3 rounded-xl border border-ps-success/20 flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-ps-success shrink-0" />
-                  <span>A recovery email has been sent to <strong>{email.trim()}</strong>.</span>
+                <div className="sa-alert sa-alert--success items-center">
+                  <ShieldCheck size={16} strokeWidth={1.5} className="shrink-0" />
+                  <span>A recovery email has been sent to <strong className="font-medium">{email.trim()}</strong>.</span>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => sendResetEmail(email)}
-                    className="inline-flex items-center min-h-[44px] text-xs font-medium text-ps-danger hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+                    className="sa-link min-h-[44px] self-start"
                   >
                     Send password reset email to {email.trim()} →
                   </button>
                   <button
                     type="button"
                     onClick={() => { setIsLockedOut(false); setFailedAttempts(0); setError(''); }}
-                    className="min-h-[44px] text-xs font-semibold text-ps-accent hover:underline text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent"
+                    className="sa-link min-h-[44px] self-start"
                   >
                     Reset attempt counter
                   </button>
@@ -204,9 +202,9 @@ const Login = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-4 rounded-xl bg-ps-danger/10 border border-ps-danger/20 flex items-center gap-3 text-ps-danger text-sm"
+              className="sa-alert sa-alert--danger items-center"
             >
-              <AlertCircle size={18} className="shrink-0 text-ps-danger" />
+              <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
               <span>{error}</span>
             </motion.div>
           )}
@@ -214,12 +212,12 @@ const Login = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
-            <div className="space-y-1.5">
-              <label htmlFor="login-email" className="block text-xs font-medium text-ps-ink-2">
+            <div>
+              <label htmlFor="login-email" className="sa-label">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
+                <Mail className="sa-field-icon" size={16} strokeWidth={1.5} />
                 <input
                   id="login-email"
                   name="email"
@@ -233,27 +231,24 @@ const Login = () => {
                   }}
                   onBlur={() => validateField('email')}
                   placeholder="name@center.com"
-                  className={`w-full pl-11 pr-4 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
-                    fieldErrors.email
-                      ? 'border-ps-danger ring-2 ring-ps-danger/20'
-                      : 'border-ps-border focus:border-ps-accent focus:ring-4 focus:ring-ps-accent/10'
-                  }`}
+                  aria-invalid={fieldErrors.email ? 'true' : undefined}
+                  className="sa-input disabled:opacity-40"
                 />
               </div>
               {fieldErrors.email && (
-                <p className="text-xs text-ps-danger font-medium flex items-center gap-1 mt-1">
-                  <AlertCircle size={12} /> {fieldErrors.email}
+                <p className="mt-1 flex items-center gap-1 text-xs text-ps-danger">
+                  <AlertCircle size={12} strokeWidth={1.5} /> {fieldErrors.email}
                 </p>
               )}
             </div>
 
             {/* Password Field */}
-            <div className="space-y-1.5">
-              <label htmlFor="login-password" className="block text-xs font-medium text-ps-ink-2">
+            <div>
+              <label htmlFor="login-password" className="sa-label">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
+                <Lock className="sa-field-icon" size={16} strokeWidth={1.5} />
                 <input
                   id="login-password"
                   name="password"
@@ -267,11 +262,8 @@ const Login = () => {
                   }}
                   onBlur={() => validateField('password')}
                   placeholder="••••••••"
-                  className={`w-full pl-11 pr-12 py-3 bg-ps-surface border rounded-xl text-sm font-medium transition-all outline-none disabled:opacity-50 ${
-                    fieldErrors.password
-                      ? 'border-ps-danger ring-2 ring-ps-danger/20'
-                      : 'border-ps-border focus:border-ps-accent focus:ring-4 focus:ring-ps-accent/10'
-                  }`}
+                  aria-invalid={fieldErrors.password ? 'true' : undefined}
+                  className="sa-input disabled:opacity-40"
                 />
                 <button
                   type="button"
@@ -281,34 +273,30 @@ const Login = () => {
                   disabled={isLockedOut}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   aria-pressed={showPassword}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-ps-ink-2 hover:text-ps-ink-1 disabled:opacity-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center text-ps-ink-2 hover:text-ps-ink-1 disabled:opacity-40 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>
               {fieldErrors.password && (
-                <p className="text-xs text-ps-danger font-medium flex items-center gap-1 mt-1">
-                  <AlertCircle size={12} /> {fieldErrors.password}
+                <p className="mt-1 flex items-center gap-1 text-xs text-ps-danger">
+                  <AlertCircle size={12} strokeWidth={1.5} /> {fieldErrors.password}
                 </p>
               )}
               {password.length > 0 && password !== password.trim() && (
-                <p className="text-xs text-ps-warn font-medium">Spaces at the start or end count as part of your password.</p>
+                <p className="mt-1 text-xs text-ps-warn">Spaces at the start or end count as part of your password.</p>
               )}
             </div>
 
-            {/* Segmented Attempt Dots */}
+            {/* Failed-attempt marks */}
             {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && !isLockedOut && (
               <div className="flex items-center justify-between gap-1.5 pt-1">
-                <span className="text-xs font-medium text-ps-ink-2">Security check</span>
+                <span className="text-xs text-ps-ink-2">Security check</span>
                 <div className="flex gap-1.5">
                   {[...Array(MAX_ATTEMPTS)].map((_, i) => (
                     <div
                       key={i}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
-                        i < failedAttempts 
-                          ? 'bg-ps-danger ring-2 ring-ps-danger/30' 
-                          : 'bg-ps-border'
-                      }`}
+                      className={i < failedAttempts ? 'sa-attempt sa-attempt--spent' : 'sa-attempt'}
                     />
                   ))}
                 </div>
@@ -319,16 +307,16 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || isLockedOut}
-              className="w-full py-3.5 bg-ps-primary hover:opacity-90 text-white font-semibold rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--sa-gold)] border-t-transparent animate-spin" />
               ) : isLockedOut ? (
                 'Access Locked'
               ) : (
                 <>
                   <span>Sign In</span>
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={14} strokeWidth={1.5} />
                 </>
               )}
             </button>
@@ -336,21 +324,21 @@ const Login = () => {
             {/* Forgot Password */}
             <Link
               to="/forgot-password"
-              className="w-full inline-flex items-center justify-center min-h-[44px] rounded-lg text-xs font-medium text-ps-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="sa-link w-full justify-center min-h-[44px]"
             >
               Forgot password?
             </Link>
           </form>
 
-          {/* Trust Badge at bottom */}
-          <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3 text-xs text-ps-ink-2 font-medium">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={14} className="text-ps-success" />
+          {/* Trust line at bottom */}
+          <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3">
+            <p className="flex items-center gap-2 text-[11px] text-ps-ink-2">
+              <ShieldCheck size={14} strokeWidth={1.5} className="text-ps-success" />
               <span>Secure access • Role-based • SPED Center</span>
-            </div>
+            </p>
             <nav aria-label="About PoliSync" className="flex items-center gap-4">
-              <Link to="/about" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">About this system</Link>
-              <Link to="/faq" className="inline-flex items-center min-h-[44px] cursor-pointer hover:text-ps-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ps-accent">FAQ</Link>
+              <Link to="/about" className="sa-link min-h-[44px]">About this system</Link>
+              <Link to="/faq" className="sa-link min-h-[44px]">FAQ</Link>
             </nav>
           </div>
         </motion.div>
