@@ -254,7 +254,8 @@ html:not(.dark) .sa-theme {
   transform: translateY(-2px) rotate(45deg);
 }
 
-.sa-theme > header p {
+/* The subline only: `.sa-wordmark` is a <p> too and carries the h1 rules above. */
+.sa-theme > header p:not(.sa-wordmark) {
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;

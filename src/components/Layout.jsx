@@ -137,7 +137,7 @@ const Layout = () => {
                 <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="font-semibold text-base text-ps-ink-1 leading-tight">PoliSync</h1>
+                <p className="sa-wordmark font-semibold text-base text-ps-ink-1 leading-tight">PoliSync</p>
                 <p className="text-ps-ink-2 text-[11px]">Polikids Center</p>
               </div>
             </div>
