@@ -7,6 +7,7 @@ import GlobalSearch from './GlobalSearch';
 import NotificationPanel from './NotificationPanel';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { useGlobalState } from '../context/GlobalStateContext';
+import '../styles/superadminTheme.css';
 
 const getInitials = (name) => {
   if (!name) return 'U';
@@ -21,7 +22,7 @@ const Layout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const { user, appRole, logout, notifications } = useGlobalState();
+  const { user, appRole, logout, notifications, isSuperAdmin } = useGlobalState();
   const navigate = useNavigate();
   const bellRef = useRef(null);
 
@@ -115,7 +116,7 @@ const Layout = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen w-full bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors duration-300">
+    <div className={clsx('flex flex-col h-screen w-full bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors duration-300', isSuperAdmin() && 'sa-theme')}>
       
       {/* ── Top Header ────────────────────────────────────────────────── */}
       <header className="h-16 flex-shrink-0 bg-ps-surface border-b border-ps-border flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm transition-colors">

@@ -31,6 +31,7 @@ dist-ssr
 # Local agent customizations & skills
 .agents/*.md
 .agents/skills/
+.taste-skill/
 
 docs/
 

@@ -15,13 +15,12 @@ import {
   WifiOff,
   Loader2,
   Zap,
+  MoreVertical,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine } from '../../lib/auditLog';
-import { StatCard } from '../admin/AdminDashboard';
-import { ROLE_COLORS, ROLE_LABELS } from '../../lib/rolePalette';
+import { ROLE_LABELS } from '../../lib/rolePalette';
 
 const EDGE_FUNCTIONS = [
   'admin-create-user',
@@ -29,6 +28,26 @@ const EDGE_FUNCTIONS = [
   'auto-scheduler',
   'send-notification',
 ];
+
+// ── Local KPI card ─────────────────────────────────────────────────────
+// The shared StatCard belongs to AdminDashboard and must stay untouched
+// (ADR-3), so the superadmin page renders its own card off the same data.
+const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lead = false }) => (
+  <div className="sa-panel sa-kpi">
+    <div className="sa-kpi-head">
+      <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
+      <p className="sa-micro">{title}</p>
+      <span className="sa-kpi-kebab" aria-hidden="true">
+        <MoreVertical size={14} strokeWidth={1.5} />
+      </span>
+    </div>
+    <p className={lead ? 'sa-kpi-value sa-kpi-value--lead' : 'sa-kpi-value'}>{value}</p>
+    <div className="sa-kpi-foot">
+      <p className="sa-kpi-sub">{subtext}</p>
+      {badge && <span className={badgeTone ? `sa-badge sa-badge--${badgeTone}` : 'sa-badge'}>{badge}</span>}
+    </div>
+  </div>
+);
 
 // ── Connection Ping ────────────────────────────────────────────────────
 function useConnectionStatus(checkConnection) {
@@ -89,105 +108,103 @@ const SuperAdminDashboard = () => {
     role,
     count: staff.filter(s => s.app_role === role).length,
     label: ROLE_LABELS[role],
-    colors: ROLE_COLORS[role],
   }));
   const totalForDistribution = roleCounts.reduce((acc, r) => acc + r.count, 0) || 1;
+  // Only the largest role's bar takes the gold accent (gold rationing).
+  const topRole = roleCounts.reduce((top, r) => (r.count > top.count ? r : top), { count: -1 }).role;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
 
       {/* ── Page Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ps-border/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="text-2xl font-display font-semibold text-ps-ink-1 tracking-tight">
+          <h1 className="sa-title">
             Platform Overview
           </h1>
-          <p className="text-xs text-ps-ink-2 font-medium mt-0.5">
+          <p className="sa-sub">
             System administration and account governance
           </p>
         </div>
         <button
           onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
-          className="flex items-center gap-2 bg-ps-primary hover:opacity-90 active:scale-95 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm self-start sm:self-auto"
+          className="sa-btn sa-btn--primary self-start sm:self-auto"
         >
-          <UserPlus size={16} strokeWidth={2} />
+          <UserPlus size={16} strokeWidth={1.5} />
           <span>Create User</span>
         </button>
       </div>
 
       {/* ── Account Metric Cards ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
-        <StatCard
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KpiCard
           title="Total Accounts"
           value={totalAccounts}
           icon={Users}
           subtext="All registered platform users"
           badge={totalAccounts > 0 ? 'System-wide' : 'No accounts yet'}
-          badgeColor="bg-ps-bg text-ps-ink-2 border border-ps-border"
+          lead
         />
-        <StatCard
+        <KpiCard
           title="Active Accounts"
           value={activeAccounts}
           icon={UserCheck}
           subtext={`${totalAccounts > 0 ? Math.round((activeAccounts / totalAccounts) * 100) : 0}% of all accounts`}
           badge="Online"
-          badgeColor="bg-ps-success/10 text-ps-success"
+          badgeTone="positive"
         />
-        <StatCard
+        <KpiCard
           title="Inactive Accounts"
           value={inactiveAccounts}
           icon={UserX}
           subtext={inactiveAccounts > 0 ? 'Deactivated by admin' : 'No inactive accounts'}
           badge={inactiveAccounts > 0 ? 'Suspended' : 'Clear'}
-          badgeColor={inactiveAccounts > 0 ? 'bg-ps-warn/10 text-ps-warn' : 'bg-ps-success/10 text-ps-success'}
+          badgeTone={inactiveAccounts > 0 ? 'warn' : 'positive'}
         />
-        <StatCard
+        <KpiCard
           title="New This Week"
           value={newThisWeek}
           icon={CalendarDays}
           subtext="Accounts created in last 7 days"
           badge={newThisWeek > 0 ? 'Recent' : 'None'}
-          badgeColor={newThisWeek > 0 ? 'bg-ps-accent-soft text-ps-accent' : 'bg-ps-bg text-ps-ink-2 border border-ps-border'}
+          badgeTone={newThisWeek > 0 ? 'positive' : ''}
         />
       </div>
 
       {/* ── Role Distribution ─────────────────────────────────────────── */}
-      <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border">
-        <div className="flex items-center justify-between mb-5">
+      <div className="sa-panel">
+        <div className="sa-panel-head">
           <div>
-            <h2 className="text-base font-display font-semibold text-ps-ink-1">Role Distribution</h2>
-            <p className="text-xs text-ps-ink-2 font-medium mt-0.5">Breakdown of {totalAccounts} account{totalAccounts !== 1 ? 's' : ''} by access level</p>
+            <h2 className="sa-panel-title">Role Distribution</h2>
+            <p className="sa-panel-sub">Breakdown of {totalAccounts} account{totalAccounts !== 1 ? 's' : ''} by access level</p>
           </div>
           <button
             onClick={() => navigate('/admin/users')}
-            className="text-xs font-medium text-ps-accent hover:underline flex items-center gap-1"
+            className="sa-link"
           >
-            Manage <ChevronRight size={13} />
+            Manage <ChevronRight size={13} strokeWidth={1.5} />
           </button>
         </div>
 
         {staff.length === 0 ? (
-          <div className="p-6 text-center text-ps-ink-2 border border-dashed border-ps-border rounded-xl bg-ps-bg/40">
-            <Users size={24} className="mx-auto mb-2 opacity-40" />
-            <p className="text-sm font-medium">No accounts yet</p>
+          <div className="sa-empty mt-4">
+            <Users size={24} strokeWidth={1.5} className="mx-auto mb-2 sa-t-muted" />
+            <p className="sa-empty-title">No accounts yet</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {roleCounts.filter(r => r.count > 0).map(({ role, count, label, colors }) => {
+          <div>
+            {roleCounts.filter(r => r.count > 0).map(({ role, count, label }) => {
               const pct = Math.round((count / totalForDistribution) * 100);
               return (
-                <div key={role} className="flex items-center gap-3">
-                  <div className="w-24 shrink-0 flex items-center gap-2">
-                    <span className={clsx('w-2 h-2 rounded-full shrink-0', colors.dot)} />
-                    <span className={clsx('text-xs font-semibold', colors.text)}>{label}</span>
-                  </div>
-                  <div className="flex-1 bg-ps-bg rounded-full h-2 overflow-hidden">
+                <div key={role} className="sa-bar-row">
+                  <span className="sa-bar-label">{label}</span>
+                  <div className="sa-bar">
                     <div
-                      className={clsx('h-full rounded-full transition-all duration-500', colors.dot)}
+                      className={role === topRole ? 'sa-bar-fill sa-bar-fill--accent' : 'sa-bar-fill'}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <span className="text-xs font-semibold text-ps-ink-1 w-8 text-right shrink-0">{count}</span>
+                  <span className="sa-bar-count">{count}</span>
                 </div>
               );
             })}
@@ -196,51 +213,51 @@ const SuperAdminDashboard = () => {
       </div>
 
       {/* ── Recent Activity + System Status ──────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
 
         {/* Recent Administrative Activity */}
-        <div className="lg:col-span-2 bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 sa-panel flex flex-col">
+          <div className="sa-panel-head">
             <div>
-              <h2 className="text-base font-display font-semibold text-ps-ink-1">Recent Activity</h2>
-              <p className="text-xs text-ps-ink-2 font-medium mt-0.5">Last administrative events</p>
+              <h2 className="sa-panel-title">Recent Activity</h2>
+              <p className="sa-panel-sub">Last administrative events</p>
             </div>
             <button
               onClick={() => navigate('/admin/users', { state: { tab: 'audit' } })}
-              className="flex items-center gap-1.5 py-1 text-xs font-semibold text-ps-accent hover:underline decoration-2 underline-offset-4"
+              className="sa-link"
             >
-              Full log <ArrowRight size={13} />
+              Full log <ArrowRight size={13} strokeWidth={1.5} />
             </button>
           </div>
 
           {auditLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <Loader2 size={20} className="animate-spin text-ps-ink-2" />
+              <Loader2 size={20} className="animate-spin sa-t-muted" />
             </div>
           ) : auditLogs.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 border border-dashed border-ps-border rounded-xl bg-ps-bg/40">
-              <Activity size={24} className="text-ps-ink-2 opacity-40 mb-2" />
-              <p className="text-sm font-medium text-ps-ink-1">No administrative events recorded yet</p>
-              <p className="text-xs text-ps-ink-2 mt-1">Actions like user creation and role changes will appear here.</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-10 sa-empty mt-4">
+              <Activity size={24} strokeWidth={1.5} className="sa-t-muted mb-2" />
+              <p className="sa-empty-title">No administrative events recorded yet</p>
+              <p className="sa-empty-sub">Actions like user creation and role changes will appear here.</p>
             </div>
           ) : (
-            <div className="space-y-1 flex-1">
+            <div className="sa-list flex-1">
               {auditLogs.map(log => {
                 const { action, actor, target } = auditLine(log, staff);
                 const isDestructive = log.action?.includes('delete') || log.action?.includes('deactivate');
                 const isCreative = log.action?.includes('create') || log.action?.includes('activate');
                 return (
-                  <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-ps-bg/60 transition-colors">
-                    <div className={clsx(
-                      'w-2 h-2 rounded-full shrink-0 mt-1.5',
-                      isDestructive ? 'bg-ps-danger' : isCreative ? 'bg-ps-success' : 'bg-ps-primary'
-                    )} />
+                  <div key={log.id} className="sa-row">
+                    <span
+                      className={`sa-marker${isDestructive ? ' sa-marker--danger' : isCreative ? ' sa-marker--creative' : ''}`}
+                      aria-hidden="true"
+                    />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-ps-ink-1">
+                      <p className="sa-row-title">
                         {action}
-                        {target && <span className="text-ps-ink-2 font-normal"> → {target}</span>}
+                        {target && <span className="sa-row-target"> → {target}</span>}
                       </p>
-                      <p className="text-xs text-ps-ink-2 mt-0.5">
+                      <p className="sa-row-meta">
                         {actor} · {new Date(log.created_at).toLocaleString('en-US', {
                           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                         })}
@@ -254,65 +271,63 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* System Status */}
-        <div className="bg-ps-surface rounded-2xl p-6 shadow-sm border border-ps-border space-y-5">
-          <div>
-            <h2 className="text-base font-display font-semibold text-ps-ink-1">System Status</h2>
-            <p className="text-xs text-ps-ink-2 font-medium mt-0.5">Platform connectivity and services</p>
+        <div className="sa-panel">
+          <div className="sa-panel-head">
+            <div>
+              <h2 className="sa-panel-title">System Status</h2>
+              <p className="sa-panel-sub">Platform connectivity and services</p>
+            </div>
           </div>
 
-          {/* Supabase Connection */}
-          <div className="p-4 rounded-xl bg-ps-bg border border-ps-border space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-ps-ink-1">Supabase Connection</p>
-              {connStatus === 'idle' && <Loader2 size={14} className="animate-spin text-ps-ink-2" />}
-              {connStatus === 'ok' && <Wifi size={14} className="text-ps-success" />}
-              {connStatus === 'error' && <WifiOff size={14} className="text-ps-danger" />}
+          <div className="sa-sections">
+            {/* Supabase Connection */}
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="sa-row-title">Supabase Connection</p>
+                {connStatus === 'idle' && <Loader2 size={14} className="animate-spin sa-t-muted" />}
+                {connStatus === 'ok' && <Wifi size={14} strokeWidth={1.5} className="sa-t-warm" />}
+                {connStatus === 'error' && <WifiOff size={14} strokeWidth={1.5} className="sa-t-danger" />}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`sa-dot${connStatus === 'ok' ? ' sa-dot--ok' : connStatus === 'error' ? ' sa-dot--error' : ''}`} />
+                <span className={
+                  connStatus === 'idle' ? 'sa-micro sa-t-muted' :
+                  connStatus === 'ok' ? 'sa-micro sa-t-warm' :
+                  'sa-micro sa-t-danger'
+                }>
+                  {connStatus === 'idle' ? 'Verifying...' :
+                   connStatus === 'ok' ? 'Connected and live' :
+                   'Connection could not be verified'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={clsx(
-                'w-2 h-2 rounded-full shrink-0',
-                connStatus === 'idle' ? 'bg-ps-ink-2' :
-                connStatus === 'ok' ? 'bg-ps-success animate-pulse' :
-                'bg-ps-danger'
-              )} />
-              <span className={clsx(
-                'text-xs font-medium',
-                connStatus === 'idle' ? 'text-ps-ink-2' :
-                connStatus === 'ok' ? 'text-ps-success' :
-                'text-ps-danger'
-              )}>
-                {connStatus === 'idle' ? 'Verifying...' :
-                 connStatus === 'ok' ? 'Connected and live' :
-                 'Connection could not be verified'}
+
+            {/* Active Session */}
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="sa-row-title">Active Session</p>
+                <CheckCircle2 size={14} strokeWidth={1.5} className="sa-t-warm" />
+              </div>
+              <p className="sa-row-meta truncate">{user?.email || '—'}</p>
+              <span className="sa-badge sa-t-warm inline-flex items-center gap-1 mt-2">
+                <Shield size={11} strokeWidth={1.5} /> Super Administrator
               </span>
             </div>
-          </div>
 
-          {/* Active Session */}
-          <div className="p-4 rounded-xl bg-ps-bg border border-ps-border space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-ps-ink-1">Active Session</p>
-              <CheckCircle2 size={14} className="text-ps-success" />
-            </div>
-            <p className="text-xs text-ps-ink-2 truncate">{user?.email || '—'}</p>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-role-superadmin">
-              <Shield size={11} /> Super Administrator
-            </span>
-          </div>
-
-          {/* Edge Functions */}
-          <div className="p-4 rounded-xl bg-ps-bg border border-ps-border space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-ps-ink-1">Edge Functions</p>
-              <Zap size={14} className="text-ps-accent" />
-            </div>
-            <div className="space-y-1.5">
-              {EDGE_FUNCTIONS.map(fn => (
-                <div key={fn} className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-ps-success shrink-0" />
-                  <span className="text-xs text-ps-ink-2 font-mono">{fn}</span>
-                </div>
-              ))}
+            {/* Edge Functions */}
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="sa-row-title">Edge Functions</p>
+                <Zap size={14} strokeWidth={1.5} className="sa-t-muted" />
+              </div>
+              <div className="space-y-1.5 mt-2">
+                {EDGE_FUNCTIONS.map(fn => (
+                  <div key={fn} className="flex items-center gap-2">
+                    <span className="sa-dot sa-dot--ok" />
+                    <span className="sa-mono">{fn}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

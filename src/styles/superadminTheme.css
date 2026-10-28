@@ -1,0 +1,623 @@
+/* ─────────────────────────────────────────────────────────────────────
+   SuperAdmin "atelier" theme — role-scoped.
+
+   Every rule sits under .sa-theme, which Layout adds to its root only
+   while the signed-in role is superadmin. Without that class the file is
+   inert, so other roles and the public auth pages are untouched.
+   Contract: docs/plans/superadmin-atelier-plan.md §2–§3.
+   ───────────────────────────────────────────────────────────────────── */
+
+.sa-theme {
+  /* Surfaces */
+  --sa-bg-base: #0B0B0B;      /* app canvas, top bar */
+  --sa-surface-1: #1B1C1E;    /* cards, sidebar, panels */
+  --sa-surface-2: #232427;    /* hover/raised */
+  --sa-surface-warm: #2F2E29; /* tags/badges (warm dark) */
+  /* Lines */
+  --sa-line-hairline: #222325;
+  --sa-line-default: #3D3E40;
+  --sa-line-strong: #4A4A4C;
+  --sa-line-row: #37383C;
+  /* Text */
+  --sa-text-primary: #FFFFFF;
+  --sa-text-secondary: #E1E1E1;
+  --sa-text-muted: #A5A5A7;
+  --sa-text-subtle: #939393;
+  --sa-text-warm: #CBC8C3;
+  --sa-text-warm-dim: #BCB8AF;
+  /* Gold accent (champagne) — accents only, never a fill or button bg */
+  --sa-gold: #C3B090;
+  --sa-gold-light: #CEBEA4;
+  --sa-gold-line: #C6BFAF;
+  --sa-gold-fill-top: #413D34;
+  --sa-gold-fill-end: #1B1C1E;
+  /* Bars */
+  --sa-bar-primary: #D9DADE;
+  --sa-bar-accent: #C7B7A0;
+  --sa-bar-track: #3C3D3F;
+  /* Semantic (muted) */
+  --sa-danger: #C47A6E;
+  --sa-success: #8FA58B;
+
+  /* App tokens remapped for the themed subtree, so shared components from
+     other pages land on the atelier palette instead of the light app one. */
+  --ps-surface: var(--sa-surface-1);
+  --ps-bg: var(--sa-bg-base);
+  --ps-border: var(--sa-line-default);
+  --ps-ink-1: var(--sa-text-primary);
+  --ps-ink-2: var(--sa-text-muted);
+  --ps-accent: var(--sa-gold);
+  --ps-primary: var(--sa-surface-2);
+  --ps-accent-soft: var(--sa-surface-warm);
+  --color-ps-surface: var(--sa-surface-1);
+  --color-ps-bg: var(--sa-bg-base);
+  --color-ps-border: var(--sa-line-default);
+  --color-ps-ink-1: var(--sa-text-primary);
+  --color-ps-ink-2: var(--sa-text-muted);
+  --color-ps-accent: var(--sa-gold);
+  --color-ps-primary: var(--sa-surface-2);
+  --color-ps-accent-soft: var(--sa-surface-warm);
+  --color-ps-success: var(--sa-success);
+  --color-ps-warn: var(--sa-gold);
+  --color-ps-danger: var(--sa-danger);
+
+  background: var(--sa-bg-base);
+  color: var(--sa-text-primary);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Light Atelier — same language on "Gallery White" (plan v3.1 §3, D3).
+   Wins over .sa-theme only while the app toggle is light; the block above
+   stays the dark fallback (L1/L4). Tokens only, no component rules. */
+html:not(.dark) .sa-theme {
+  /* Surfaces */
+  --sa-bg-base: #F6F5F2;
+  --sa-surface-1: #FFFFFF;
+  --sa-surface-2: #EFEDE9;
+  --sa-surface-warm: #F0EDE4;
+  /* Lines */
+  --sa-line-hairline: #E8E7E3;
+  --sa-line-default: #D9D8D3;
+  --sa-line-strong: #C2C0B9;
+  --sa-line-row: #E1E0DB;
+  /* Text (subtle, gold and gold-light are the shipped AA values, L-A1) */
+  --sa-text-primary: #1A1916;
+  --sa-text-secondary: #3D3C37;
+  --sa-text-muted: #6B6A63;
+  --sa-text-subtle: #6B6A60;
+  --sa-text-warm: #57534A;
+  --sa-text-warm-dim: #6C685C;
+  /* Gold accent — deepened champagne, AA on the canvas */
+  --sa-gold: #856730;
+  --sa-gold-light: #6E5628;
+  --sa-gold-line: #C4AE7C;
+  --sa-gold-fill-top: #F3EBD9;
+  --sa-gold-fill-end: #FFFFFF;
+  /* Bars */
+  --sa-bar-primary: #3E3D38;
+  --sa-bar-accent: #8F7038;
+  --sa-bar-track: #E4E3DE;
+  /* Semantic (muted) */
+  --sa-danger: #A34A3D;
+  --sa-success: #5F7355;
+
+  /* App tokens hand back to the native light palette (L2/D2) so shared
+     pages inside the frame look like the app's normal light mode. */
+  --ps-surface: #FFFFFF;
+  --ps-bg: #F7F5F1;
+  --ps-border: #E4E2DA;
+  --ps-ink-1: #1E2A5E;
+  --ps-ink-2: #5E6E96;
+  --ps-accent: #2563EB;
+  --ps-primary: #2563EB;
+  --ps-accent-soft: #EAF1FE;
+  --color-ps-surface: #FFFFFF;
+  --color-ps-bg: #F7F5F1;
+  --color-ps-border: #E4E2DA;
+  --color-ps-ink-1: #1E2A5E;
+  --color-ps-ink-2: #5E6E96;
+  --color-ps-accent: #2563EB;
+  --color-ps-primary: #2563EB;
+  --color-ps-accent-soft: #EAF1FE;
+  --color-ps-success: #35682C;
+  --color-ps-warn: #92400e;
+  --color-ps-danger: #b91c1c;
+}
+
+/* ── Shape, motion, focus ───────────────────────────────────────────── */
+.sa-theme *,
+.sa-theme *::before,
+.sa-theme *::after {
+  border-radius: 0;
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sa-line-default) var(--sa-bg-base);
+}
+
+/* The avatar is the only circle in the theme. */
+.sa-theme aside .rounded-full {
+  border-radius: 9999px;
+  background: var(--sa-surface-warm);
+  border: 1px solid var(--sa-line-default);
+  color: var(--sa-text-warm);
+  font-weight: 400;
+}
+
+.sa-theme h1,
+.sa-theme h2,
+.sa-theme h3,
+.sa-theme h4,
+.sa-theme .font-display {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* A2: clamp shared 600/700 utilities to 500 (unlayered beats the utilities layer; :where defers to theme rules). */
+.sa-theme :where(.font-semibold, .font-bold) {
+  font-weight: 500;
+}
+
+.sa-theme :is(button, a, [role="button"]) {
+  transition: opacity 160ms ease-out, color 160ms ease-out,
+    background-color 160ms ease-out, border-color 160ms ease-out;
+}
+
+.sa-theme :is(button, a, [role="button"]):active {
+  transform: none;
+}
+
+.sa-theme :is(button, a, [role="button"], input, select, textarea):focus-visible {
+  outline: 1px solid var(--sa-gold);
+  outline-offset: 2px;
+}
+
+.sa-theme .animate-pulse {
+  animation: none;
+}
+
+/* Page entry: opacity only, no slide. The loading spinner stays functional. */
+.sa-theme .animate-page-entry {
+  animation: sa-fade-in 200ms ease-out both;
+}
+
+@keyframes sa-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Shell: top bar, sidebar, wordmark, nav ─────────────────────────── */
+.sa-theme > header {
+  background: var(--sa-bg-base);
+  border-bottom: 1px solid var(--sa-line-hairline);
+}
+
+/* Wordmark: uppercase, hairline tracked, weight 300, outlined gold mark. */
+.sa-theme > header h1 {
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.2;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--sa-text-primary);
+}
+
+.sa-theme > header h1::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 12px;
+  border: 1px solid var(--sa-gold);
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.sa-theme > header p {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sa-text-subtle);
+}
+
+/* Date label in the top bar's right cluster. */
+.sa-theme > header > div:last-child > div:last-child {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+.sa-theme aside {
+  background: var(--sa-surface-1);
+  border-right: 1px solid var(--sa-line-hairline);
+}
+
+.sa-theme nav {
+  --sa-navpad: 16px;
+}
+
+.sa-theme nav.px-2 {
+  --sa-navpad: 8px;
+}
+
+.sa-theme nav p {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+.sa-theme nav a {
+  position: relative;
+  padding-block: 8px;
+  background: transparent;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--sa-text-muted);
+}
+
+.sa-theme nav a:hover {
+  background: transparent;
+  color: var(--sa-text-primary);
+}
+
+/* Active: white text plus a 2px gold bar flush with the sidebar edge. */
+.sa-theme nav a[aria-current="page"] {
+  background: transparent;
+  color: var(--sa-text-primary);
+  font-weight: 500;
+}
+
+.sa-theme nav a[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--sa-navpad));
+  width: 2px;
+  background: var(--sa-gold);
+}
+
+/* Bottom-left role tag. */
+/* Layout's user row is semibold; the theme caps weight at 500. */
+.sa-theme aside .font-semibold {
+  font-weight: 400;
+}
+
+.sa-theme aside .capitalize {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: var(--sa-surface-warm);
+  color: var(--sa-text-warm-dim);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ── Page: headings, panels, rules ──────────────────────────────────── */
+.sa-title {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--sa-text-primary);
+}
+
+.sa-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--sa-text-muted);
+}
+
+.sa-rule-b {
+  border-bottom: 1px solid var(--sa-line-hairline);
+}
+
+.sa-panel {
+  background: var(--sa-surface-1);
+  border: 1px solid var(--sa-line-default);
+  padding: 20px;
+}
+
+.sa-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sa-line-hairline);
+}
+
+.sa-panel-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--sa-text-secondary);
+}
+
+.sa-panel-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--sa-text-muted);
+}
+
+/* 11px uppercase, widely tracked, muted. */
+.sa-micro {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+/* ── KPI cards ──────────────────────────────────────────────────────── */
+.sa-kpi {
+  padding: 16px;
+}
+
+.sa-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sa-line-hairline);
+}
+
+.sa-kpi-icon {
+  flex: none;
+  color: var(--sa-text-muted);
+}
+
+.sa-kpi-kebab {
+  display: flex;
+  margin-left: auto;
+  color: var(--sa-text-subtle);
+}
+
+.sa-kpi-value {
+  margin-top: 12px;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--sa-text-primary);
+}
+
+.sa-kpi-value--lead {
+  font-size: 32px;
+}
+
+.sa-kpi-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sa-kpi-sub {
+  font-size: 11px;
+  color: var(--sa-text-muted);
+}
+
+.sa-badge {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+.sa-badge--positive {
+  color: var(--sa-text-warm);
+}
+
+.sa-badge--warn {
+  color: var(--sa-danger);
+}
+
+/* ── Progress bars ──────────────────────────────────────────────────── */
+.sa-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block: 9px;
+}
+
+.sa-bar-label {
+  flex: none;
+  width: 96px;
+  font-size: 14px;
+  color: var(--sa-text-primary);
+}
+
+.sa-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--sa-bar-track);
+}
+
+.sa-bar-fill {
+  height: 100%;
+  background: var(--sa-bar-primary);
+}
+
+.sa-bar-fill--accent {
+  background: var(--sa-bar-accent);
+}
+
+.sa-bar-count {
+  flex: none;
+  width: 32px;
+  text-align: right;
+  font-size: 14px;
+  color: var(--sa-text-primary);
+}
+
+/* ── Activity rows ──────────────────────────────────────────────────── */
+.sa-list > * + * {
+  border-top: 1px solid var(--sa-line-row);
+}
+
+.sa-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 40px;
+  padding-block: 10px;
+}
+
+.sa-row:hover {
+  background: var(--sa-surface-2);
+}
+
+.sa-marker {
+  flex: none;
+  width: 2px;
+  height: 2px;
+  margin-top: 8px;
+  background: var(--sa-bar-primary);
+}
+
+.sa-marker--danger {
+  background: var(--sa-danger);
+}
+
+.sa-marker--creative {
+  background: var(--sa-success);
+}
+
+.sa-row-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--sa-text-primary);
+}
+
+.sa-row-target {
+  color: var(--sa-text-muted);
+}
+
+.sa-row-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sa-text-muted);
+}
+
+/* ── System status ──────────────────────────────────────────────────── */
+.sa-sections > * {
+  padding-block: 16px;
+}
+
+.sa-sections > *:first-child {
+  padding-top: 0;
+}
+
+.sa-sections > *:last-child {
+  padding-bottom: 0;
+}
+
+.sa-sections > * + * {
+  border-top: 1px solid var(--sa-line-hairline);
+}
+
+.sa-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--sa-text-muted);
+}
+
+.sa-dot--ok {
+  background: var(--sa-success);
+}
+
+.sa-dot--error {
+  background: var(--sa-danger);
+}
+
+.sa-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--sa-text-muted);
+}
+
+.sa-t-muted {
+  color: var(--sa-text-muted);
+}
+
+.sa-t-warm {
+  color: var(--sa-text-warm);
+}
+
+.sa-t-danger {
+  color: var(--sa-danger);
+}
+
+/* ── Empty states ───────────────────────────────────────────────────── */
+.sa-empty {
+  padding: 28px 16px;
+  border: 1px solid var(--sa-line-hairline);
+  text-align: center;
+}
+
+.sa-empty-title {
+  font-size: 14px;
+  color: var(--sa-text-secondary);
+}
+
+.sa-empty-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--sa-text-muted);
+}
+
+/* ── Buttons and links ──────────────────────────────────────────────── */
+.sa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--sa-line-default);
+  background: transparent;
+  color: var(--sa-text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sa-btn:hover {
+  border-color: var(--sa-line-strong);
+  color: var(--sa-text-primary);
+}
+
+.sa-btn--primary {
+  border-color: var(--sa-gold);
+  color: var(--sa-gold);
+}
+
+.sa-btn--primary:hover {
+  border-color: var(--sa-gold-light);
+  color: var(--sa-gold-light);
+  background: rgba(195, 176, 144, 0.08);
+}
+
+.sa-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sa-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sa-link:hover {
+  color: var(--sa-text-primary);
+}
