@@ -54,60 +54,60 @@ const ForceChangePasswordModal = () => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-ps-surface rounded-t-2xl sm:rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-ps-border max-h-[90vh] flex flex-col"
+        className="bg-[var(--sa-surface-1)] max-w-md w-full overflow-hidden border border-[var(--sa-line-default)] max-h-[90vh] flex flex-col"
       >
-        <div className="p-6 sm:p-8 pb-6 bg-ps-warn/10 flex flex-col items-center text-center shrink-0">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-ps-warn/20 text-ps-warn rounded-full flex items-center justify-center mb-3 sm:mb-4">
-            <ShieldAlert size={28} className="sm:w-8 sm:h-8" />
+        <div className="p-6 sm:p-8 pb-6 flex flex-col items-center text-center shrink-0 border-b border-[var(--sa-line-hairline)]">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 border border-[var(--sa-line-default)] sa-t-warm flex items-center justify-center mb-3 sm:mb-4">
+            <ShieldAlert size={28} strokeWidth={1.5} className="sm:w-8 sm:h-8" />
           </div>
-          <h2 className="text-xl font-bold text-ps-ink-1">Action Required</h2>
-          <p className="text-sm text-ps-ink-2 mt-2">
+          <h2 className="text-lg sm:text-xl text-[var(--sa-text-primary)]">Action Required</h2>
+          <p className="text-sm text-[var(--sa-text-secondary)] mt-2">
             For security reasons, you must change your temporary password before accessing your account.
           </p>
         </div>
 
         <div className="p-6 sm:p-8 pt-6 space-y-5 overflow-y-auto">
           {error && (
-            <div className="p-3 bg-ps-danger/10 border border-ps-danger/20 text-ps-danger rounded-xl text-sm flex items-start gap-2">
-              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <div className="sa-alert sa-alert--danger items-start">
+              <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-ps-ink-1 mb-1.5">New Password</label>
+            <label className="sa-label">New Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
+              <Lock className="sa-field-icon" size={18} strokeWidth={1.5} />
               <input
                 type="text"
                 style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
                 placeholder="Min 8 characters"
-                className="w-full pl-10 pr-12 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
+                className="sa-input sa-input--reveal"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center text-ps-ink-2 hover:text-ps-ink-1 focus-visible:outline-2 focus-visible:outline-ps-accent"
+                className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center text-[var(--sa-text-muted)] transition-colors hover:text-[var(--sa-text-primary)]"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-ps-ink-1 mb-1.5">Confirm New Password</label>
+            <label className="sa-label">Confirm New Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ps-ink-2" size={18} />
+              <Lock className="sa-field-icon" size={18} strokeWidth={1.5} />
               <input
                 type="text"
                 style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                 placeholder="Confirm new password"
-                className="w-full pl-10 pr-10 py-3 bg-ps-bg border border-ps-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ps-warn/20 focus:border-ps-warn text-ps-ink-1 transition-all"
+                className="sa-input"
               />
             </div>
           </div>
@@ -117,10 +117,10 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={handleSubmit}
               disabled={loading || !newPassword || !confirmPassword}
-              className="sa-btn sa-btn--primary sa-btn--block h-[48px] disabled:opacity-50 disabled:cursor-default"
+              className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-default"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-current border-t-transparent animate-spin" />
               ) : (
                 'Update Password'
               )}
@@ -129,7 +129,7 @@ const ForceChangePasswordModal = () => {
               type="button"
               onClick={logout}
               disabled={loading}
-              className="w-full py-3 text-ps-ink-2 hover:text-ps-ink-1 font-bold rounded-xl hover:bg-ps-bg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="sa-btn sa-btn--block disabled:opacity-40 disabled:cursor-default"
             >
               Cancel and Logout
             </button>
