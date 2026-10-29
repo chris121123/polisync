@@ -11,11 +11,8 @@ import {
   AlertCircle,
   ArrowRight,
   ChevronRight,
-  Wifi,
-  WifiOff,
   Loader2,
   Zap,
-  MoreVertical,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
@@ -37,9 +34,6 @@ const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lea
     <div className="sa-kpi-head">
       <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
       <p className="sa-micro">{title}</p>
-      <span className="sa-kpi-kebab" aria-hidden="true">
-        <MoreVertical size={14} strokeWidth={1.5} />
-      </span>
     </div>
     <p className={lead ? 'sa-kpi-value sa-kpi-value--lead' : 'sa-kpi-value'}>{value}</p>
     <div className="sa-kpi-foot">
@@ -284,9 +278,6 @@ const SuperAdminDashboard = () => {
             <div>
               <div className="flex items-center justify-between">
                 <p className="sa-row-title">Supabase Connection</p>
-                {connStatus === 'idle' && <Loader2 size={14} className="animate-spin sa-t-muted" />}
-                {connStatus === 'ok' && <Wifi size={14} strokeWidth={1.5} className="sa-t-warm" />}
-                {connStatus === 'error' && <WifiOff size={14} strokeWidth={1.5} className="sa-t-danger" />}
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <span className={`sa-dot${connStatus === 'ok' ? ' sa-dot--ok' : connStatus === 'error' ? ' sa-dot--error' : ''}`} />
