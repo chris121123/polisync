@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  AlertTriangle, Plus, X, 
+  AlertTriangle, Plus,
   Info, Filter, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -214,106 +214,97 @@ const Rooms = () => {
       </AnimatePresence>
 
       {/* Add Room Modal */}
-      <AnimatePresence>
-        {isAddModalOpen && (
-          <div 
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4"
-            onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-5 sm:p-6 border-b border-[var(--sa-line-hairline)] flex justify-between items-center shrink-0">
-                <h3 className="sa-panel-title">Add New Room</h3>
-                <button onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }} aria-label="Close add room" className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
-                  <X size={18} strokeWidth={1.5} />
-                </button>
-              </div>
-              
-              <form onSubmit={handleAddRoom} className="p-5 sm:p-6 space-y-4 overflow-y-auto">
-                <div>
-                  <label className="sa-label">Room Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Room 101"
-                    className={clsx(
-                      fieldCls,
-                      formErrors.name 
-                        ? "border-[var(--sa-danger)]" 
-                        : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
-                    )}
-                    value={newRoom.name}
-                    onChange={e => {
-                      setNewRoom({...newRoom, name: e.target.value});
-                      if (formErrors.name) setFormErrors(p => ({ ...p, name: '' }));
-                    }}
-                    onBlur={() => validateField('name')}
-                  />
-                  {formErrors.name && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.name}</p>}
-                </div>
-                
-                <div>
-                  <label className="sa-label">Room Type</label>
-                  <select 
-                    className={clsx(fieldCls, "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]")}
-                    value={newRoom.type}
-                    onChange={e => setNewRoom({...newRoom, type: e.target.value})}
-                  >
-                    <option>General SPED</option>
-                    <option>Therapy Room</option>
-                    <option>Playschool Area</option>
-                    <option>Admin Office</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="sa-label">Max Capacity</label>
-                  <input 
-                    type="number" 
-                    min="1"
-                    max="50"
-                    className={clsx(
-                      fieldCls,
-                      "tabular-nums",
-                      formErrors.maxCapacity 
-                        ? "border-[var(--sa-danger)]" 
-                        : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
-                    )}
-                    value={newRoom.maxCapacity}
-                    onChange={e => {
-                      setNewRoom({...newRoom, maxCapacity: parseInt(e.target.value)});
-                      if (formErrors.maxCapacity) setFormErrors(p => ({ ...p, maxCapacity: '' }));
-                    }}
-                    onBlur={() => validateField('maxCapacity')}
-                  />
-                  {formErrors.maxCapacity && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.maxCapacity}</p>}
-                </div>
-                
-                <div className="pt-4 flex gap-3">
-                  <button 
-                    type="button"
-                    onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
-                    className="sa-btn flex-1 justify-center min-h-11"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={!newRoom.name || !newRoom.maxCapacity}
-                    className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Create Room
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      <AppModal
+        isOpen={isAddModalOpen}
+        onClose={() => { setIsAddModalOpen(false); setFormErrors({}); }}
+        maxWidth="max-w-md"
+        labelledBy="add-room-title"
+      >
+        <ModalHeader
+          titleId="add-room-title"
+          title="Add New Room"
+          onClose={() => { setIsAddModalOpen(false); setFormErrors({}); }}
+          className="bg-[var(--sa-surface-warm)]"
+        />
+
+        <form onSubmit={handleAddRoom} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 md:px-6">
+          <div>
+            <label className="sa-label">Room Name</label>
+            <input 
+              data-autofocus
+              type="text" 
+              placeholder="e.g. Room 101"
+              className={clsx(
+                fieldCls,
+                formErrors.name 
+                  ? "border-[var(--sa-danger)]" 
+                  : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
+              )}
+              value={newRoom.name}
+              onChange={e => {
+                setNewRoom({...newRoom, name: e.target.value});
+                if (formErrors.name) setFormErrors(p => ({ ...p, name: '' }));
+              }}
+              onBlur={() => validateField('name')}
+            />
+            {formErrors.name && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.name}</p>}
           </div>
-        )}
-      </AnimatePresence>
+
+          <div>
+            <label className="sa-label">Room Type</label>
+            <select 
+              className={clsx(fieldCls, "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]")}
+              value={newRoom.type}
+              onChange={e => setNewRoom({...newRoom, type: e.target.value})}
+            >
+              <option>General SPED</option>
+              <option>Therapy Room</option>
+              <option>Playschool Area</option>
+              <option>Admin Office</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="sa-label">Max Capacity</label>
+            <input 
+              type="number" 
+              min="1"
+              max="50"
+              className={clsx(
+                fieldCls,
+                "tabular-nums",
+                formErrors.maxCapacity 
+                  ? "border-[var(--sa-danger)]" 
+                  : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
+              )}
+              value={newRoom.maxCapacity}
+              onChange={e => {
+                setNewRoom({...newRoom, maxCapacity: parseInt(e.target.value)});
+                if (formErrors.maxCapacity) setFormErrors(p => ({ ...p, maxCapacity: '' }));
+              }}
+              onBlur={() => validateField('maxCapacity')}
+            />
+            {formErrors.maxCapacity && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.maxCapacity}</p>}
+          </div>
+
+          <div className="pt-4 flex gap-3">
+            <button 
+              type="button"
+              onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
+              className="sa-btn flex-1 justify-center min-h-11"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={!newRoom.name || !newRoom.maxCapacity}
+              className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Create Room
+            </button>
+          </div>
+        </form>
+      </AppModal>
 
       <AppModal
         isOpen={!!roomToDelete}

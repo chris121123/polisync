@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Clock, Users, CheckCircle2, Check, XCircle, AlertCircle, FileText, Calendar, ChevronLeft, ChevronRight, UserCheck, BookOpen, X } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, formatTime } from '../../lib/sessionDay';
 import { StatCard } from '../admin/AdminDashboard';
 import MyAvailabilityCard from '../../components/MyAvailabilityCard';
+import { AppModal, ModalHeader } from '../../components/AppModal';
 
 const TeacherDashboard = () => {
   const { user, sessions, students, fetchMyAssignments, myAssignments, markAttendance, fetchAttendance } = useGlobalState();
@@ -237,100 +238,90 @@ const TeacherDashboard = () => {
       </div>
 
       {/* Attendance Modal */}
-      <AnimatePresence>
-        {showAttendanceModal && (
-          <div 
-            className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={() => setShowAttendanceModal(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="bg-ps-surface border border-ps-border max-w-lg w-full p-5 sm:p-6 lg:p-8 space-y-5 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sa-panel-head">
-                <div>
-                  <h3 className="sa-panel-title">Attendance Record</h3>
-                  <p className="sa-panel-sub">Session Overview & Student Status</p>
-                </div>
-                <button onClick={() => setShowAttendanceModal(null)} aria-label="Close attendance" className="sa-btn">
-                  <X size={14} strokeWidth={1.5} />
-                </button>
-              </div>
+      <AppModal
+        isOpen={!!showAttendanceModal}
+        onClose={() => setShowAttendanceModal(null)}
+        labelledBy="attendance-record-title"
+      >
+        <ModalHeader
+          titleId="attendance-record-title"
+          title="Attendance Record"
+          description="Session Overview & Student Status"
+          onClose={() => setShowAttendanceModal(null)}
+          className="bg-[var(--sa-surface-warm)]"
+        />
 
-              <div>
-                <label className="sa-label">Common Note (Optional)</label>
-                <input
-                  type="text"
-                  value={attendanceNotes}
-                  onChange={(e) => setAttendanceNotes(e.target.value)}
-                  placeholder="e.g. Traffic delay, family emergency..."
-                  className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
-                />
-              </div>
-
-              <div className="max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar sa-list">
-                {(() => {
-                  const session = sessions.find(s => s.id === showAttendanceModal);
-                  return session?.studentIds?.map(sid => {
-                    const student = getStudent(sid);
-                    if (!student) return null;
-                    const marked = attendanceMarks[sid];
-                    
-                    return (
-                      <div key={sid} className="flex flex-col gap-3 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 border border-[var(--sa-line-default)] flex items-center justify-center text-sm sa-t-warm">
-                            {student.name.charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="sa-row-title truncate">{student.name}</p>
-                            {marked && (
-                              <p className="sa-row-meta">
-                                Currently: {marked}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-4 gap-2">
-                          {[
-                            { id: 'present', icon: Check, label: 'P' },
-                            { id: 'absent', icon: X, label: 'A' },
-                            { id: 'late', icon: Clock, label: 'L' },
-                            { id: 'excused', icon: FileText, label: 'E' }
-                          ].map(status => (
-                            <button
-                              key={status.id}
-                              onClick={() => handleMarkAttendance(showAttendanceModal, sid, status.id)}
-                              className={clsx(
-                                "sa-btn justify-center",
-                                marked === status.id && "sa-btn--primary"
-                              )}
-                            >
-                              <status.icon size={14} strokeWidth={1.5} />
-                              <span>{status.id.slice(0, 1).toUpperCase()}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-
-              <button
-                onClick={() => setShowAttendanceModal(null)}
-                className="sa-btn sa-btn--primary sa-btn--block"
-              >
-                Done
-              </button>
-            </motion.div>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 md:px-6">
+          <div>
+            <label className="sa-label">Common Note (Optional)</label>
+            <input
+              data-autofocus
+              type="text"
+              value={attendanceNotes}
+              onChange={(e) => setAttendanceNotes(e.target.value)}
+              placeholder="e.g. Traffic delay, family emergency..."
+              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+            />
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar sa-list">
+            {(() => {
+              const session = sessions.find(s => s.id === showAttendanceModal);
+              return session?.studentIds?.map(sid => {
+                const student = getStudent(sid);
+                if (!student) return null;
+                const marked = attendanceMarks[sid];
+
+                return (
+                  <div key={sid} className="flex flex-col gap-3 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 border border-[var(--sa-line-default)] flex items-center justify-center text-sm sa-t-warm">
+                        {student.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="sa-row-title truncate">{student.name}</p>
+                        {marked && (
+                          <p className="sa-row-meta">
+                            Currently: {marked}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { id: 'present', icon: Check, label: 'P' },
+                        { id: 'absent', icon: X, label: 'A' },
+                        { id: 'late', icon: Clock, label: 'L' },
+                        { id: 'excused', icon: FileText, label: 'E' }
+                      ].map(status => (
+                        <button
+                          key={status.id}
+                          onClick={() => handleMarkAttendance(showAttendanceModal, sid, status.id)}
+                          className={clsx(
+                            "sa-btn justify-center",
+                            marked === status.id && "sa-btn--primary"
+                          )}
+                        >
+                          <status.icon size={14} strokeWidth={1.5} />
+                          <span>{status.id.slice(0, 1).toUpperCase()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          <button
+            onClick={() => setShowAttendanceModal(null)}
+            className="sa-btn sa-btn--primary sa-btn--block"
+          >
+            Done
+          </button>
+        </div>
+      </AppModal>
     </div>
   );
 };

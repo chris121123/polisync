@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Calendar, Users, FileText, Star, Activity, BookOpen, Edit3, X, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Clock, Calendar, Users, FileText, Star, Activity, BookOpen, Edit3, MapPin } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 import { StatCard } from '../admin/AdminDashboard';
 import MyAvailabilityCard from '../../components/MyAvailabilityCard';
+import { AppModal, ModalHeader } from '../../components/AppModal';
 
 const TherapistDashboard = () => {
   const { user, sessions, students, fetchMyAssignments, myAssignments, addSessionNote } = useGlobalState();
@@ -247,99 +248,85 @@ const TherapistDashboard = () => {
       </div>
 
       {/* Session Note Modal */}
-      <AnimatePresence>
-        {selectedSession && (
-          <div 
-            className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={closeNoteModal}
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="bg-ps-surface border border-ps-border max-w-lg w-full p-5 sm:p-6 lg:p-8 space-y-5 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+      <AppModal isOpen={!!selectedSession} onClose={closeNoteModal} labelledBy="session-note-title">
+        <ModalHeader
+          titleId="session-note-title"
+          title="Session Note"
+          description={selectedSession && `${selectedSession.title} • ${sessionDayName(selectedSession)}`}
+          onClose={closeNoteModal}
+          className="bg-[var(--sa-surface-warm)]"
+        />
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 md:px-6">
+          {/* Student Select */}
+          <div>
+            <label className="sa-label">Select Student</label>
+            <select
+              data-autofocus
+              value={noteStudentId}
+              onChange={(e) => setNoteStudentId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
             >
-              <div className="sa-panel-head">
-                <div>
-                  <h3 className="sa-panel-title">Session Note</h3>
-                  <p className="sa-panel-sub">{selectedSession.title} • {sessionDayName(selectedSession)}</p>
-                </div>
-                <button onClick={closeNoteModal} aria-label="Close session note" className="sa-btn">
-                  <X size={14} strokeWidth={1.5} />
-                </button>
-              </div>
-
-              {/* Student Select */}
-              <div>
-                <label className="sa-label">Select Student</label>
-                <select
-                  value={noteStudentId}
-                  onChange={(e) => setNoteStudentId(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
-                >
-                  {(selectedSession.studentIds || []).map(sid => {
-                    const student = getStudent(sid);
-                    return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
-                  })}
-                </select>
-              </div>
-
-              {/* Star Rating */}
-              <div>
-                <label className="sa-label">Progress & Engagement Rating</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onMouseEnter={() => setHoverRating(rating)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => setNoteRating(rating)}
-                      className="p-1.5 text-ps-warn"
-                    >
-                      <Star 
-                        size={22} 
-                        fill={(hoverRating || noteRating) >= rating ? 'currentColor' : 'none'} 
-                        strokeWidth={1.5}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Clinical Note Content */}
-              <div>
-                <label className="sa-label">Clinical Observations & Plan</label>
-                <textarea
-                  value={noteContent}
-                  onChange={e => setNoteContent(e.target.value)}
-                  placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
-                  rows={4}
-                  className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)] resize-none"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleAddNote}
-                  disabled={!noteContent.trim()}
-                  className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40"
-                >
-                  Save Progress Note
-                </button>
-                <button
-                  onClick={closeNoteModal}
-                  className="sa-btn justify-center min-h-11"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
+              {(selectedSession?.studentIds || []).map(sid => {
+                const student = getStudent(sid);
+                return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
+              })}
+            </select>
           </div>
-        )}
-      </AnimatePresence>
+
+          {/* Star Rating */}
+          <div>
+            <label className="sa-label">Progress & Engagement Rating</label>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map(rating => (
+                <button
+                  key={rating}
+                  type="button"
+                  onMouseEnter={() => setHoverRating(rating)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  onClick={() => setNoteRating(rating)}
+                  className="p-1.5 text-ps-warn"
+                >
+                  <Star 
+                    size={22} 
+                    fill={(hoverRating || noteRating) >= rating ? 'currentColor' : 'none'} 
+                    strokeWidth={1.5}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Clinical Note Content */}
+          <div>
+            <label className="sa-label">Clinical Observations & Plan</label>
+            <textarea
+              value={noteContent}
+              onChange={e => setNoteContent(e.target.value)}
+              placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
+              rows={4}
+              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)] resize-none"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleAddNote}
+              disabled={!noteContent.trim()}
+              className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40"
+            >
+              Save Progress Note
+            </button>
+            <button
+              onClick={closeNoteModal}
+              className="sa-btn justify-center min-h-11"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </AppModal>
     </div>
   );
 };
