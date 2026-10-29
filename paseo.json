@@ -1,6 +1,6 @@
 {
   "worktree": {
-    "setup": "npm install && node -e \"require('fs').copyFileSync('C:/Users/beng/Documents/code_ni_chris/CAPSTONE_SYSTEM/polisync/.env','.env')\""
+    "setup": "npm install && node scripts/setup-worktree.mjs"
   },
   "scripts": {
     "dev": {
