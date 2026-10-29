@@ -330,6 +330,7 @@ const Login = () => {
                 type="button"
                 onClick={() => setShowDemo((s) => !s)}
                 aria-expanded={showDemo}
+                aria-controls="demo-accounts-grid"
                 className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-3 border border-ps-border bg-transparent transition-colors cursor-pointer hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)]"
               >
                 <span className="block text-xs text-ps-ink-1">Demo accounts</span>

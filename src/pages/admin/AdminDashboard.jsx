@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Users, UserCircle, DoorOpen, Calendar,
   ArrowRight, CheckCircle2, MapPin, CalendarDays,
-  ChevronRight, MoreVertical
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
@@ -15,9 +15,6 @@ export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeTone =
       <div className="sa-kpi-head">
         <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
         <p className="sa-micro">{title}</p>
-        <span className="sa-kpi-kebab" aria-hidden="true">
-          <MoreVertical size={14} strokeWidth={1.5} />
-        </span>
       </div>
       <p className="sa-kpi-value tabular-nums">{value}</p>
       <div className="sa-kpi-foot">

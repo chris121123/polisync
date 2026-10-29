@@ -412,12 +412,6 @@ html:not(.dark) .sa-theme {
   color: var(--sa-text-muted);
 }
 
-.sa-kpi-kebab {
-  display: flex;
-  margin-left: auto;
-  color: var(--sa-text-subtle);
-}
-
 .sa-kpi-value {
   margin-top: 12px;
   font-size: 28px;
