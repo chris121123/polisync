@@ -1,27 +1,45 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link, Navigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
+import { parseDemoAccounts, DEMO_ROLE_LABELS } from '../../lib/demoAccounts';
 import AuthShell from './AuthShell';
-import { AUTH_ROLES } from './roles';
 
 const MAX_ATTEMPTS = 5;
 
 const Login = () => {
-  const { role } = useParams();
-  const activeRole = AUTH_ROLES.find(r => r.id === role);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const { login, logout, requestPasswordReset } = useGlobalState();
+  const { login, requestPasswordReset } = useGlobalState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [demoError, setDemoError] = useState('');
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  // supersedes ADR-019: superadmin demo is intentionally shown on the public login (user-approved)
+  const demoAccounts = parseDemoAccounts(import.meta.env.VITE_DEMO_ACCOUNTS);
+
+  const handleDemoLogin = async (account) => {
+    setDemoError('');
+    setDemoLoading(true);
+    try {
+      await login(account.email, account.password);
+      navigate('/dashboard');
+    } catch (err) {
+      const msg = err?.message || '';
+      const isAuthFail = err?.status === 400 || err?.code === 'invalid_credentials' || msg.toLowerCase().includes('invalid login credentials');
+      setDemoError(isAuthFail ? msg : 'Demo sign-in failed.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -73,23 +91,10 @@ const Login = () => {
     try {
       const loggedInUser = await login(emailValue, passwordValue);
       if (loggedInUser) {
-        if (loggedInUser.app_role !== role) {
-          await logout();
-          setError('These credentials do not match the selected role.');
-          return;
-        }
-
         setFailedAttempts(0);
         setIsLockedOut(false);
 
-        const roleRoutes = {
-          superadmin: '/dashboard',
-          admin: '/dashboard',
-          parent: '/dashboard',
-          teacher: '/dashboard',
-          therapist: '/dashboard'
-        };
-        navigate(roleRoutes[loggedInUser.app_role] || '/dashboard');
+        navigate('/dashboard');
       }
     } catch (err) {
       console.error('[Login Error]:', err);
@@ -129,8 +134,6 @@ const Login = () => {
     await performLogin(email.trim(), password);
   };
 
-  if (!activeRole) return <Navigate to="/login" replace />;
-
   return (
     <AuthShell>
         <motion.div
@@ -140,18 +143,8 @@ const Login = () => {
         >
           {/* Form Header */}
           <div className="flex flex-col items-start gap-2">
-            <Link
-              to="/login"
-              className="sa-link min-h-[44px]"
-            >
-              <ArrowLeft size={14} strokeWidth={1.5} /> Choose a different role
-            </Link>
-            <h1 className="text-2xl text-ps-ink-1">
-              Sign in
-            </h1>
-            <p className="text-sm text-ps-ink-2">
-              Signing in as {activeRole.label}.
-            </p>
+            <h1 className="text-2xl text-ps-ink-1">Sign in to PoliSync</h1>
+            <p className="text-sm text-ps-ink-2">Accounts are created by the center’s administrator.</p>
           </div>
 
           {/* Lockout State */}
@@ -306,7 +299,7 @@ const Login = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading || isLockedOut}
+              disabled={loading || demoLoading || isLockedOut}
               className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
@@ -329,6 +322,39 @@ const Login = () => {
               Forgot password?
             </Link>
           </form>
+
+          {/* Demo accounts (rendered only when VITE_DEMO_ACCOUNTS is set) */}
+          {demoAccounts.length > 0 && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowDemo((s) => !s)}
+                aria-expanded={showDemo}
+                className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-3 border border-ps-border bg-transparent transition-colors cursor-pointer hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)]"
+              >
+                <span className="block text-xs text-ps-ink-1">Demo accounts</span>
+                <span className="block text-xs text-ps-ink-2">{showDemo ? 'Tap a role to sign in.' : 'Tap to show demo accounts.'}</span>
+              </button>
+              {showDemo && (
+                <div id="demo-accounts-grid" className="flex flex-wrap gap-2">
+                  {demoAccounts.map((account) => (
+                    <button
+                      key={account.role}
+                      type="button"
+                      onClick={() => handleDemoLogin(account)}
+                      disabled={demoLoading}
+                      className="grow basis-[calc(50%-0.25rem)] min-h-[44px] px-2 border border-ps-border bg-transparent text-xs text-ps-ink-1 hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showDemo && demoError && (
+                <p role="alert" className="text-xs text-ps-danger text-center">{demoError}</p>
+              )}
+            </div>
+          )}
 
           {/* Trust line at bottom */}
           <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3">
