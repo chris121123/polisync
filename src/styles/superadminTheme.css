@@ -412,12 +412,17 @@ html:not(.dark) .sa-theme {
   color: var(--sa-text-muted);
 }
 
+.sa-kpi-kebab {
+  display: flex;
+  margin-left: auto;
+  color: var(--sa-text-subtle);
+}
+
 .sa-kpi-value {
   margin-top: 12px;
   font-size: 28px;
   font-weight: 400;
   line-height: 1.1;
-  font-variant-numeric: tabular-nums;
   color: var(--sa-text-primary);
 }
 
@@ -489,7 +494,6 @@ html:not(.dark) .sa-theme {
   width: 32px;
   text-align: right;
   font-size: 14px;
-  font-variant-numeric: tabular-nums;
   color: var(--sa-text-primary);
 }
 
@@ -541,7 +545,6 @@ html:not(.dark) .sa-theme {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
   color: var(--sa-text-muted);
 }
 
