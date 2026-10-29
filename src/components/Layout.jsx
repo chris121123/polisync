@@ -45,11 +45,8 @@ const Layout = () => {
 
   // Lock body scroll when mobile sidebar is open
   useEffect(() => {
-    if (isMobile && isSidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isMobile || !isSidebarOpen) return undefined;
+    document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, [isMobile, isSidebarOpen]);
 

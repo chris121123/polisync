@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Lock, Mail, Key, ShieldAlert, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { AppModal } from './AppModal.jsx';
 
 const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
   const { verifyPassword } = useGlobalState();
@@ -63,25 +64,28 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40">
+    <AppModal
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy={step === 1 ? 'wipe-critical-title' : 'admin-verify-title'}
+      maxWidth={step === 1 ? 'max-w-lg' : 'max-w-md'}
+    >
       <AnimatePresence mode="wait">
         {step === 1 ? (
           <motion.div
             key="step1"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 0 }}
-            className="w-full max-w-lg bg-[var(--sa-surface-1)] border border-[var(--sa-danger)] max-h-[90vh] flex flex-col overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex min-h-0 flex-1 flex-col"
           >
-            <div className="p-5 sm:p-8 flex flex-col items-center text-center overflow-y-auto">
+            <div className="p-5 sm:p-8 flex min-h-0 flex-col items-center text-center overflow-y-auto">
               <div className="w-16 h-16 sm:w-20 sm:h-20 border border-[var(--sa-danger)] flex items-center justify-center mb-5 sm:mb-6 shrink-0">
                 <ShieldAlert size={28} strokeWidth={1.5} className="sa-t-danger" />
               </div>
               
-              <h2 className="text-lg sm:text-xl sa-t-danger mb-2">
+              <h2 id="wipe-critical-title" className="text-lg sm:text-xl sa-t-danger mb-2">
                 CRITICAL WARNING
               </h2>
               <p className="text-sm text-[var(--sa-text-secondary)] mb-6 leading-relaxed">
@@ -117,16 +121,16 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
         ) : (
           <motion.div
             key="step2"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 0 }}
-            className="w-full max-w-md bg-[var(--sa-surface-1)] border border-[var(--sa-danger)] max-h-[90vh] flex flex-col overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex min-h-0 flex-1 flex-col"
           >
-            <div className="p-5 sm:p-8 overflow-y-auto">
+            <div className="p-5 sm:p-8 min-h-0 overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3 sa-t-danger">
                   <Lock size={20} strokeWidth={1.5} />
-                  <h3 className="text-lg">Admin Verification</h3>
+                  <h3 id="admin-verify-title" className="text-lg">Admin Verification</h3>
                 </div>
                 <button onClick={onClose} aria-label="Close" className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
                   <X size={18} strokeWidth={1.5} />
@@ -201,7 +205,7 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </AppModal>
   );
 };
 
