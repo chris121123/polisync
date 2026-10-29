@@ -27,8 +27,7 @@ const EDGE_FUNCTIONS = [
 ];
 
 // ── Local KPI card ─────────────────────────────────────────────────────
-// The shared StatCard belongs to AdminDashboard and must stay untouched
-// (ADR-3), so the superadmin page renders its own card off the same data.
+// Mirrors the shared StatCard; separate only for the 32px lead value.
 const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lead = false }) => (
   <div className="sa-panel sa-kpi">
     <div className="sa-kpi-head">
@@ -104,8 +103,6 @@ const SuperAdminDashboard = () => {
     label: ROLE_LABELS[role],
   }));
   const totalForDistribution = roleCounts.reduce((acc, r) => acc + r.count, 0) || 1;
-  // Only the largest role's bar takes the gold accent (gold rationing).
-  const topRole = roleCounts.reduce((top, r) => (r.count > top.count ? r : top), { count: -1 }).role;
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
@@ -186,19 +183,17 @@ const SuperAdminDashboard = () => {
             <p className="sa-empty-title">No accounts yet</p>
           </div>
         ) : (
-          <div>
-            {roleCounts.filter(r => r.count > 0).map(({ role, count, label }) => {
+          <div className="grid grid-cols-1 gap-px bg-[var(--sa-line-hairline)] lg:grid-cols-5">
+            {roleCounts.map(({ role, count, label }) => {
               const pct = Math.round((count / totalForDistribution) * 100);
               return (
-                <div key={role} className="sa-bar-row">
-                  <span className="sa-bar-label">{label}</span>
-                  <div className="sa-bar">
-                    <div
-                      className={role === topRole ? 'sa-bar-fill sa-bar-fill--accent' : 'sa-bar-fill'}
-                      style={{ width: `${pct}%` }}
-                    />
+                <div key={role} className="bg-[var(--sa-surface-1)] px-4 py-3">
+                  <p className="text-xs text-[var(--sa-text-muted)]">{label}</p>
+                  <p className="mt-1 text-2xl leading-none tabular-nums text-[var(--sa-text-primary)]">{count}</p>
+                  <p className="mt-1 text-[11px] tabular-nums text-[var(--sa-text-muted)]">{pct}%</p>
+                  <div className="mt-3 h-0.5 bg-[var(--sa-line-row)]">
+                    <div className="h-full bg-[var(--sa-bar-primary)]" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="sa-bar-count">{count}</span>
                 </div>
               );
             })}
