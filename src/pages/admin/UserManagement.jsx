@@ -17,7 +17,6 @@ import {
   Search,
   Activity
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine } from '../../lib/auditLog';
@@ -32,6 +31,7 @@ import {
 } from './userManagementConstants.js';
 import { AuditPanel } from './AuditPanel.jsx';
 import { ConfigPanel } from './ConfigPanel.jsx';
+import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
 
 const NAME_PATTERN = /^[A-Za-zÀ-ÿÑñ .,'-]+$/;
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -148,6 +148,7 @@ const UserManagement = () => {
     if (openCreate) {
       setShowCreateModal(true);
       setCreateError('');
+      setErrors({});
       setCreateSuccess('');
     }
     if (openCreate || tab) navigate(location.pathname, { replace: true, state: null });
@@ -355,7 +356,7 @@ const UserManagement = () => {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
+            onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
             className="sa-btn sa-btn--primary"
           >
             <UserPlus size={16} strokeWidth={1.5} />
@@ -534,7 +535,7 @@ const UserManagement = () => {
                     <p className="sa-empty-title">No users yet</p>
                     <p className="sa-empty-sub">Create your first platform account to get started.</p>
                     <button
-                      onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); }}
+                      onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
                       className="sa-btn sa-btn--primary mt-4"
                     >
                       <UserPlus size={14} strokeWidth={1.5} /> Create first user
@@ -655,232 +656,209 @@ const UserManagement = () => {
       )}
 
       {/* ── Create User Modal ── */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <div
-            className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/40 p-0 md:p-4"
-            onClick={handleCancelCreate}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: '100%' }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: '100%' }}
-              className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="relative shrink-0 bg-[var(--sa-surface-warm)] px-5 py-5 md:px-6">
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="sa-micro">New Account</p>
-                    <h3 className="mt-1 text-lg text-[var(--sa-text-primary)] md:text-xl">Create New User</h3>
-                    <p className="mt-1 text-xs text-[var(--sa-text-muted)]">Administrator-provisioned account</p>
-                  </div>
+      <AppModal isOpen={showCreateModal} onClose={handleCancelCreate} labelledBy="create-user-title">
+        <ModalHeader
+          titleId="create-user-title"
+          eyebrow="New Account"
+          title="Create New User"
+          description="Administrator-provisioned account"
+          onClose={handleCancelCreate}
+          className="bg-[var(--sa-surface-warm)]"
+        />
+
+        {/* Body */}
+        <div className="flex-1 min-h-0 px-5 py-5 md:px-6 space-y-4 overflow-y-auto">
+          {createError && (
+            <div className="sa-alert sa-alert--danger items-center">
+              <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
+              {createError}
+            </div>
+          )}
+          {createSuccess && (
+            <div className="sa-alert sa-alert--success items-center">
+              <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0" />
+              {createSuccess}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Name */}
+            <div>
+              <label htmlFor="new_user_name" className="sa-label">Full Name</label>
+              <input
+                id="new_user_name"
+                data-autofocus
+                type="text"
+                value={newUser.name}
+                onChange={(e) => {
+                  setNewUser(p => ({ ...p, name: e.target.value }));
+                  if (errors.name) setErrors(p => ({ ...p, name: '' }));
+                }}
+                onBlur={() => validateField('name')}
+                placeholder="FirstName LastName"
+                className={clsx(fieldClass, fieldTone(errors.name))}
+              />
+              {errors.name && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.name}</p>}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="new_user_email" className="sa-label">Email Address</label>
+              <input
+                id="new_user_email"
+                type="email"
+                autoComplete="username"
+                value={newUser.email}
+                onChange={(e) => {
+                  setNewUser(p => ({ ...p, email: e.target.value }));
+                  if (errors.email) setErrors(p => ({ ...p, email: '' }));
+                }}
+                onBlur={() => validateField('email')}
+                placeholder="email@polisync.com"
+                className={clsx(fieldClass, fieldTone(errors.email))}
+              />
+              {errors.email && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.email}</p>}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="temp_password_input" className="sa-label">Temporary Password</label>
+              <div className="relative">
+                <input
+                  id="temp_password_input"
+                  aria-describedby="temp_password_rules"
+                  type="text"
+                  style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
+                  autoComplete="new-password"
+                  value={newUser.password}
+                  onChange={(e) => {
+                    setNewUser(p => ({ ...p, password: e.target.value }));
+                    if (errors.password) setErrors(p => ({ ...p, password: '' }));
+                  }}
+                  onBlur={() => validateField('password')}
+                  placeholder="Min 8 characters"
+                  className={clsx(fieldClass, 'pr-12', fieldTone(errors.password))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
+                >
+                  {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
+                </button>
+              </div>
+              {errors.password && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.password}</p>}
+              {!errors.password && <p className="text-[11px] text-[var(--sa-text-muted)] mt-1">User will be prompted to change password on initial login.</p>}
+              <ul id="temp_password_rules" className="mt-2 border border-[var(--sa-line-hairline)] bg-[var(--sa-bg-base)] p-3 space-y-1.5">
+                {PASSWORD_RULES.map((rule) => {
+                  const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
+                  return (
+                    <li key={rule.id} className={clsx('flex items-center gap-1.5 text-[11px]', met ? 'text-[var(--sa-success)]' : 'text-[var(--sa-text-muted)]')}>
+                      {met ? <Check size={12} strokeWidth={1.5} /> : <X size={12} strokeWidth={1.5} />}
+                      {rule.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Role */}
+            <div>
+              <p id="new_user_role_label" className="sa-label">Role</p>
+              <div role="group" aria-labelledby="new_user_role_label" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { value: 'teacher', label: 'Teacher' },
+                  { value: 'therapist', label: 'Therapist' },
+                  { value: 'parent', label: 'Parent' },
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'superadmin', label: 'Super Admin' },
+                ].map(({ value, label }) => (
                   <button
+                    key={value}
                     type="button"
-                    onClick={handleCancelCreate}
-                    aria-label="Close"
-                    className="shrink-0 cursor-pointer border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
+                    onClick={() => setNewUser(p => ({ ...p, role: value }))}
+                    aria-pressed={newUser.role === value}
+                    className={clsx(
+                      'py-2.5 text-xs border cursor-pointer transition-colors',
+                      newUser.role === value
+                        ? 'border-[var(--sa-gold)] text-[var(--sa-text-primary)]'
+                        : 'border-[var(--sa-line-default)] text-[var(--sa-text-muted)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]'
+                    )}
                   >
-                    <X size={18} strokeWidth={1.5} />
+                    {label}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {newUser.role !== 'parent' && (
+                <div>
+                  <label htmlFor="new_user_department" className="sa-label">Department</label>
+                  <select
+                    id="new_user_department"
+                    value={newUser.department}
+                    onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
+                    className={clsx(fieldClass, 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]')}
+                  >
+                    <option value="General">General</option>
+                    <option value="SPED">SPED</option>
+                    <option value="Rehab">Rehab</option>
+                    <option value="Playschool">Playschool</option>
+                    <option value="Admin">Admin</option>
+                  </select>
                 </div>
-                <div className="mt-4 h-px bg-[var(--sa-line-hairline)]" />
+              )}
+
+              {/* Phone */}
+              <div className={clsx(newUser.role === 'parent' && 'sm:col-span-2')}>
+                <label htmlFor="phone_input" className="sa-label">Phone (optional)</label>
+                <input
+                  id="phone_input"
+                  type="tel"
+                  autoComplete="tel"
+                  value={newUser.phone}
+                  onChange={(e) => {
+                    setNewUser(p => ({ ...p, phone: e.target.value }));
+                    if (errors.phone) setErrors(p => ({ ...p, phone: '' }));
+                  }}
+                  onBlur={() => validateField('phone')}
+                  placeholder="09XX XXX XXXX"
+                  className={clsx(fieldClass, fieldTone(errors.phone))}
+                />
+                {errors.phone && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.phone}</p>}
               </div>
-
-              {/* Body */}
-              <div className="flex-1 min-h-0 px-5 py-5 md:px-6 space-y-4 overflow-y-auto">
-                {createError && (
-                  <div className="sa-alert sa-alert--danger items-center">
-                    <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
-                    {createError}
-                  </div>
-                )}
-                {createSuccess && (
-                  <div className="sa-alert sa-alert--success items-center">
-                    <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0" />
-                    {createSuccess}
-                  </div>
-                )}
-
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label htmlFor="new_user_name" className="sa-label">Full Name</label>
-                    <input
-                      id="new_user_name"
-                      type="text"
-                      value={newUser.name}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, name: e.target.value }));
-                        if (errors.name) setErrors(p => ({ ...p, name: '' }));
-                      }}
-                      onBlur={() => validateField('name')}
-                      placeholder="FirstName LastName"
-                      className={clsx(fieldClass, fieldTone(errors.name))}
-                    />
-                    {errors.name && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.name}</p>}
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label htmlFor="new_user_email" className="sa-label">Email Address</label>
-                    <input
-                      id="new_user_email"
-                      type="email"
-                      autoComplete="username"
-                      value={newUser.email}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, email: e.target.value }));
-                        if (errors.email) setErrors(p => ({ ...p, email: '' }));
-                      }}
-                      onBlur={() => validateField('email')}
-                      placeholder="email@polisync.com"
-                      className={clsx(fieldClass, fieldTone(errors.email))}
-                    />
-                    {errors.email && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.email}</p>}
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label htmlFor="temp_password_input" className="sa-label">Temporary Password</label>
-                    <div className="relative">
-                      <input
-                        id="temp_password_input"
-                        aria-describedby="temp_password_rules"
-                        type="text"
-                        style={{ WebkitTextSecurity: showPassword ? 'none' : 'disc' }}
-                        autoComplete="new-password"
-                        value={newUser.password}
-                        onChange={(e) => {
-                          setNewUser(p => ({ ...p, password: e.target.value }));
-                          if (errors.password) setErrors(p => ({ ...p, password: '' }));
-                        }}
-                        onBlur={() => validateField('password')}
-                        placeholder="Min 8 characters"
-                        className={clsx(fieldClass, 'pr-12', fieldTone(errors.password))}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
-                      >
-                        {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
-                      </button>
-                    </div>
-                    {errors.password && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.password}</p>}
-                    {!errors.password && <p className="text-[11px] text-[var(--sa-text-muted)] mt-1">User will be prompted to change password on initial login.</p>}
-                    <ul id="temp_password_rules" className="mt-2 border border-[var(--sa-line-hairline)] bg-[var(--sa-bg-base)] p-3 space-y-1.5">
-                      {PASSWORD_RULES.map((rule) => {
-                        const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
-                        return (
-                          <li key={rule.id} className={clsx('flex items-center gap-1.5 text-[11px]', met ? 'text-[var(--sa-success)]' : 'text-[var(--sa-text-muted)]')}>
-                            {met ? <Check size={12} strokeWidth={1.5} /> : <X size={12} strokeWidth={1.5} />}
-                            {rule.label}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-
-                  {/* Role */}
-                  <div>
-                    <p id="new_user_role_label" className="sa-label">Role</p>
-                    <div role="group" aria-labelledby="new_user_role_label" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {[
-                        { value: 'teacher', label: 'Teacher' },
-                        { value: 'therapist', label: 'Therapist' },
-                        { value: 'parent', label: 'Parent' },
-                        { value: 'admin', label: 'Admin' },
-                        { value: 'superadmin', label: 'Super Admin' },
-                      ].map(({ value, label }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setNewUser(p => ({ ...p, role: value }))}
-                          aria-pressed={newUser.role === value}
-                          className={clsx(
-                            'py-2.5 text-xs border cursor-pointer transition-colors',
-                            newUser.role === value
-                              ? 'border-[var(--sa-gold)] text-[var(--sa-text-primary)]'
-                              : 'border-[var(--sa-line-default)] text-[var(--sa-text-muted)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]'
-                          )}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {newUser.role !== 'parent' && (
-                    <div>
-                      <label htmlFor="new_user_department" className="sa-label">Department</label>
-                      <select
-                        id="new_user_department"
-                        value={newUser.department}
-                        onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                        className={clsx(fieldClass, 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]')}
-                      >
-                        <option value="General">General</option>
-                        <option value="SPED">SPED</option>
-                        <option value="Rehab">Rehab</option>
-                        <option value="Playschool">Playschool</option>
-                        <option value="Admin">Admin</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Phone */}
-                  <div>
-                    <label htmlFor="phone_input" className="sa-label">Phone (optional)</label>
-                    <input
-                      id="phone_input"
-                      type="tel"
-                      autoComplete="tel"
-                      value={newUser.phone}
-                      onChange={(e) => {
-                        setNewUser(p => ({ ...p, phone: e.target.value }));
-                        if (errors.phone) setErrors(p => ({ ...p, phone: '' }));
-                      }}
-                      onBlur={() => validateField('phone')}
-                      placeholder="09XX XXX XXXX"
-                      className={clsx(fieldClass, fieldTone(errors.phone))}
-                    />
-                    {errors.phone && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.phone}</p>}
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
-                <button
-                  type="button"
-                  onClick={handleCancelCreate}
-                  className="sa-btn justify-center min-h-11 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateUser}
-                  disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
-                  className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {createLoading ? (
-                    <div className="h-4 w-4 animate-spin border border-current border-t-transparent" />
-                  ) : (
-                    <>
-                      <UserPlus size={16} strokeWidth={1.5} />
-                      Create Account
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+
+        {/* Footer */}
+        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+          <button
+            type="button"
+            onClick={handleCancelCreate}
+            className="sa-btn justify-center min-h-11 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleCreateUser}
+            disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
+            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {createLoading ? (
+              <div className="h-4 w-4 animate-spin border border-current border-t-transparent" />
+            ) : (
+              <>
+                <UserPlus size={16} strokeWidth={1.5} />
+                Create Account
+              </>
+            )}
+          </button>
+        </div>
+      </AppModal>
 
       {/* ── Delete User Modal ── */}
       {deleteModalData && (
