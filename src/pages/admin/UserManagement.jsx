@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users,
   UserPlus,
@@ -70,6 +70,8 @@ const UserManagement = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+  // The row kebab outlives the menu item that opens a dialog, so it is the focus anchor to restore.
+  const rowMenuTriggerRef = useRef(null);
   const [auditSearch, setAuditSearch] = useState('');
   const [auditCategory, setAuditCategory] = useState('all');
 
@@ -233,6 +235,7 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = (member) => {
+    rowMenuTriggerRef.current?.focus();
     setDeleteModalData(member);
     setDeleteCountdown(5);
     setOpenMenuId(null);
@@ -464,7 +467,10 @@ const UserManagement = () => {
                     <td className="px-6 py-3.5 text-right">
                       <div className="relative inline-block text-left">
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                          onClick={(e) => {
+                            rowMenuTriggerRef.current = e.currentTarget;
+                            setOpenMenuId(openMenuId === member.id ? null : member.id);
+                          }}
                           aria-label={`Actions for ${member.name}`}
                           className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] transition-colors"
                         >
@@ -498,6 +504,7 @@ const UserManagement = () => {
 
                               <button
                                 onClick={() => {
+                                  rowMenuTriggerRef.current?.focus();
                                   setShowRoleModal(member.id);
                                   setSelectedRole(member.app_role || 'teacher');
                                   setOpenMenuId(null);
@@ -583,77 +590,73 @@ const UserManagement = () => {
       )}
 
       {/* ── Change Role Modal ── */}
-      {showRoleModal && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setShowRoleModal(null)}
-        >
-          <div
-            className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] max-w-sm w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg text-[var(--sa-text-primary)] mb-2">Change User Role</h3>
-            
-            {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
-              <div className="mb-4 border border-[var(--sa-danger)] p-3 flex gap-3 items-start">
-                <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-xs sa-t-danger mb-1">Critical Warning</p>
-                  <p className="text-xs sa-t-danger leading-tight">
-                    You are changing your OWN role. You will lose administrative access and be locked out of this console.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="mb-4 border border-[var(--sa-line-hairline)] p-3 flex gap-3 items-start">
-                <ShieldAlert size={16} strokeWidth={1.5} className="text-[var(--sa-text-muted)] shrink-0 mt-0.5" />
-                <p className="text-xs text-[var(--sa-text-muted)] leading-tight">
-                  This will immediately update access permissions across the system.
+      <AppModal isOpen={Boolean(showRoleModal)} onClose={() => setShowRoleModal(null)} labelledBy="change-role-title" maxWidth="max-w-sm">
+        <ModalHeader
+          titleId="change-role-title"
+          title="Change User Role"
+          onClose={() => setShowRoleModal(null)}
+        />
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
+          {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
+            <div className="mb-4 border border-[var(--sa-danger)] p-3 flex gap-3 items-start">
+              <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs sa-t-danger mb-1">Critical Warning</p>
+                <p className="text-xs sa-t-danger leading-tight">
+                  You are changing your OWN role. You will lose administrative access and be locked out of this console.
                 </p>
               </div>
-            )}
-
-            <div className="space-y-2 mb-4">
-              {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
-                <button
-                  key={role}
-                  onClick={() => setSelectedRole(role)}
-                  className={clsx(
-                    "w-full text-left px-4 py-3 text-sm transition-colors border",
-                    selectedRole === role
-                      ? "border-[var(--sa-gold)] text-[var(--sa-text-primary)]"
-                      : "border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
-                  )}
-                >
-                  <span className="capitalize block">{role === 'superadmin' ? 'Super Admin' : role}</span>
-                  <span className="text-[11px] text-[var(--sa-text-muted)] block mt-0.5">
-                    {role === 'superadmin' ? 'Full system access + user management + platform config' :
-                     role === 'admin' ? 'Schedule, directory, and room operations' :
-                     role === 'teacher' ? 'Manage classes and attendance' :
-                     role === 'therapist' ? 'Session notes and progress' :
-                     'View child schedule'}
-                  </span>
-                </button>
-              ))}
             </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleUpdateRole(showRoleModal)}
-                className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
-              >
-                Update Role
-              </button>
-              <button
-                onClick={() => setShowRoleModal(null)}
-                className="sa-btn justify-center min-h-11"
-              >
-                Cancel
-              </button>
+          ) : (
+            <div className="mb-4 border border-[var(--sa-line-hairline)] p-3 flex gap-3 items-start">
+              <ShieldAlert size={16} strokeWidth={1.5} className="text-[var(--sa-text-muted)] shrink-0 mt-0.5" />
+              <p className="text-xs text-[var(--sa-text-muted)] leading-tight">
+                This will immediately update access permissions across the system.
+              </p>
             </div>
+          )}
+
+          <div className="space-y-2">
+            {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+              <button
+                key={role}
+                onClick={() => setSelectedRole(role)}
+                className={clsx(
+                  "w-full text-left px-4 py-3 text-sm transition-colors border",
+                  selectedRole === role
+                    ? "border-[var(--sa-gold)] text-[var(--sa-text-primary)]"
+                    : "border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
+                )}
+              >
+                <span className="capitalize block">{role === 'superadmin' ? 'Super Admin' : role}</span>
+                <span className="text-[11px] text-[var(--sa-text-muted)] block mt-0.5">
+                  {role === 'superadmin' ? 'Full system access + user management + platform config' :
+                   role === 'admin' ? 'Schedule, directory, and room operations' :
+                   role === 'teacher' ? 'Manage classes and attendance' :
+                   role === 'therapist' ? 'Session notes and progress' :
+                   'View child schedule'}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+          <button
+            onClick={() => handleUpdateRole(showRoleModal)}
+            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
+          >
+            Update Role
+          </button>
+          <button
+            onClick={() => setShowRoleModal(null)}
+            className="sa-btn justify-center min-h-11"
+          >
+            Cancel
+          </button>
+        </div>
+      </AppModal>
 
       {/* ── Create User Modal ── */}
       <AppModal isOpen={showCreateModal} onClose={handleCancelCreate} labelledBy="create-user-title">
@@ -861,102 +864,84 @@ const UserManagement = () => {
       </AppModal>
 
       {/* ── Delete User Modal ── */}
-      {deleteModalData && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4"
-          onClick={() => setDeleteModalData(null)}
-        >
-          <div
-            className="bg-[var(--sa-surface-1)] max-w-sm w-full p-6 border border-[var(--sa-line-default)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <AlertCircle size={18} strokeWidth={1.5} className="sa-t-danger shrink-0" />
-              <div className="min-w-0">
-                <h3 className="text-lg text-[var(--sa-text-primary)]">Delete User?</h3>
-                <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{deleteModalData.name}</p>
-              </div>
-            </div>
-            
-            <div className="border border-[var(--sa-danger)] p-3.5 mb-6">
-              <p className="text-xs sa-t-danger leading-relaxed">
-                This action cannot be undone. This will permanently delete the user's account and revoke access immediately.
-              </p>
-            </div>
+      <AppModal isOpen={Boolean(deleteModalData)} onClose={() => setDeleteModalData(null)} labelledBy="delete-user-title" maxWidth="max-w-sm">
+        <ModalHeader
+          titleId="delete-user-title"
+          title="Delete User?"
+          description={deleteModalData?.name}
+          onClose={() => setDeleteModalData(null)}
+        />
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteModalData(null)}
-                className="sa-btn flex-1 justify-center min-h-11"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteUser}
-                disabled={deleteCountdown > 0}
-                className={clsx(
-                  "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
-                  deleteCountdown > 0
-                    ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
-                    : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
-                )}
-              >
-                {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
-              </button>
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
+          <div className="border border-[var(--sa-danger)] p-3.5">
+            <p className="text-xs sa-t-danger leading-relaxed">
+              This action cannot be undone. This will permanently delete the user's account and revoke access immediately.
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+          <button
+            onClick={() => setDeleteModalData(null)}
+            className="sa-btn flex-1 justify-center min-h-11"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDeleteUser}
+            disabled={deleteCountdown > 0}
+            className={clsx(
+              "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
+              deleteCountdown > 0
+                ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
+                : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
+            )}
+          >
+            {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
+          </button>
+        </div>
+      </AppModal>
 
       {/* ── Self Role Change Warning Modal ── */}
-      {showSelfRoleWarning && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-[10000] flex items-center justify-center p-4"
-          onClick={() => setShowSelfRoleWarning(false)}
-        >
-          <div
-            className="bg-[var(--sa-surface-1)] max-w-sm w-full p-6 border border-[var(--sa-line-default)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0" />
-              <div className="min-w-0">
-                <h3 className="text-lg text-[var(--sa-text-primary)]">Change Own Role?</h3>
-                <p className="text-[11px] text-[var(--sa-text-muted)] truncate">Target Role: <span className="capitalize sa-t-warm">{selectedRole}</span></p>
-              </div>
-            </div>
-            
-            <div className="border border-[var(--sa-danger)] p-3.5 mb-6">
-              <p className="text-xs sa-t-danger leading-relaxed">
-                You are stripping yourself of superadmin access.
-                This action is irreversible from this account.
-                You will be locked out immediately.
-              </p>
-            </div>
+      <AppModal isOpen={showSelfRoleWarning} onClose={() => setShowSelfRoleWarning(false)} labelledBy="self-role-title" maxWidth="max-w-sm">
+        <ModalHeader
+          titleId="self-role-title"
+          title="Change Own Role?"
+          description={<>Target Role: <span className="capitalize sa-t-warm">{selectedRole}</span></>}
+          onClose={() => setShowSelfRoleWarning(false)}
+        />
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowSelfRoleWarning(false)}
-                className="sa-btn flex-1 justify-center min-h-11"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSelfRoleChange}
-                disabled={selfRoleCountdown > 0}
-                className={clsx(
-                  "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
-                  selfRoleCountdown > 0
-                    ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
-                    : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
-                )}
-              >
-                {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
-              </button>
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
+          <div className="border border-[var(--sa-danger)] p-3.5">
+            <p className="text-xs sa-t-danger leading-relaxed">
+              You are stripping yourself of superadmin access.
+              This action is irreversible from this account.
+              You will be locked out immediately.
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+          <button
+            onClick={() => setShowSelfRoleWarning(false)}
+            className="sa-btn flex-1 justify-center min-h-11"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmSelfRoleChange}
+            disabled={selfRoleCountdown > 0}
+            className={clsx(
+              "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
+              selfRoleCountdown > 0
+                ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
+                : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
+            )}
+          >
+            {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
+          </button>
+        </div>
+      </AppModal>
     </div>
   );
 };

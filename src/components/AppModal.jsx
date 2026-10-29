@@ -10,14 +10,19 @@ const panelTransition = { type: 'tween', duration: 0.2, ease: [0.16, 1, 0.3, 1] 
 // Tracks open modals so Escape only closes the topmost one.
 const openModals = [];
 
-export const AppModal = ({ isOpen, onClose, labelledBy, children, maxWidth = 'max-w-lg' }) => {
+export const AppModal = ({ isOpen, onClose, labelledBy, describedBy, children, maxWidth = 'max-w-lg', dismissible = true }) => {
   const panelRef = useRef(null);
   const closeRef = useRef(onClose);
+  const dismissibleRef = useRef(dismissible);
   const tokenRef = useRef({});
 
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
+
+  useEffect(() => {
+    dismissibleRef.current = dismissible;
+  }, [dismissible]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -29,7 +34,7 @@ export const AppModal = ({ isOpen, onClose, labelledBy, children, maxWidth = 'ma
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape' && openModals[openModals.length - 1] === token) closeRef.current?.();
+      if (event.key === 'Escape' && dismissibleRef.current && openModals[openModals.length - 1] === token) closeRef.current?.();
     };
     document.addEventListener('keydown', handleKeyDown);
 
@@ -58,13 +63,14 @@ export const AppModal = ({ isOpen, onClose, labelledBy, children, maxWidth = 'ma
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          onClick={() => closeRef.current?.()}
+          onClick={dismissible ? () => closeRef.current?.() : undefined}
         >
           <motion.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}
+            aria-describedby={describedBy}
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.99 }}
@@ -94,14 +100,16 @@ export const ModalHeader = ({ titleId, eyebrow, title, description, onClose, cla
         <h2 id={titleId} className="mt-1 truncate text-lg font-semibold text-[var(--sa-text-primary)] md:text-xl">{title}</h2>
         {description && <p className="mt-1 text-xs font-medium text-[var(--sa-text-muted)]">{description}</p>}
       </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close dialog"
-        className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
-      >
-        <X size={18} />
-      </button>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
+        >
+          <X size={18} />
+        </button>
+      )}
     </div>
     {children}
   </div>

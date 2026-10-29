@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
 import NotificationPanel from './NotificationPanel';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
+import { AppModal, ModalHeader } from './AppModal.jsx';
 import { useGlobalState } from '../context/GlobalStateContext';
 import '../styles/superadminTheme.css';
 
@@ -78,14 +79,6 @@ const Layout = () => {
     setShowLogoutConfirm(false);
     handleLogout();
   };
-
-  // Escape closes the logout confirmation
-  useEffect(() => {
-    if (!showLogoutConfirm) return;
-    const onKey = (e) => { if (e.key === 'Escape') setShowLogoutConfirm(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showLogoutConfirm]);
 
   const handleNavClick = () => {
     // Close sidebar on tablet when clicking a nav link
@@ -305,57 +298,34 @@ const Layout = () => {
         </main>
       </div>
       {/* Logout Confirmation */}
-      <AnimatePresence>
-        {showLogoutConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+      <AppModal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} labelledBy="logout_confirm_title" describedBy="logout_confirm_desc" maxWidth="max-w-sm">
+        <ModalHeader
+          titleId="logout_confirm_title"
+          title="Log out?"
+          onClose={() => setShowLogoutConfirm(false)}
+        />
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
+          <p id="logout_confirm_desc" className="text-sm font-medium text-[var(--sa-text-muted)]">
+            You'll need to sign in again to get back to PoliSync.
+          </p>
+        </div>
+
+        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+          <button
             onClick={() => setShowLogoutConfirm(false)}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40"
+            className="sa-btn flex-1 justify-center min-h-11"
           >
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="logout_confirm_title"
-              aria-describedby="logout_confirm_desc"
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-ps-surface border border-ps-border rounded-2xl shadow-md p-5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h2 id="logout_confirm_title" className="font-display font-semibold text-lg text-ps-ink-1">Log out?</h2>
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  aria-label="Close"
-                  className="p-1.5 -mt-1 -mr-1 rounded-lg text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-bg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <p id="logout_confirm_desc" className="text-sm text-ps-ink-2 font-medium mt-2 mb-5">
-                You'll need to sign in again to get back to PoliSync.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 py-2.5 bg-ps-bg hover:bg-ps-border text-ps-ink-1 font-medium rounded-xl text-sm transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmLogout}
-                  className="flex-1 py-2.5 bg-ps-primary hover:opacity-90 text-white font-medium rounded-xl text-sm transition-opacity focus-visible:outline-2 focus-visible:outline-ps-accent"
-                >
-                  Log out
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Cancel
+          </button>
+          <button
+            onClick={confirmLogout}
+            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
+          >
+            Log out
+          </button>
+        </div>
+      </AppModal>
 
       {/* Global Search Modal */}
       <GlobalSearch isOpen={isSearchOpen} onToggle={() => setIsSearchOpen(prev => !prev)} onClose={() => setIsSearchOpen(false)} />
