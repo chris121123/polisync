@@ -1,6 +1,21 @@
 // Called every render: actions must close over this render's state. Do not memoize.
 import { supabase } from '../lib/supabase';
 
+// Read-only totals for the danger-zone preview; null per table when it cannot be counted.
+export const fetchWipeCounts = async () => {
+  const tables = ['profiles', 'students', 'rooms', 'sessions'];
+  if (!supabase) return Object.fromEntries(tables.map((table) => [table, null]));
+  const entries = await Promise.all(tables.map(async (table) => {
+    try {
+      const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
+      return [table, error ? null : count];
+    } catch {
+      return [table, null];
+    }
+  }));
+  return Object.fromEntries(entries);
+};
+
 export const createSettingsActions = ({ setLoading, setSessions, setStudents, setRooms, setStaff, user }) => {
   const clearDatabase = async () => {
     setLoading(true);

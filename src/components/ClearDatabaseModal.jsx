@@ -3,7 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Lock, Mail, Key, ShieldAlert, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { fetchWipeCounts } from '../state/settings';
 import { AppModal } from './AppModal.jsx';
+
+const WIPE_PHRASE = 'ERASE ALL DATA';
+// A count that could not be read is shown as an em dash, never guessed.
+const displayCount = (value, loading) => (loading ? '…' : value == null ? '—' : value);
 
 const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
   const { verifyPassword } = useGlobalState();
@@ -11,6 +16,8 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
   const [countdown, setCountdown] = useState(30);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [counts, setCounts] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,9 +28,21 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
       setCountdown(30);
       setEmail('');
       setPassword('');
+      setPassphrase('');
       setError('');
       setLoading(false);
+    } else {
+      setPassphrase('');
     }
+  }, [isOpen]);
+
+  // Preview only: a failed count never blocks the wipe.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    let active = true;
+    setCounts(null);
+    fetchWipeCounts().then((next) => { if (active) setCounts(next); });
+    return () => { active = false; };
   }, [isOpen]);
 
   // Handle countdown
@@ -38,6 +57,8 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
   }, [isOpen, step, countdown]);
 
   const handleVerifyAndClear = async () => {
+    if (passphrase !== WIPE_PHRASE) return;
+
     if (!email || !password) {
       setError('Please enter your email and password');
       return;
@@ -91,6 +112,26 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
               <p className="text-sm text-[var(--sa-text-secondary)] mb-6 leading-relaxed">
                 You are about to <strong className="font-medium sa-t-danger">PERMANENTLY ERASE</strong> all data in the system. This includes all students, staff, rooms, and sessions. This action <strong className="font-medium">CANNOT BE UNDONE</strong>.
               </p>
+
+              <div className="w-full border border-[var(--sa-line-default)] px-3 sm:px-4 mb-6 sm:mb-8 text-left">
+                <div className="sa-list">
+                  {[
+                    ['Sessions', counts?.sessions],
+                    ['Students', counts?.students],
+                    ['Rooms', counts?.rooms],
+                    ['Profiles', counts?.profiles == null ? null : Math.max(0, counts.profiles - 1)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-start justify-between gap-3 py-2">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--sa-text-secondary)]">{label}</p>
+                        {label === 'Profiles' && <p className="sa-micro">current account retained</p>}
+                      </div>
+                      <p className="text-sm tabular-nums text-[var(--sa-text-primary)]">{displayCount(value, counts === null)}</p>
+                    </div>
+                  ))}
+                  <p className="py-2 text-[11px] text-[var(--sa-text-muted)]">Audit log retained</p>
+                </div>
+              </div>
 
               <div className="w-full border border-[var(--sa-danger)] p-3 sm:p-4 mb-6 sm:mb-8 text-xs sm:text-sm sa-t-danger">
                 Please wait {countdown} seconds to proceed...
@@ -176,8 +217,22 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="sa-label" htmlFor="wipe-passphrase">Type ERASE ALL DATA to confirm</label>
+                  <div className="relative">
+                    <ShieldAlert className="sa-field-icon" size={16} strokeWidth={1.5} />
+                    <input
+                      id="wipe-passphrase"
+                      type="text"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      className="sa-input"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  </div>
+                </div>
               </div>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep(1)}
@@ -188,7 +243,7 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                 </button>
                 <button
                   onClick={handleVerifyAndClear}
-                  disabled={loading || !email || !password}
+                  disabled={loading || !email || !password || passphrase !== WIPE_PHRASE}
                   className="flex-[2] min-h-11 py-3 text-[11px] uppercase tracking-[0.1em] border border-[var(--sa-danger)] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)] disabled:opacity-40 disabled:cursor-default flex justify-center items-center gap-2"
                 >
                   {loading ? (
