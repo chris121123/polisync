@@ -2,6 +2,18 @@ import React from 'react';
 import { Search, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 import { auditLine } from '../../lib/auditLog';
+import { AUDIT_SEVERITIES, getAuditSeverity } from './userManagementConstants.js';
+
+const SEVERITY_TONE = { critical: 'sa-t-danger', warn: 'sa-t-warm', info: 'sa-t-muted' };
+const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-2 py-1.5 text-xs tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
+
+// Local time, fixed shape: 2026-10-29 09:14:00.
+const stamp = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
 
 export const AuditPanel = ({
   fetchAuditLogs,
@@ -10,6 +22,12 @@ export const AuditPanel = ({
   setAuditSearch,
   auditCategory,
   setAuditCategory,
+  auditSeverity,
+  setAuditSeverity,
+  auditFrom,
+  setAuditFrom,
+  auditTo,
+  setAuditTo,
   auditLogs,
   filteredAuditLogs,
   expandedLogIds,
@@ -59,6 +77,41 @@ export const AuditPanel = ({
           ))}
         </div>
       </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:items-end sm:gap-3">
+        <div className="min-w-0 sm:w-40">
+          <label htmlFor="audit-from" className="sa-label">From</label>
+          <input
+            id="audit-from"
+            type="date"
+            value={auditFrom}
+            onChange={e => setAuditFrom(e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+        <div className="min-w-0 sm:w-40">
+          <label htmlFor="audit-to" className="sa-label">To</label>
+          <input
+            id="audit-to"
+            type="date"
+            value={auditTo}
+            onChange={e => setAuditTo(e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+        <div className="min-w-0 sm:w-40">
+          <label htmlFor="audit-severity" className="sa-label">Severity</label>
+          <select
+            id="audit-severity"
+            value={auditSeverity}
+            onChange={e => setAuditSeverity(e.target.value)}
+            className={fieldClass}
+          >
+            {Object.entries(AUDIT_SEVERITIES).map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
 
     <div className="overflow-x-auto">
@@ -69,11 +122,12 @@ export const AuditPanel = ({
       )}
 
       {!auditLoading && auditLogs.length > 0 && (
-        <table className="w-full min-w-[700px] text-left border-collapse">
+        <table className="w-full min-w-[820px] text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--sa-line-default)]">
               <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Timestamp</th>
               <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Action</th>
+              <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Severity</th>
               <th className="text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Performed by</th>
               <th className="hidden md:table-cell text-left px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">IP address</th>
               <th className="text-right px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Details</th>
@@ -83,14 +137,14 @@ export const AuditPanel = ({
             {filteredAuditLogs.map(log => {
               const { action, actor, target } = auditLine(log, staff);
               const badge = getAuditBadge(log.action);
+              const severity = getAuditSeverity(log.action);
               const isExpanded = expandedLogIds.has(log.id);
-              const hasDetails = log.details && typeof log.details === 'object' && Object.keys(log.details).length > 0;
 
               return (
                 <React.Fragment key={log.id}>
                   <tr className="hover:bg-[var(--sa-surface-2)] transition-colors">
-                    <td className="px-6 py-3.5 text-xs tabular-nums text-[var(--sa-text-muted)] whitespace-nowrap">
-                      {new Date(log.created_at).toLocaleString()}
+                    <td className="px-6 py-3.5 text-xs tabular-nums whitespace-nowrap">
+                      <span className="sa-mono">{stamp(log.created_at)}</span>
                     </td>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -100,6 +154,9 @@ export const AuditPanel = ({
                         {target && <span className="text-xs text-[var(--sa-text-muted)]">→ {target}</span>}
                       </div>
                     </td>
+                    <td className={clsx('px-6 py-3.5 text-xs', SEVERITY_TONE[severity])}>
+                      {AUDIT_SEVERITIES[severity]}
+                    </td>
                     <td className="px-6 py-3.5 text-xs text-[var(--sa-text-muted)]">
                       {actor}
                     </td>
@@ -107,24 +164,20 @@ export const AuditPanel = ({
                       {log.ip_address || '—'}
                     </td>
                     <td className="px-6 py-3.5 text-right">
-                      {hasDetails ? (
-                        <button
-                          onClick={() => toggleExpandLog(log.id)}
-                          className="sa-link inline-flex"
-                        >
-                          {isExpanded ? <ChevronDown size={14} strokeWidth={1.5} /> : <ChevronRight size={14} strokeWidth={1.5} />}
-                          {isExpanded ? 'Hide' : 'View'}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-[var(--sa-text-subtle)]">—</span>
-                      )}
+                      <button
+                        onClick={() => toggleExpandLog(log.id)}
+                        className="sa-link inline-flex"
+                      >
+                        {isExpanded ? <ChevronDown size={14} strokeWidth={1.5} /> : <ChevronRight size={14} strokeWidth={1.5} />}
+                        {isExpanded ? 'Hide' : 'View'}
+                      </button>
                     </td>
                   </tr>
-                  {isExpanded && hasDetails && (
+                  {isExpanded && (
                     <tr className="bg-[var(--sa-bg-base)]">
-                      <td colSpan={5} className="px-6 py-3">
+                      <td colSpan={6} className="px-6 py-3">
                         <pre className="sa-mono border border-[var(--sa-line-hairline)] p-3 overflow-x-auto">
-                          {JSON.stringify(log.details, null, 2)}
+                          {JSON.stringify(log, null, 2)}
                         </pre>
                       </td>
                     </tr>
@@ -134,7 +187,7 @@ export const AuditPanel = ({
             })}
             {filteredAuditLogs.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-xs text-[var(--sa-text-muted)]">
+                <td colSpan={6} className="px-6 py-8 text-center text-xs text-[var(--sa-text-muted)]">
                   No entries match your search or filter.
                 </td>
               </tr>

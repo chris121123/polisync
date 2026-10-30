@@ -181,14 +181,23 @@ export const createUserAdminActions = ({
     }
   };
 
-  /** Admin-only: most recent audit rows, newest first. */
-  const fetchRecentAudit = async (limit = 30) => {
+  /**
+   * Admin-only: most recent audit rows, newest first.
+   * Accepts a count (legacy callers) or `{ limit, from, to }`, where from/to are
+   * `YYYY-MM-DD` local calendar days.
+   */
+  const fetchRecentAudit = async (options = 30) => {
     if (!supabase) return { data: null, error: null };
-    return supabase
+    const { limit = 30, from, to } = typeof options === 'number' ? { limit: options } : options;
+    let query = supabase
       .from('audit_logs')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(limit);
+    // A bare date is parsed as local time (no trailing Z), so the range is the user's day.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(from || '')) query = query.gte('created_at', new Date(`${from}T00:00:00`).toISOString());
+    if (/^\d{4}-\d{2}-\d{2}$/.test(to || '')) query = query.lte('created_at', new Date(`${to}T23:59:59.999`).toISOString());
+    return query;
   };
 
   return {

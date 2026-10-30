@@ -27,6 +27,7 @@ import {
   EMPTY_CONFIG,
   AUDIT_CATEGORIES,
   getAuditBadge,
+  getAuditSeverity,
   ROLE_PILL_COLORS,
   ROLE_PILL_INACTIVE,
 } from './userManagementConstants.js';
@@ -38,6 +39,7 @@ const NAME_PATTERN = /^[A-Za-zÀ-ÿÑñ .,'-]+$/;
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const PHONE_PATTERN = /^09\d{9}$/;
 const normalizePhone = (phone) => phone.replace(/[\s-]/g, '');
+const FULL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
 // The border colour is chosen, never raced: two border-* utilities in one
@@ -75,6 +77,9 @@ const UserManagement = () => {
   const rowMenuTriggerRef = useRef(null);
   const [auditSearch, setAuditSearch] = useState('');
   const [auditCategory, setAuditCategory] = useState('all');
+  const [auditSeverity, setAuditSeverity] = useState('all');
+  const [auditFrom, setAuditFrom] = useState('');
+  const [auditTo, setAuditTo] = useState('');
 
   // ── Platform Configuration Form State ──
   const [configForm, setConfigForm] = useState(EMPTY_CONFIG);
@@ -126,7 +131,7 @@ const UserManagement = () => {
   const fetchAuditLogs = useCallback(async () => {
     setAuditLoading(true);
     try {
-      const { data, error } = await fetchRecentAudit(30);
+      const { data, error } = await fetchRecentAudit({ limit: 30, from: auditFrom, to: auditTo });
       if (error) throw error;
       if (data) setAuditLogs(data);
     } catch (err) {
@@ -136,13 +141,21 @@ const UserManagement = () => {
     }
     // Factory actions are state-free and recreated per render by design (ADR-001).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auditFrom, auditTo]);
 
   useEffect(() => {
     if (activeTab === 'audit' && auditLogs.length === 0) {
       fetchAuditLogs();
     }
   }, [activeTab, auditLogs.length, fetchAuditLogs]);
+
+  // A date range refetches on change; a half-typed date input is not a filter yet.
+  useEffect(() => {
+    const complete = (value) => !value || FULL_DATE.test(value);
+    if (complete(auditFrom) && complete(auditTo) && activeTab === 'audit') fetchAuditLogs();
+    // Tab-open loading stays in the effect above; this one owns the date range only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auditFrom, auditTo]);
 
   useEffect(() => {
     const openCreate = location.state?.openCreate;
@@ -334,10 +347,12 @@ const UserManagement = () => {
 
   const filteredAuditLogs = auditLogs.filter(log => {
     const matchesCategory = auditCategory === 'all' || AUDIT_CATEGORIES[auditCategory]?.(log);
-    if (!auditSearch) return matchesCategory;
+    const matchesSeverity = auditSeverity === 'all' || getAuditSeverity(log.action) === auditSeverity;
+    if (!matchesCategory || !matchesSeverity) return false;
+    if (!auditSearch) return true;
     const { action, actor, target } = auditLine(log, staff);
     const q = auditSearch.toLowerCase();
-    return matchesCategory && (
+    return (
       action.toLowerCase().includes(q) ||
       actor.toLowerCase().includes(q) ||
       (target && target.toLowerCase().includes(q))
@@ -570,6 +585,12 @@ const UserManagement = () => {
           setAuditSearch={setAuditSearch}
           auditCategory={auditCategory}
           setAuditCategory={setAuditCategory}
+          auditSeverity={auditSeverity}
+          setAuditSeverity={setAuditSeverity}
+          auditFrom={auditFrom}
+          setAuditFrom={setAuditFrom}
+          auditTo={auditTo}
+          setAuditTo={setAuditTo}
           auditLogs={auditLogs}
           filteredAuditLogs={filteredAuditLogs}
           expandedLogIds={expandedLogIds}

@@ -25,6 +25,22 @@ export const getAuditBadge = (action) => {
   return { color: 'sa-badge' };
 };
 
+// Derived, never stored: audit_logs has no severity column.
+// delete / deactivate / data_cleared (the wipe) are critical; role changes warn;
+// user_created, user_activated and anything unrecognised read as info.
+export const getAuditSeverity = (action = '') => {
+  if (/(delete|deactivate|clear)/.test(action)) return 'critical';
+  if (action.includes('role')) return 'warn';
+  return 'info';
+};
+
+export const AUDIT_SEVERITIES = {
+  all: 'All',
+  info: 'Information',
+  warn: 'Warning',
+  critical: 'Critical',
+};
+
 // ADR-R5 / D2: role identity is carried by the label, so every role shares the
 // one hairline active-cell treatment (gold 1px outline, primary ink).
 const ACTIVE_CELL = 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1';
