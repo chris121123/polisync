@@ -1,19 +1,11 @@
 import React from 'react';
 import { Search, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
-import { auditLine } from '../../lib/auditLog';
+import { auditLine, formatAuditStamp } from '../../lib/auditLog';
 import { AUDIT_SEVERITIES, getAuditSeverity } from './userManagementConstants.js';
 
 const SEVERITY_TONE = { critical: 'sa-t-danger', warn: 'sa-t-warm', info: 'sa-t-muted' };
 const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-2 py-1.5 text-xs tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
-
-// Local time, fixed shape: 2026-10-29 09:14:00.
-const stamp = (value) => {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-};
 
 export const AuditPanel = ({
   fetchAuditLogs,
@@ -144,7 +136,7 @@ export const AuditPanel = ({
                 <React.Fragment key={log.id}>
                   <tr className="hover:bg-[var(--sa-surface-2)] transition-colors">
                     <td className="px-6 py-3.5 text-xs tabular-nums whitespace-nowrap">
-                      <span className="sa-mono">{stamp(log.created_at)}</span>
+                      <span className="sa-mono">{formatAuditStamp(log.created_at)}</span>
                     </td>
                     <td className="px-6 py-3.5">
                       <div className="flex items-center gap-2 flex-wrap">

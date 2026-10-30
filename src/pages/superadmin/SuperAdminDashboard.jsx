@@ -1,30 +1,82 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Users,
-  UserPlus,
-  UserCheck,
-  UserX,
-  CalendarDays,
-  Shield,
   Activity,
-  CheckCircle2,
-  AlertCircle,
-  ArrowRight,
   ChevronRight,
+  Database,
   Loader2,
+  RefreshCw,
+  ShieldAlert,
+  UserPlus,
+  Users,
   Zap,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { auditLine } from '../../lib/auditLog';
+import { auditLine, formatAuditStamp } from '../../lib/auditLog';
+import { supabase } from '../../lib/supabase';
 import { ROLE_LABELS } from '../../lib/rolePalette';
+import { getAuditSeverity } from '../admin/userManagementConstants';
 
+// Zone D ships the static manifest on purpose: all four functions mutate, so
+// there is no health endpoint to call (plan §0.2).
 const EDGE_FUNCTIONS = [
   'admin-create-user',
   'admin-delete-user',
   'auto-scheduler',
   'send-notification',
 ];
+
+const ROLES = ['superadmin', 'admin', 'teacher', 'therapist', 'parent'];
+
+const COUNT_TABLES = [
+  { table: 'profiles', label: 'Profiles' },
+  { table: 'students', label: 'Students' },
+  { table: 'sessions', label: 'Sessions' },
+  { table: 'audit_logs', label: 'Audit log' },
+];
+
+const shortDate = (value) => value
+  ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : '—';
+
+// A channel exists once the provider has subscribed; its state is the real
+// client state, never a guess.
+const channelState = () => {
+  if (!supabase) return 'Unavailable';
+  const channels = supabase.getChannels?.() ?? [];
+  const channel = channels.find(c => c.topic?.includes('system-changes'));
+  return channel ? (channel.state || 'Unknown') : 'Not connected';
+};
+
+// Client round-trip: three trivial reads, averaged. Not a server-side metric.
+const measureRoundTrip = async () => {
+  if (!supabase) return { status: 'unverified', latency: null };
+  const samples = [];
+  try {
+    for (let i = 0; i < 3; i++) {
+      const started = performance.now();
+      const { error } = await supabase.from('profiles').select('id').limit(1);
+      if (error) return { status: 'unverified', latency: null };
+      samples.push(performance.now() - started);
+    }
+  } catch {
+    return { status: 'unverified', latency: null };
+  }
+  return { status: 'online', latency: Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) };
+};
+
+const readCounts = async () => {
+  if (!supabase) return {};
+  const entries = await Promise.all(COUNT_TABLES.map(async ({ table }) => {
+    try {
+      const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
+      return [table, error ? null : count];
+    } catch {
+      return [table, null];
+    }
+  }));
+  return Object.fromEntries(entries);
+};
 
 // ── Local KPI card ─────────────────────────────────────────────────────
 // Mirrors the shared StatCard; separate only for the 32px lead value.
@@ -34,7 +86,7 @@ const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lea
       <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
       <p className="sa-micro">{title}</p>
     </div>
-    <p className={lead ? 'sa-kpi-value sa-kpi-value--lead' : 'sa-kpi-value'}>{value}</p>
+    <p className={`${lead ? 'sa-kpi-value sa-kpi-value--lead' : 'sa-kpi-value'} tabular-nums`}>{value}</p>
     <div className="sa-kpi-foot">
       <p className="sa-kpi-sub">{subtext}</p>
       {badge && <span className={badgeTone ? `sa-badge sa-badge--${badgeTone}` : 'sa-badge'}>{badge}</span>}
@@ -42,203 +94,242 @@ const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lea
   </div>
 );
 
-// ── Connection Ping ────────────────────────────────────────────────────
-function useConnectionStatus(checkConnection) {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'ok' | 'error'
-  useEffect(() => {
-    let cancelled = false;
-    checkConnection().then((ok) => {
-      if (!cancelled) setStatus(ok ? 'ok' : 'error');
-    });
-    return () => { cancelled = true; };
-    // Factory action is state-free and recreated per render by design (ADR-001).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return status;
-}
-
 // ── Main Component ─────────────────────────────────────────────────────
 const SuperAdminDashboard = () => {
-  const { staff, user, fetchRecentAudit, checkConnection } = useGlobalState();
+  const { staff, fetchRecentAudit } = useGlobalState();
   const navigate = useNavigate();
-  const connStatus = useConnectionStatus(checkConnection);
 
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(true);
+  const [audit, setAudit] = useState({ rows: [], loading: true });
+  const [counts, setCounts] = useState(null);
+  const [db, setDb] = useState({ status: 'checking', latency: null });
+  const [channel, setChannel] = useState(channelState);
 
-  // Fetch last 10 audit events on mount
-  const loadRecentAudit = useCallback(async () => {
-    setAuditLoading(true);
-    try {
-      const { data, error } = await fetchRecentAudit(10);
-      if (!error && data) setAuditLogs(data);
-    } catch {
-      // non-blocking
-    } finally {
-      setAuditLoading(false);
-    }
+  const refresh = useCallback(async () => {
+    setAudit(prev => ({ ...prev, loading: true }));
+    setDb({ status: 'checking', latency: null });
+    setCounts(null);
+    setChannel(channelState());
+
+    await Promise.allSettled([
+      (async () => {
+        try {
+          const { data, error } = await fetchRecentAudit(30);
+          setAudit({ rows: !error && data ? data : [], loading: false });
+        } catch {
+          setAudit({ rows: [], loading: false });
+        }
+      })(),
+      (async () => setDb(await measureRoundTrip()))(),
+      (async () => setCounts(await readCounts()))(),
+    ]);
     // Factory actions are state-free and recreated per render by design (ADR-001).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    loadRecentAudit();
-  }, [loadRecentAudit]);
+    refresh();
+    // The provider subscribes to system-changes after this page mounts, so the
+    // channel joins late; re-read it once instead of polling.
+    const timer = setTimeout(() => setChannel(channelState()), 2000);
+    return () => clearTimeout(timer);
+  }, [refresh]);
 
-  // ── Derived account metrics ──────────────────────────────────────────
+  // ── Derived identity metrics ─────────────────────────────────────────
   const totalAccounts = staff.length;
   const activeAccounts = staff.filter(s => s.is_active !== false).length;
-  const inactiveAccounts = staff.filter(s => s.is_active === false).length;
+  const suspendedAccounts = staff.filter(s => s.is_active === false).length;
+  const tempAccounts = staff.filter(s => s.must_change_password === true).length;
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const newThisWeek = staff.filter(s => {
-    if (!s.created_at) return false;
-    return new Date(s.created_at) > sevenDaysAgo;
-  }).length;
+  const criticalCount = audit.rows.filter(log => getAuditSeverity(log.action) === 'critical').length;
 
-  // ── Role distribution ────────────────────────────────────────────────
-  const roleCounts = ['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => ({
-    role,
-    count: staff.filter(s => s.app_role === role).length,
-    label: ROLE_LABELS[role],
-  }));
-  const totalForDistribution = roleCounts.reduce((acc, r) => acc + r.count, 0) || 1;
+  const roleRows = ROLES.map(role => {
+    const rows = staff.filter(s => s.app_role === role);
+    // "Provisioned" is the profile's real created_at; absent rows keep a dash.
+    const provisioned = rows.map(s => s.created_at).filter(Boolean).sort().pop();
+    return {
+      role,
+      label: ROLE_LABELS[role] ?? role,
+      active: rows.filter(s => s.is_active !== false).length,
+      suspended: rows.filter(s => s.is_active === false).length,
+      temp: rows.filter(s => s.must_change_password === true).length,
+      last: shortDate(provisioned),
+    };
+  });
+
+  const dbLabel = db.status === 'checking' ? 'Checking' : db.status === 'online' ? 'Online' : 'Unverified';
+  const dbSub = db.latency != null
+    ? `${db.latency} ms round-trip`
+    : supabase ? 'Ping pending' : 'No client configured';
+  const channelTone = channel === 'joined'
+    ? ' sa-dot--ok'
+    : channel === 'errored' || channel === 'closed' ? ' sa-dot--error' : '';
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
 
       {/* ── Page Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="sa-title">
-            Platform Overview
-          </h1>
-          <p className="sa-sub">
-            System administration and account governance
-          </p>
+          <h1 className="sa-title">Platform Overview</h1>
+          <p className="sa-sub">Infrastructure health, identity, and privilege telemetry.</p>
         </div>
-        <button
-          onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
-          className="sa-btn sa-btn--primary self-start sm:self-auto"
-        >
-          <UserPlus size={16} strokeWidth={1.5} />
-          <span>Create User</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={refresh}
+            className="sa-btn min-h-11 sm:min-h-0"
+            aria-label="Refresh telemetry"
+          >
+            <RefreshCw size={14} strokeWidth={1.5} />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
+            className="sa-btn sa-btn--primary min-h-11 sm:min-h-0"
+          >
+            <UserPlus size={16} strokeWidth={1.5} />
+            <span>Create User</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Account Metric Cards ──────────────────────────────────────── */}
+      {/* ── Zone A: telemetry ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          title="Total Accounts"
+          title="Database Engine"
+          value={dbLabel}
+          icon={Database}
+          subtext={dbSub}
+          badge="PostgREST"
+        />
+        <KpiCard
+          title="Identity & Access"
           value={totalAccounts}
           icon={Users}
-          subtext="All registered platform users"
-          badge={totalAccounts > 0 ? 'System-wide' : 'No accounts yet'}
+          subtext={(
+            <>
+              <span className="whitespace-nowrap">{activeAccounts} active</span>
+              {' '}
+              <span className="whitespace-nowrap">· {suspendedAccounts} suspended</span>
+            </>
+          )}
+          badge={`${tempAccounts} temp password`}
+          badgeTone={tempAccounts > 0 ? 'warn' : 'positive'}
           lead
         />
         <KpiCard
-          title="Active Accounts"
-          value={activeAccounts}
-          icon={UserCheck}
-          subtext={`${totalAccounts > 0 ? Math.round((activeAccounts / totalAccounts) * 100) : 0}% of all accounts`}
-          badge="Online"
-          badgeTone="positive"
+          title="Edge Functions"
+          value={EDGE_FUNCTIONS.length}
+          icon={Zap}
+          subtext={<>Configured in <span className="whitespace-nowrap">this project</span></>}
+          badge="Static manifest"
         />
         <KpiCard
-          title="Inactive Accounts"
-          value={inactiveAccounts}
-          icon={UserX}
-          subtext={inactiveAccounts > 0 ? 'Deactivated by admin' : 'No inactive accounts'}
-          badge={inactiveAccounts > 0 ? 'Suspended' : 'Clear'}
-          badgeTone={inactiveAccounts > 0 ? 'warn' : 'positive'}
-        />
-        <KpiCard
-          title="New This Week"
-          value={newThisWeek}
-          icon={CalendarDays}
-          subtext="Accounts created in last 7 days"
-          badge={newThisWeek > 0 ? 'Recent' : 'None'}
-          badgeTone={newThisWeek > 0 ? 'positive' : ''}
+          title="Security State"
+          value={criticalCount}
+          icon={ShieldAlert}
+          subtext="Critical events in recent audit"
+          badge={criticalCount > 0 ? 'Review' : 'Clear'}
+          badgeTone={criticalCount > 0 ? 'warn' : 'positive'}
         />
       </div>
 
-      {/* ── Role Distribution ─────────────────────────────────────────── */}
-      <div className="sa-panel">
-        <div className="sa-panel-head">
-          <div>
-            <h2 className="sa-panel-title">Role Distribution</h2>
-            <p className="sa-panel-sub">Breakdown of {totalAccounts} account{totalAccounts !== 1 ? 's' : ''} by access level</p>
-          </div>
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="sa-link"
-          >
-            Manage <ChevronRight size={13} strokeWidth={1.5} />
-          </button>
-        </div>
+      {/* ── Zone B + C: governance and recent activity ───────────────── */}
+      {/* Split at xl: below it the 1/3 column falls under the app's own
+          340px floor beside the 256px sidebar, so both panels stack. */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        {staff.length === 0 ? (
-          <div className="sa-empty mt-4">
-            <Users size={24} strokeWidth={1.5} className="mx-auto mb-2 sa-t-muted" />
-            <p className="sa-empty-title">No accounts yet</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-px bg-[var(--sa-line-hairline)] lg:grid-cols-5">
-            {roleCounts.map(({ role, count, label }) => {
-              const pct = Math.round((count / totalForDistribution) * 100);
-              return (
-                <div key={role} className="bg-[var(--sa-surface-1)] px-4 py-3">
-                  <p className="text-xs text-[var(--sa-text-muted)]">{label}</p>
-                  <p className="mt-1 text-2xl leading-none tabular-nums text-[var(--sa-text-primary)]">{count}</p>
-                  <p className="mt-1 text-[11px] tabular-nums text-[var(--sa-text-muted)]">{pct}%</p>
-                  <div className="mt-3 h-0.5 bg-[var(--sa-line-row)]">
-                    <div className="h-full bg-[var(--sa-bar-primary)]" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* ── Recent Activity + System Status ──────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
-
-        {/* Recent Administrative Activity */}
-        <div className="lg:col-span-2 sa-panel flex flex-col">
+        {/* Role Governance */}
+        <section className="sa-panel xl:col-span-2 flex flex-col min-w-0">
           <div className="sa-panel-head">
             <div>
-              <h2 className="sa-panel-title">Recent Activity</h2>
-              <p className="sa-panel-sub">Last administrative events</p>
+              <h2 className="sa-panel-title">Role Governance</h2>
+              <p className="sa-panel-sub">Accounts by access level</p>
             </div>
             <button
               onClick={() => navigate('/admin/users', { state: { tab: 'audit' } })}
-              className="sa-link"
+              className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
             >
-              Full log <ArrowRight size={13} strokeWidth={1.5} />
+              Inspect audit <ChevronRight size={13} strokeWidth={1.5} />
             </button>
           </div>
 
-          {auditLoading ? (
+          {/* Phone: two-line rows, all five fields kept (§12). */}
+          <div className="sm:hidden flex-1">
+            {roleRows.map(row => (
+              <div key={row.role} className="border-b border-[var(--sa-line-row)] py-2.5 last:border-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-[13px] text-[var(--sa-text-primary)]">{row.label}</p>
+                  <p className="text-[11px] text-[var(--sa-text-muted)]">
+                    Last provisioned <span className="tabular-nums text-[var(--sa-text-secondary)]">{row.last}</span>
+                  </p>
+                </div>
+                <p className="mt-0.5 text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                  {row.active} active · {row.suspended} suspended · {row.temp} temp
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden sm:block flex-1 overflow-x-auto">
+            <table className="w-full h-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-[var(--sa-line-hairline)]">
+                  <th scope="col" className="py-2.5 pr-3 text-[11px] font-normal text-[var(--sa-text-muted)]">Role</th>
+                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Active</th>
+                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Suspended</th>
+                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Temp password</th>
+                  <th scope="col" className="py-2.5 pl-3 text-[11px] font-normal text-[var(--sa-text-muted)]">Last provisioned</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roleRows.map(row => (
+                  <tr key={row.role} className="border-b border-[var(--sa-line-row)] last:border-0">
+                    <td className="py-3 pr-3 text-[13px] text-[var(--sa-text-primary)]">{row.label}</td>
+                    <td className="px-3 py-3 text-right text-[13px] tabular-nums text-[var(--sa-text-secondary)]">{row.active}</td>
+                    <td className="px-3 py-3 text-right text-[13px] tabular-nums text-[var(--sa-text-secondary)]">{row.suspended}</td>
+                    <td className={`px-3 py-3 text-right text-[13px] tabular-nums ${row.temp > 0 ? 'sa-t-warm' : 'text-[var(--sa-text-secondary)]'}`}>{row.temp}</td>
+                    <td className="pl-3 py-3 text-[13px] tabular-nums whitespace-nowrap text-[var(--sa-text-secondary)]">{row.last}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Recent Activity */}
+        <section className="sa-panel flex flex-col min-w-0">
+          <div className="sa-panel-head">
+            <div>
+              <h2 className="sa-panel-title">Recent Activity</h2>
+              <p className="sa-panel-sub">Privileged actions</p>
+            </div>
+            <button
+              onClick={() => navigate('/admin/users', { state: { tab: 'audit' } })}
+              className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
+            >
+              Full trail <ChevronRight size={13} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          {audit.loading && audit.rows.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <Loader2 size={20} className="animate-spin sa-t-muted" />
             </div>
-          ) : auditLogs.length === 0 ? (
+          ) : audit.rows.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center py-10 sa-empty mt-4">
               <Activity size={24} strokeWidth={1.5} className="sa-t-muted mb-2" />
               <p className="sa-empty-title">No administrative events recorded yet</p>
               <p className="sa-empty-sub">Actions like user creation and role changes will appear here.</p>
             </div>
           ) : (
-            <div className="sa-list flex-1">
-              {auditLogs.map(log => {
+            <div className="sa-list flex-1 flex flex-col">
+              {audit.rows.slice(0, 4).map(log => {
                 const { action, actor, target } = auditLine(log, staff);
-                const isDestructive = log.action?.includes('delete') || log.action?.includes('deactivate');
-                const isCreative = log.action?.includes('create') || log.action?.includes('activate');
+                const critical = getAuditSeverity(log.action) === 'critical';
                 return (
-                  <div key={log.id} className="sa-row">
+                  <div key={log.id} className="sa-row flex-1">
                     <span
-                      className={`sa-marker${isDestructive ? ' sa-marker--danger' : isCreative ? ' sa-marker--creative' : ''}`}
+                      className={`sa-marker${critical ? ' sa-marker--danger' : ''}`}
                       aria-hidden="true"
                     />
                     <div className="flex-1 min-w-0">
@@ -247,9 +338,7 @@ const SuperAdminDashboard = () => {
                         {target && <span className="sa-row-target"> → {target}</span>}
                       </p>
                       <p className="sa-row-meta">
-                        {actor} · {new Date(log.created_at).toLocaleString('en-US', {
-                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                        })}
+                        {actor} · <span className="sa-mono tabular-nums">{formatAuditStamp(log.created_at)}</span>
                       </p>
                     </div>
                   </div>
@@ -257,67 +346,63 @@ const SuperAdminDashboard = () => {
               })}
             </div>
           )}
-        </div>
-
-        {/* System Status */}
-        <div className="sa-panel">
-          <div className="sa-panel-head">
-            <div>
-              <h2 className="sa-panel-title">System Status</h2>
-              <p className="sa-panel-sub">Platform connectivity and services</p>
-            </div>
-          </div>
-
-          <div className="sa-sections">
-            {/* Supabase Connection */}
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="sa-row-title">Supabase Connection</p>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`sa-dot${connStatus === 'ok' ? ' sa-dot--ok' : connStatus === 'error' ? ' sa-dot--error' : ''}`} />
-                <span className={
-                  connStatus === 'idle' ? 'sa-micro sa-t-muted' :
-                  connStatus === 'ok' ? 'sa-micro sa-t-warm' :
-                  'sa-micro sa-t-danger'
-                }>
-                  {connStatus === 'idle' ? 'Verifying...' :
-                   connStatus === 'ok' ? 'Connected and live' :
-                   'Connection could not be verified'}
-                </span>
-              </div>
-            </div>
-
-            {/* Active Session */}
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="sa-row-title">Active Session</p>
-                <CheckCircle2 size={14} strokeWidth={1.5} className="sa-t-warm" />
-              </div>
-              <p className="sa-row-meta truncate">{user?.email || '—'}</p>
-              <span className="sa-badge sa-t-warm inline-flex items-center gap-1 mt-2">
-                <Shield size={11} strokeWidth={1.5} /> IT Manager
-              </span>
-            </div>
-
-            {/* Edge Functions */}
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="sa-row-title">Edge Functions</p>
-                <Zap size={14} strokeWidth={1.5} className="sa-t-muted" />
-              </div>
-              <div className="space-y-1.5 mt-2">
-                {EDGE_FUNCTIONS.map(fn => (
-                  <div key={fn} className="flex items-center gap-2">
-                    <span className="sa-dot sa-dot--ok" />
-                    <span className="sa-mono">{fn}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
+
+      {/* ── Zone D: service endpoints ────────────────────────────────── */}
+      <section className="sa-panel">
+        <div className="sa-panel-head">
+          <div>
+            <h2 className="sa-panel-title">Service Endpoints</h2>
+            <p className="sa-panel-sub">Connection, functions, and table volume</p>
+          </div>
+        </div>
+
+        <div className="-mx-5 -mb-5 mt-5 grid grid-cols-1 gap-px bg-[var(--sa-line-hairline)] sm:grid-cols-3">
+          {/* Realtime */}
+          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
+            <p className="sa-micro">Realtime</p>
+            <div className="mt-3 flex items-center gap-2">
+              <span className={`sa-dot${channelTone}`} aria-hidden="true" />
+              <p className="text-sm capitalize text-[var(--sa-text-primary)]">{channel}</p>
+            </div>
+            <p className="sa-mono mt-1">system-changes</p>
+            <p className="mt-2 text-[11px] text-[var(--sa-text-muted)]">Listens to app tables</p>
+          </div>
+
+          {/* Edge Functions */}
+          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
+            <p className="sa-micro">Edge Functions</p>
+            <ul className="mt-3 space-y-1.5">
+              {EDGE_FUNCTIONS.map(fn => (
+                <li key={fn} className="flex items-baseline justify-between gap-3">
+                  <span className="sa-mono">{fn}</span>
+                  <span className="text-[11px] text-[var(--sa-text-muted)]">configured</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11px] text-[var(--sa-text-muted)]">No health endpoint — static manifest</p>
+          </div>
+
+          {/* Table records */}
+          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
+            <p className="sa-micro">Table records</p>
+            <div className="mt-2">
+              {COUNT_TABLES.map(({ table, label }) => (
+                <div
+                  key={table}
+                  className="flex items-baseline justify-between gap-3 border-b border-[var(--sa-line-row)] py-1.5 last:border-0"
+                >
+                  <span className="text-[13px] text-[var(--sa-text-secondary)]">{label}</span>
+                  <span className="text-[13px] tabular-nums text-[var(--sa-text-primary)]">
+                    {counts?.[table] ?? '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
     </div>
   );
