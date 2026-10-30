@@ -12,7 +12,7 @@ const FAQS = [
   {
     id: 'who-can-use',
     q: 'Who can use PoliSync?',
-    a: 'Five roles share the system: super administrators, administrators, teachers, therapists and parents. Accounts are created by an administrator — the sign-up route redirects to the login page, so there is no public registration.',
+    a: 'Five roles share the system: IT managers, administrators, teachers, therapists and parents. Accounts are created by an administrator — the sign-up route redirects to the login page, so there is no public registration.',
   },
   {
     id: 'how-do-i-log-in',
@@ -27,7 +27,7 @@ const FAQS = [
   {
     id: 'after-login',
     q: 'What happens after I log in?',
-    a: 'You land on your dashboard. The sidebar lists only the pages your role can open — administrators get Schedule, Directory and Rooms, therapists get Session Notes, super administrators get the System Console, and every role has its own profile page and settings.',
+    a: 'You land on your dashboard. The sidebar lists only the pages your role can open — administrators get Schedule, Directory and Rooms, therapists get Session Notes, IT managers get the Platform Administration Console, and every role has its own profile page and settings.',
   },
   {
     id: 'change-own-password',
@@ -42,7 +42,7 @@ const FAQS = [
   {
     id: 'account-issues',
     q: 'Who do I contact for account issues?',
-    a: 'Your center’s administrator or super administrator. They manage accounts from the System Console: creating users, changing roles, deactivating or deleting accounts, and reviewing the audit log.',
+    a: 'Your center’s administrator or IT Manager. They manage accounts from the Platform Administration Console: creating users, changing roles, deactivating or deleting accounts, and reviewing the audit log.',
   },
   {
     id: 'data-security',

@@ -20,6 +20,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine } from '../../lib/auditLog';
+import { ROLE_LABELS } from '../../lib/rolePalette';
 import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
 import {
@@ -344,9 +345,9 @@ const UserManagement = () => {
   });
 
   const tabs = [
-    { id: 'users', label: 'Users' },
+    { id: 'users', label: 'Identity & Access' },
     { id: 'audit', label: 'Audit Trail' },
-    { id: 'config', label: 'Platform Config' }
+    { id: 'config', label: 'System Config' }
   ];
 
   return (
@@ -354,8 +355,8 @@ const UserManagement = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="sa-title">System Console</h1>
-          <p className="sa-sub">Identity, audit trail, and platform configuration</p>
+          <h1 className="sa-title">Platform Administration Console</h1>
+          <p className="sa-sub">Manage identities, privileged actions, and runtime configuration.</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -403,7 +404,7 @@ const UserManagement = () => {
                       : ROLE_PILL_INACTIVE
                   )}
                 >
-                  {role === 'superadmin' ? 'Super Admin' : role === 'all' ? 'All' : role} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
+                  {role === 'all' ? 'All' : (ROLE_LABELS[role] || role)} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
                 </button>
               ))}
             </div>
@@ -448,7 +449,7 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-3.5">
-                      <span className="sa-badge">{member.app_role || 'teacher'}</span>
+                      <span className="sa-badge whitespace-nowrap">{ROLE_LABELS[member.app_role] || member.app_role || 'teacher'}</span>
                     </td>
                     <td className="px-6 py-3.5">
                       <span className="text-sm text-[var(--sa-text-muted)]">{member.department || 'General'}</span>
@@ -629,7 +630,7 @@ const UserManagement = () => {
                     : "border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
                 )}
               >
-                <span className="capitalize block">{role === 'superadmin' ? 'Super Admin' : role}</span>
+                <span className="block">{ROLE_LABELS[role] || role}</span>
                 <span className="text-[11px] text-[var(--sa-text-muted)] block mt-0.5">
                   {role === 'superadmin' ? 'Full system access + user management + platform config' :
                    role === 'admin' ? 'Schedule, directory, and room operations' :
@@ -775,7 +776,7 @@ const UserManagement = () => {
                   { value: 'therapist', label: 'Therapist' },
                   { value: 'parent', label: 'Parent' },
                   { value: 'admin', label: 'Admin' },
-                  { value: 'superadmin', label: 'Super Admin' },
+                  { value: 'superadmin', label: ROLE_LABELS.superadmin },
                 ].map(({ value, label }) => (
                   <button
                     key={value}
@@ -907,14 +908,14 @@ const UserManagement = () => {
         <ModalHeader
           titleId="self-role-title"
           title="Change Own Role?"
-          description={<>Target Role: <span className="capitalize sa-t-warm">{selectedRole}</span></>}
+          description={<>Target Role: <span className="sa-t-warm">{ROLE_LABELS[selectedRole] || selectedRole}</span></>}
           onClose={() => setShowSelfRoleWarning(false)}
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
           <div className="border border-[var(--sa-danger)] p-3.5">
             <p className="text-xs sa-t-danger leading-relaxed">
-              You are stripping yourself of superadmin access.
+              You are stripping yourself of IT Manager access.
               This action is irreversible from this account.
               You will be locked out immediately.
             </p>

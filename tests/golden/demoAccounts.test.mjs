@@ -74,5 +74,5 @@ test('role is lower-cased and trimmed, password is not', () => {
 
 test('role labels cover every accepted role', () => {
   assert.deepEqual(Object.keys(DEMO_ROLE_LABELS), ['superadmin', 'admin', 'teacher', 'therapist', 'parent']);
-  assert.equal(DEMO_ROLE_LABELS.superadmin, 'Super Admin');
+  assert.equal(DEMO_ROLE_LABELS.superadmin, 'IT Manager');
 });

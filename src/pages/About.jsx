@@ -15,14 +15,14 @@ const FEATURES = [
   'Student records and program enrolment, linked to the staff who deliver each program.',
   'A weekly schedule that assigns staff, rooms and time slots, with automatic conflict detection.',
   'Session notes written by therapists from their own dashboard.',
-  'A System Console for account management, with an audit log of the changes made.',
+  'A Platform Administration Console for account management, with an audit log of the changes made.',
   'Notifications for the people affected by a scheduling or record change.',
 ];
 
 const ROLES = [
   {
     id: 'superadmin',
-    name: 'Super Administrator',
+    name: 'IT Manager',
     who: 'Owns the system',
     icon: ShieldCheck,
     can: [

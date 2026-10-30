@@ -8,7 +8,7 @@ export const ROLE_COLORS = {
 };
 
 export const ROLE_LABELS = {
-  superadmin: 'Super Admin',
+  superadmin: 'IT Manager',
   admin: 'Admin',
   teacher: 'Teacher',
   therapist: 'Therapist',

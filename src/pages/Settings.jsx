@@ -267,10 +267,10 @@ const Settings = () => {
                 <div className="grid grid-cols-1 gap-3">
                   <div className="p-4 border-l-2 border-l-[var(--sa-line-strong)] space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-role-superadmin">Super Administrator</span>
+                      <span className="text-xs text-role-superadmin">IT Manager</span>
                       <span className="sa-badge">superadmin</span>
                     </div>
-                    <p className="text-[11px] text-[var(--sa-text-muted)] leading-relaxed">Platform overview dashboard, user account management (create, delete, activate, change roles), audit trail inspection, platform scheduling configuration, and system settings.</p>
+                    <p className="text-[11px] text-[var(--sa-text-muted)] leading-relaxed">Platform owner — telemetry, security auditing, RBAC governance and edge services.</p>
                   </div>
                   <div className="p-4 border-l-2 border-l-[var(--sa-line-strong)] space-y-2">
                     <div className="flex items-center gap-2">

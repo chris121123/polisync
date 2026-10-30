@@ -21,8 +21,8 @@ export const AuditPanel = ({
     <div className="px-6 py-4 border-b border-[var(--sa-line-hairline)]">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <h2 className="sa-panel-title">System Activity Log</h2>
-          <p className="sa-panel-sub">Immutable audit trail of administrative and identity events</p>
+          <h2 className="sa-panel-title">Security Audit Trail</h2>
+          <p className="sa-panel-sub">Privileged actions and account events</p>
         </div>
         <button
           onClick={fetchAuditLogs}

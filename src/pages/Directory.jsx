@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { AppModal, ModalHeader } from '../components/AppModal.jsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { ROLE_LABELS } from '../lib/rolePalette';
 
 const getInitials = (name) => {
   if (!name) return '??';
@@ -258,7 +259,7 @@ const Directory = () => {
                           {row.name}
                         </Link>
                         <p className="text-[11px] text-[var(--sa-text-muted)] capitalize">
-                          {row.type === 'Staff' ? (row.app_role || 'Staff') : row.type}
+                          {row.type === 'Staff' ? (ROLE_LABELS[row.app_role] || row.app_role || 'Staff') : row.type}
                           {row.email ? ` • ${row.email}` : ''}
                         </p>
                       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, Server } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -8,6 +8,7 @@ import NotificationPanel from './NotificationPanel';
 import ForceChangePasswordModal from './ForceChangePasswordModal';
 import { AppModal, ModalHeader } from './AppModal.jsx';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { ROLE_LABELS } from '../lib/rolePalette';
 import '../styles/superadminTheme.css';
 
 const getInitials = (name) => {
@@ -95,13 +96,13 @@ const Layout = () => {
     {
       to: '/dashboard',
       icon: LayoutDashboard,
-      label: appRole === 'superadmin' ? 'Super Admin Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'),
+      label: appRole === 'superadmin' ? 'IT Operations Dashboard' : (appRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'),
     },
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
-    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'System Console', section: 'System' }] : []),
+    ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Server, label: 'System Console', section: 'System' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings', section: 'System' },
   ];
 
@@ -258,7 +259,7 @@ const Layout = () => {
               {isSidebarOpen && (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ps-ink-1 truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-ps-ink-2 truncate capitalize">{appRole || 'Loading...'}</p>
+                  <p className="text-xs text-ps-ink-2 truncate">{ROLE_LABELS[appRole] || appRole || 'Loading...'}</p>
                 </div>
               )}
               

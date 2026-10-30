@@ -87,7 +87,7 @@ export const createUserAdminActions = ({
 
       // Map app role to display role (Job Title)
       const roleDisplayMap = {
-        superadmin: 'Super Administrator',
+        superadmin: 'IT Manager',
         admin: 'Administrator',
         teacher: 'Teacher',
         therapist: 'Therapist',

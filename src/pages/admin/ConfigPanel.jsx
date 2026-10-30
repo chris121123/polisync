@@ -14,7 +14,7 @@ export const ConfigPanel = ({
       <div>
         <h2 className="sa-panel-title flex items-center gap-2">
           <Sliders size={16} strokeWidth={1.5} className="shrink-0 text-[var(--sa-text-muted)]" />
-          Platform Scheduling Settings
+          System Engine &amp; Runtime
         </h2>
         <p className="sa-panel-sub">
           Global constraints and operational parameters for automated and manual scheduling engines.

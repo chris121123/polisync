@@ -296,7 +296,7 @@ const SuperAdminDashboard = () => {
               </div>
               <p className="sa-row-meta truncate">{user?.email || '—'}</p>
               <span className="sa-badge sa-t-warm inline-flex items-center gap-1 mt-2">
-                <Shield size={11} strokeWidth={1.5} /> Super Administrator
+                <Shield size={11} strokeWidth={1.5} /> IT Manager
               </span>
             </div>
 

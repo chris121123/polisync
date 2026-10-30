@@ -1,6 +1,6 @@
 // demo accounts come from VITE_DEMO_ACCOUNTS: role|email|password;role|email|password;…
 export const DEMO_ROLE_LABELS = {
-  superadmin: 'Super Admin',
+  superadmin: 'IT Manager',
   admin: 'Admin',
   teacher: 'Teacher',
   therapist: 'Therapist',
