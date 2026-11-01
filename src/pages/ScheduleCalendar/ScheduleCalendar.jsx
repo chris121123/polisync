@@ -13,6 +13,7 @@ import {
   filterSessionsForView, groupSessionsByDay, slotHasConflict as slotHasConflictAt, TYPE_CONFIG,
 } from './calendarMath.js';
 import { countAvailableStaff } from './staff.js';
+import { dayOfWeekFor } from '../../lib/scheduling/time.js';
 import { NowIndicator, SessionCard, WeeklySessionCard } from './SessionCard.jsx';
 import { AddSessionModal } from './AddSessionModal.jsx';
 import { ManageAvailabilityModal } from './ManageAvailabilityModal.jsx';
@@ -45,7 +46,7 @@ const ScheduleCalendar = () => {
 
   const selectedDateISO = formatDateISO(selectedDate);
   // Same Mon–Fri mapping as handleAutoSchedule (Sunday keeps its Fri mapping).
-  const scheduleDayOfWeek = selectedDate.getDay() === 0 ? 4 : selectedDate.getDay() - 1;
+  const scheduleDayOfWeek = dayOfWeekFor(selectedDate);
   const isWeekend = scheduleDayOfWeek < 0 || scheduleDayOfWeek > 4;
 
   const navigateDate = (offset) => {

@@ -1,8 +1,14 @@
 // Hour and day math shared by the engine and the edge client. No imports, so Node can load it.
 
-export function getCurrentDayOfWeek() {
-  const d = new Date().getDay();
+// Mon=0. Sunday keeps its Friday value (4) by design, so weekends never index
+// into a Mon–Fri timetable.
+export function dayOfWeekFor(date = new Date()) {
+  const d = date.getDay();
   return d === 0 ? 4 : d - 1;
+}
+
+export function getCurrentDayOfWeek() {
+  return dayOfWeekFor();
 }
 
 export function timeToHour(time) {

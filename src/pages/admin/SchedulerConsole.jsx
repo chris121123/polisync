@@ -2,38 +2,28 @@ import { useState } from 'react';
 import { Loader2, Play, Zap } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
+import { formatDateISO } from '../../lib/dates.js';
+import { dayOfWeekFor } from '../../lib/scheduling/time.js';
 
 const fieldClass = 'w-full min-h-11 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
 
 // The unscheduled list shows eight rows; the rest are counted in one line.
 const MAX_ROWS = 8;
 
-const todayISO = () => {
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
-
-// Local midnight, then the app's Mon=0 mapping (Sunday keeps its Friday value).
-const dayOfWeekFor = (iso) => {
-  const day = new Date(`${iso}T00:00:00`).getDay();
-  return day === 0 ? 4 : day - 1;
-};
-
 export const SchedulerConsole = () => {
   const { smartSchedule, students } = useGlobalState();
   const [scope, setScope] = useState('whole-week');
-  const [sessionDate, setSessionDate] = useState(todayISO);
+  const [sessionDate, setSessionDate] = useState(() => formatDateISO());
   const [running, setRunning] = useState(false);
   const [lastRun, setLastRun] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Weekends are closed for scheduling whatever the Mon=0 mapping says about Sunday.
   const weekend = [0, 6].includes(new Date(`${sessionDate}T00:00:00`).getDay());
-  const blocked = running || (scope === 'selected-day' && weekend);
+  const blocked = running || !sessionDate || (scope === 'selected-day' && weekend);
 
   const run = async (dryRun) => {
-    if (running) return;
+    if (running || !sessionDate) return;
     setConfirmOpen(false);
     setRunning(true);
     try {
@@ -41,7 +31,7 @@ export const SchedulerConsole = () => {
         dryRun,
         scope,
         sessionDate,
-        ...(scope === 'selected-day' ? { dayOfWeek: dayOfWeekFor(sessionDate) } : {}),
+        ...(scope === 'selected-day' ? { dayOfWeek: dayOfWeekFor(new Date(`${sessionDate}T00:00:00`)) } : {}),
       });
       setLastRun({ dryRun, result });
     } finally {

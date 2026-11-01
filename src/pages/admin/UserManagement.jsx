@@ -15,7 +15,6 @@ import {
   MoreVertical,
   Trash2,
   Search,
-  Activity
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';

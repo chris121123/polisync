@@ -4,6 +4,7 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import { supabase } from '../../lib/supabase';
 import { EDGE_FUNCTIONS } from '../../lib/edges';
 import { toCsv } from '../../lib/csv';
+import { formatDateISO } from '../../lib/dates';
 import {
   COUNT_TABLES,
   fetchTableCounts,
@@ -25,17 +26,12 @@ const clock = (value) => {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 
-const today = () => {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
-
 const countLabel = (value) => {
   if (value == null) return '—';
   return `${value} ${value === 1 ? 'row' : 'rows'}`;
 };
 
+// One row past the cap proves the table has more; an exact-cap table stays quiet.
 const fetchAllRows = async (table) => {
   const rows = [];
   while (rows.length < EXPORT_ROW_CAP) {
@@ -50,7 +46,17 @@ const fetchAllRows = async (table) => {
     rows.push(...batch);
     if (batch.length < EXPORT_PAGE_SIZE) break;
   }
-  return rows;
+  let truncated = false;
+  if (rows.length >= EXPORT_ROW_CAP) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('id')
+      .order('id', { ascending: true })
+      .range(EXPORT_ROW_CAP, EXPORT_ROW_CAP);
+    if (error) throw error;
+    truncated = (data?.length ?? 0) > 0;
+  }
+  return { rows, truncated };
 };
 
 const HealthPage = () => {
@@ -90,21 +96,24 @@ const HealthPage = () => {
     }
     setExporting(table);
     try {
-      const rows = await fetchAllRows(table);
+      const { rows, truncated } = await fetchAllRows(table);
       if (!rows.length) {
         notify(`No ${label.toLowerCase()} rows to export`, 'info');
         return;
       }
-      const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
+      // The BOM makes Excel read the file as UTF-8 instead of the system codepage.
+      const url = URL.createObjectURL(new Blob(['\uFEFF' + toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `polisync-${table}-${today()}.csv`;
+      link.download = `polisync-${table}-${formatDateISO()}.csv`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       notify(`${label} exported — ${rows.length} rows`);
       // The cap is a stop, not a guarantee: say so instead of implying a full copy.
-      if (rows.length >= EXPORT_ROW_CAP) {
-        notify('Export stopped at 20,000 rows — narrow the table first.', 'error');
+      if (truncated) {
+        notify('Export stopped at the 20,000-row cap — later rows are not included.', 'error');
       }
     } catch (err) {
       notify(err.message || `Could not export ${label}`, 'error');
