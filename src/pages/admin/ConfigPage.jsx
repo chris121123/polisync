@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { EMPTY_CONFIG } from './userManagementConstants.js';
 import { ConfigPanel } from './ConfigPanel.jsx';
+import { SchedulerConsole } from './SchedulerConsole.jsx';
 
 const ConfigPage = () => {
   const { schedulingSettings, notify, saveSchedulingSettings } = useGlobalState();
@@ -57,6 +58,8 @@ const ConfigPage = () => {
         configLoading={configLoading}
         isConfigDirty={isConfigDirty}
       />
+
+      <SchedulerConsole />
     </div>
   );
 };
