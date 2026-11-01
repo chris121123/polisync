@@ -56,7 +56,7 @@ const SuperAdminDashboard = () => {
     await Promise.allSettled([
       (async () => {
         try {
-          const { data, error } = await fetchRecentAudit(30);
+          const { data, error } = await fetchRecentAudit({ limit: 500 });
           setAudit({ rows: !error && data ? data : [], loading: false });
         } catch {
           setAudit({ rows: [], loading: false });
@@ -93,6 +93,76 @@ const SuperAdminDashboard = () => {
       last: shortDate(provisioned),
     };
   });
+
+  // ── Analytics (12d) ──────────────────────────────────────────────────
+  // One 500-row audit array feeds the feed and both charts below.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const auditDays = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (13 - i));
+    return { date, critical: 0, warn: 0, info: 0 };
+  });
+  const dayByStamp = new Map(auditDays.map((d, i) => [d.date.toDateString(), i]));
+  audit.rows.forEach(log => {
+    const i = dayByStamp.get(new Date(log.created_at).toDateString());
+    if (i === undefined) return;
+    auditDays[i][getAuditSeverity(log.action)] += 1;
+  });
+
+  const dayTotal = (d) => d.critical + d.warn + d.info;
+  const dayPeak = Math.max(1, ...auditDays.map(dayTotal));
+  const dayShort = (d) => d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const dayLong = (d) => d.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const hasActivity = auditDays.some(d => dayTotal(d) > 0);
+
+  const actorCounts = new Map();
+  audit.rows.forEach(log => {
+    const { actor } = auditLine(log, staff);
+    actorCounts.set(actor, (actorCounts.get(actor) ?? 0) + 1);
+  });
+  const topActors = [...actorCounts]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 5);
+
+  // Profiles with no created_at fall outside every bucket and stay uncounted.
+  const monthRows = Array.from({ length: 6 }, (_, i) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - (5 - i), 1);
+    return {
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: date.toLocaleDateString('en-US', { month: 'short' }),
+      count: 0,
+    };
+  });
+  const monthByKey = new Map(monthRows.map((m, i) => [m.key, i]));
+  staff.forEach(s => {
+    const at = new Date(s.created_at);
+    if (Number.isNaN(at.getTime())) return;
+    const i = monthByKey.get(`${at.getFullYear()}-${at.getMonth()}`);
+    if (i !== undefined) monthRows[i].count += 1;
+  });
+  const monthPeak = Math.max(1, ...monthRows.map(m => m.count));
+
+  // Stacked bar for one day, scaled to the busiest day in the window.
+  const dayStack = (d) => {
+    const total = dayTotal(d);
+    if (!total) return [];
+    const segments = [
+      ['critical', d.critical, 'var(--sa-danger)'],
+      ['warn', d.warn, 'var(--sa-gold)'],
+      ['info', d.info, 'var(--sa-text-muted)'],
+    ].filter(([, n]) => n > 0);
+    const barHeight = Math.max((total / dayPeak) * 98 - (segments.length - 1), 1);
+    let y = 100;
+    return segments.map(([key, n, fill]) => {
+      const h = (n / total) * barHeight;
+      y -= h;
+      const rect = <rect key={key} x="0" y={y} width="10" height={h} fill={fill} />;
+      y -= 1; // seam
+      return rect;
+    });
+  };
 
   const dbLabel = db.status === 'checking' ? 'Checking' : db.status === 'online' ? 'Online' : 'Unverified';
   const dbSub = db.latency != null
@@ -258,7 +328,7 @@ const SuperAdminDashboard = () => {
             </div>
           ) : (
             <div className="sa-list flex-1 flex flex-col">
-              {audit.rows.slice(0, 4).map(log => {
+              {audit.rows.slice(0, 6).map(log => {
                 const { action, actor, target } = auditLine(log, staff);
                 const critical = getAuditSeverity(log.action) === 'critical';
                 return (
@@ -283,6 +353,122 @@ const SuperAdminDashboard = () => {
           )}
         </section>
       </div>
+
+      {/* ── Analytics (12d): one audit array, three readings ─────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Audit activity — last 14 days */}
+        <section className="sa-panel xl:col-span-2 flex flex-col min-w-0">
+          <div className="sa-panel-head">
+            <div>
+              <h2 className="sa-panel-title">Audit activity</h2>
+              <p className="sa-panel-sub">Last 14 days, from the most recent 500 audit rows</p>
+            </div>
+          </div>
+
+          {audit.loading && audit.rows.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center py-10">
+              <Loader2 size={20} className="animate-spin sa-t-muted" />
+            </div>
+          ) : !hasActivity ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-10 sa-empty mt-4">
+              <Activity size={24} strokeWidth={1.5} className="sa-t-muted mb-2" />
+              <p className="sa-empty-title">No activity in the last 14 days</p>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1">
+                {auditDays.map((d, i) => (
+                  <div key={d.date.toDateString()} className="flex flex-col items-center gap-1">
+                    <span className="h-4 text-[11px] tabular-nums text-[var(--sa-text-secondary)]">
+                      {dayTotal(d)}
+                    </span>
+                    <svg
+                      role="img"
+                      aria-label={`${dayLong(d)}: ${d.critical} critical, ${d.warn} warning, ${d.info} information`}
+                      viewBox="0 0 10 100"
+                      preserveAspectRatio="none"
+                      className="h-28 w-full block"
+                    >
+                      {dayStack(d)}
+                    </svg>
+                    <span className={`h-4 text-[11px] tabular-nums whitespace-nowrap text-[var(--sa-text-muted)]${i % 4 === 3 ? ' hidden sm:block' : ''}`}>
+                      {i % 2 === 1 ? dayShort(d) : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                {[
+                  ['Critical', 'var(--sa-danger)'],
+                  ['Warning', 'var(--sa-gold)'],
+                  ['Information', 'var(--sa-text-muted)'],
+                ].map(([label, fill]) => (
+                  <span key={label} className="flex items-center gap-1.5 text-[11px] text-[var(--sa-text-muted)]">
+                    <span className="h-2 w-2 shrink-0" style={{ background: fill }} aria-hidden="true" />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Privileged actors */}
+        <section className="sa-panel flex flex-col min-w-0">
+          <div className="sa-panel-head">
+            <div>
+              <h2 className="sa-panel-title">Privileged actors</h2>
+              <p className="sa-panel-sub">Top five by action count, most recent 500 rows</p>
+            </div>
+          </div>
+
+          {audit.loading && audit.rows.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center py-10">
+              <Loader2 size={20} className="animate-spin sa-t-muted" />
+            </div>
+          ) : topActors.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-10 sa-empty mt-4">
+              <ShieldAlert size={24} strokeWidth={1.5} className="sa-t-muted mb-2" />
+              <p className="sa-empty-title">No privileged actions recorded</p>
+            </div>
+          ) : (
+            <div className="sa-list flex-1 flex flex-col">
+              {topActors.map(([actor, count]) => (
+                <div key={actor} className="sa-row flex-1 items-center">
+                  <p className="sa-row-title flex-1 min-w-0 truncate">{actor}</p>
+                  <span className="shrink-0 text-[13px] tabular-nums text-[var(--sa-text-secondary)]">{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Identity growth — creation months, flat ink fills */}
+      <section className="sa-panel min-w-0">
+        <div className="sa-panel-head">
+          <div>
+            <h2 className="sa-panel-title">Identity growth</h2>
+            <p className="sa-panel-sub">Profiles created per month, last six months</p>
+          </div>
+        </div>
+
+        <div className="mt-2">
+          {monthRows.map(m => (
+            <div key={m.key} className="sa-bar-row">
+              <span className="sa-bar-label">{m.label}</span>
+              <div className="sa-bar">
+                <div
+                  className="sa-bar-fill"
+                  style={{ width: `${(m.count / monthPeak) * 100}%` }}
+                />
+              </div>
+              <span className="sa-bar-count tabular-nums">{m.count}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Zone D moved to /admin/health; this row is the way in. */}
       <button
