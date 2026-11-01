@@ -16,6 +16,8 @@ import ParentDashboard from './pages/parent/ParentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import UserManagement from './pages/admin/UserManagement';
+import AuditPage from './pages/admin/AuditPage';
+import ConfigPage from './pages/admin/ConfigPage';
 import SessionNotes from './pages/therapist/SessionNotes';
 import { ProtectedRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
@@ -77,6 +79,8 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="admin/users" element={<SuperAdminRoute><UserManagement /></SuperAdminRoute>} />
+          <Route path="admin/audit" element={<SuperAdminRoute><AuditPage /></SuperAdminRoute>} />
+          <Route path="admin/config" element={<SuperAdminRoute><ConfigPage /></SuperAdminRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<RoleRoute allowedRoles={['admin']}><ScheduleCalendar /></RoleRoute>} />
           <Route path="directory" element={<RoleRoute allowedRoles={['admin']}><Directory /></RoleRoute>} />

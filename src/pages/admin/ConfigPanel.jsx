@@ -1,4 +1,4 @@
-import { Sliders, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
 
@@ -10,18 +10,6 @@ export const ConfigPanel = ({
   isConfigDirty,
 }) => (
   <div className="sa-panel space-y-6">
-    <div className="sa-panel-head">
-      <div>
-        <h2 className="sa-panel-title flex items-center gap-2">
-          <Sliders size={16} strokeWidth={1.5} className="shrink-0 text-[var(--sa-text-muted)]" />
-          System Engine &amp; Runtime
-        </h2>
-        <p className="sa-panel-sub">
-          Global constraints and operational parameters for automated and manual scheduling engines.
-        </p>
-      </div>
-    </div>
-
     {/* Audit Notice Callout */}
     <div className="sa-alert">
       <Info size={16} strokeWidth={1.5} className="shrink-0 mt-0.5 text-[var(--sa-text-muted)]" />
@@ -31,7 +19,7 @@ export const ConfigPanel = ({
       </div>
     </div>
 
-    <form onSubmit={handleSaveConfig} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSaveConfig} className="space-y-6">
       {/* Auto-Scheduler Toggle — primary control, moved to top */}
       <div className="border border-[var(--sa-line-default)] p-4 flex items-start gap-3">
         <input

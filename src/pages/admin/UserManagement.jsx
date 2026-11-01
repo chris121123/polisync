@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users,
   UserPlus,
@@ -19,27 +19,19 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
-import { auditLine } from '../../lib/auditLog';
 import { ROLE_LABELS } from '../../lib/rolePalette';
 import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
 import {
-  EMPTY_CONFIG,
-  AUDIT_CATEGORIES,
-  getAuditBadge,
-  getAuditSeverity,
   ROLE_PILL_COLORS,
   ROLE_PILL_INACTIVE,
 } from './userManagementConstants.js';
-import { AuditPanel } from './AuditPanel.jsx';
-import { ConfigPanel } from './ConfigPanel.jsx';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
 
 const NAME_PATTERN = /^[A-Za-zÀ-ÿÑñ .,'-]+$/;
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const PHONE_PATTERN = /^09\d{9}$/;
 const normalizePhone = (phone) => phone.replace(/[\s-]/g, '');
-const FULL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
 // The border colour is chosen, never raced: two border-* utilities in one
@@ -56,52 +48,17 @@ const UserManagement = () => {
     adminDeleteUser,
     toggleUserActive,
     user,
-    schedulingSettings,
-    notify,
-    fetchRecentAudit,
-    saveSchedulingSettings,
   } = useGlobalState();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('users');
   const [showRoleModal, setShowRoleModal] = useState(null);
   const [selectedRole, setSelectedRole] = useState('teacher');
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [expandedLogIds, setExpandedLogIds] = useState(new Set());
   const [filterRole, setFilterRole] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
   // The row kebab outlives the menu item that opens a dialog, so it is the focus anchor to restore.
   const rowMenuTriggerRef = useRef(null);
-  const [auditSearch, setAuditSearch] = useState('');
-  const [auditCategory, setAuditCategory] = useState('all');
-  const [auditSeverity, setAuditSeverity] = useState('all');
-  const [auditFrom, setAuditFrom] = useState('');
-  const [auditTo, setAuditTo] = useState('');
-
-  // ── Platform Configuration Form State ──
-  const [configForm, setConfigForm] = useState(EMPTY_CONFIG);
-  const [initialConfigForm, setInitialConfigForm] = useState(EMPTY_CONFIG);
-  const [configLoading, setConfigLoading] = useState(false);
-
-  const isConfigDirty = JSON.stringify(configForm) !== JSON.stringify(initialConfigForm);
-
-  useEffect(() => {
-    if (schedulingSettings) {
-      const loaded = {
-        operating_start_time: schedulingSettings.operating_start_time || '08:00',
-        operating_end_time: schedulingSettings.operating_end_time || '17:00',
-        allow_overbook: !!schedulingSettings.allow_overbook,
-        max_daily_hours_per_student: schedulingSettings.max_daily_hours_per_student ?? 4.0,
-        auto_schedule_enabled: !!schedulingSettings.auto_schedule_enabled,
-        min_break_minutes: schedulingSettings.min_break_minutes ?? 15,
-      };
-      setConfigForm(loaded);
-      setInitialConfigForm(loaded);
-    }
-  }, [schedulingSettings]);
 
   // ── Delete User Modal State ──
   const [deleteModalData, setDeleteModalData] = useState(null);
@@ -128,47 +85,16 @@ const UserManagement = () => {
     phone: '',
   });
 
-  const fetchAuditLogs = useCallback(async () => {
-    setAuditLoading(true);
-    try {
-      const { data, error } = await fetchRecentAudit({ limit: 30, from: auditFrom, to: auditTo });
-      if (error) throw error;
-      if (data) setAuditLogs(data);
-    } catch (err) {
-      console.error('Failed to load audit logs:', err);
-    } finally {
-      setAuditLoading(false);
-    }
-    // Factory actions are state-free and recreated per render by design (ADR-001).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auditFrom, auditTo]);
-
-  useEffect(() => {
-    if (activeTab === 'audit' && auditLogs.length === 0) {
-      fetchAuditLogs();
-    }
-  }, [activeTab, auditLogs.length, fetchAuditLogs]);
-
-  // A date range refetches on change; a half-typed date input is not a filter yet.
-  useEffect(() => {
-    const complete = (value) => !value || FULL_DATE.test(value);
-    if (complete(auditFrom) && complete(auditTo) && activeTab === 'audit') fetchAuditLogs();
-    // Tab-open loading stays in the effect above; this one owns the date range only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auditFrom, auditTo]);
-
   useEffect(() => {
     const openCreate = location.state?.openCreate;
-    const tab = location.state?.tab;
-    if (tab) setActiveTab(tab);
     if (openCreate) {
       setShowCreateModal(true);
       setCreateError('');
       setErrors({});
       setCreateSuccess('');
     }
-    if (openCreate || tab) navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state?.openCreate, location.state?.tab, navigate]);
+    if (openCreate) navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state?.openCreate, navigate]);
 
   useEffect(() => {
     let timer;
@@ -314,30 +240,6 @@ const UserManagement = () => {
     await toggleUserActive(userId, !currentActive);
   };
 
-  const handleSaveConfig = async (e) => {
-    e.preventDefault();
-    setConfigLoading(true);
-    try {
-      const { error } = await saveSchedulingSettings(configForm, schedulingSettings?.id || 1);
-      if (error) throw error;
-      if (notify) notify('Platform configuration updated successfully');
-      setInitialConfigForm({ ...configForm });
-    } catch (err) {
-      if (notify) notify(err.message || 'Failed to update configuration', 'error');
-    } finally {
-      setConfigLoading(false);
-    }
-  };
-
-  const toggleExpandLog = (id) => {
-    setExpandedLogIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const filteredStaff = (filterRole === 'all' ? staff : staff.filter(s => s.app_role === filterRole))
     .filter(s => {
       if (!searchQuery) return true;
@@ -345,38 +247,18 @@ const UserManagement = () => {
       return (s.name && s.name.toLowerCase().includes(q)) || (s.email && s.email.toLowerCase().includes(q));
     });
 
-  const filteredAuditLogs = auditLogs.filter(log => {
-    const matchesCategory = auditCategory === 'all' || AUDIT_CATEGORIES[auditCategory]?.(log);
-    const matchesSeverity = auditSeverity === 'all' || getAuditSeverity(log.action) === auditSeverity;
-    if (!matchesCategory || !matchesSeverity) return false;
-    if (!auditSearch) return true;
-    const { action, actor, target } = auditLine(log, staff);
-    const q = auditSearch.toLowerCase();
-    return (
-      action.toLowerCase().includes(q) ||
-      actor.toLowerCase().includes(q) ||
-      (target && target.toLowerCase().includes(q))
-    );
-  });
-
-  const tabs = [
-    { id: 'users', label: 'Identity & Access' },
-    { id: 'audit', label: 'Audit Trail' },
-    { id: 'config', label: 'System Config' }
-  ];
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
         <div>
-          <h1 className="sa-title">Platform Administration Console</h1>
-          <p className="sa-sub">Manage identities, privileged actions, and runtime configuration.</p>
+          <h1 className="sa-title">Identity &amp; Access</h1>
+          <p className="sa-sub">Accounts, roles, and access state.</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
-            className="sa-btn sa-btn--primary"
+            className="sa-btn sa-btn--primary min-h-11 sm:min-h-0"
           >
             <UserPlus size={16} strokeWidth={1.5} />
             Create User
@@ -384,232 +266,176 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar w-fit max-w-full">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={clsx(
-              "px-3 py-1.5 text-xs whitespace-nowrap",
-              activeTab === tab.id
-                ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
-                : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── 1. USERS TAB ── */}
-      {activeTab === 'users' && (
-        <div className="space-y-4">
-          {/* Role Filters + Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:flex-wrap">
-            <div className="flex flex-wrap gap-px sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
-              {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
-                <button
-                  key={role}
-                  onClick={() => setFilterRole(role)}
-                  className={clsx(
-                    "border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
-                    filterRole === role
-                      ? ROLE_PILL_COLORS[role]
-                      : ROLE_PILL_INACTIVE
-                  )}
-                >
-                  {role === 'all' ? 'All' : (ROLE_LABELS[role] || role)} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative sm:ml-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search by name or email..."
-                className="w-full sm:w-72 pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
-              />
-            </div>
+      <div className="space-y-4">
+        {/* Role Filters + Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:flex-wrap">
+          <div className="flex flex-wrap gap-px sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
+            {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
+              <button
+                key={role}
+                onClick={() => setFilterRole(role)}
+                className={clsx(
+                  "border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
+                  filterRole === role
+                    ? ROLE_PILL_COLORS[role]
+                    : ROLE_PILL_INACTIVE
+                )}
+              >
+                {role === 'all' ? 'All' : (ROLE_LABELS[role] || role)} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
+              </button>
+            ))}
           </div>
 
-          {/* User Table */}
-          <div className="border border-[var(--sa-line-default)] overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[var(--sa-line-default)]">
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">User</th>
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">App Role</th>
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Department</th>
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Email</th>
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Status</th>
-                  <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--sa-line-hairline)]">
-                {filteredStaff.map((member, index) => (
-                  <tr key={member.id} className="hover:bg-[var(--sa-surface-2)] transition-colors">
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 border border-[var(--sa-line-default)] sa-t-warm text-[11px] tabular-nums flex items-center justify-center shrink-0">
-                          {member.name?.charAt(0) || 'U'}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="sa-row-title truncate">{member.name}</p>
-                          <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{member.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className="sa-badge whitespace-nowrap">{ROLE_LABELS[member.app_role] || member.app_role || 'teacher'}</span>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className="text-sm text-[var(--sa-text-muted)]">{member.department || 'General'}</span>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className="text-sm text-[var(--sa-text-muted)]">{member.email}</span>
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className={clsx(
-                        'sa-badge',
-                        member.is_active !== false && 'sa-badge--positive'
-                      )}>
-                        {member.is_active === false ? 'Inactive' : 'Active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-right">
-                      <div className="relative inline-block text-left">
-                        <button
-                          onClick={(e) => {
-                            rowMenuTriggerRef.current = e.currentTarget;
-                            setOpenMenuId(openMenuId === member.id ? null : member.id);
-                          }}
-                          aria-label={`Actions for ${member.name}`}
-                          className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] transition-colors"
-                        >
-                          <MoreVertical size={16} strokeWidth={1.5} />
-                        </button>
-
-                        {openMenuId === member.id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={() => setOpenMenuId(null)}
-                            />
-                            <div className={clsx(
-                              'absolute right-0 w-48 bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] z-50 p-1',
-                              // The table scrolls (min-w), so it clips; the last rows open upward.
-                              index >= 2 && index >= filteredStaff.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'
-                            )}>
-                              <button
-                                onClick={() => {
-                                  handleToggleActive(member.id, member.is_active !== false);
-                                  setOpenMenuId(null);
-                                }}
-                                className={clsx(
-                                  "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]",
-                                  member.is_active === false ? "sa-t-warm" : "text-[var(--sa-text-secondary)]"
-                                )}
-                              >
-                                {member.is_active === false ? <ToggleLeft size={16} strokeWidth={1.5} /> : <ToggleRight size={16} strokeWidth={1.5} />}
-                                {member.is_active === false ? 'Activate User' : 'Deactivate User'}
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  rowMenuTriggerRef.current?.focus();
-                                  setShowRoleModal(member.id);
-                                  setSelectedRole(member.app_role || 'teacher');
-                                  setOpenMenuId(null);
-                                }}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left text-[var(--sa-text-secondary)] transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]"
-                              >
-                                <Shield size={16} strokeWidth={1.5} />
-                                Change Role
-                              </button>
-
-                              <div className="h-px bg-[var(--sa-line-hairline)] my-1" />
-
-                              <button
-                                onClick={() => handleDeleteUser(member)}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left sa-t-danger transition-colors hover:bg-[var(--sa-surface-2)]"
-                              >
-                                <Trash2 size={16} strokeWidth={1.5} />
-                                Delete User
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {filteredStaff.length === 0 && (
-              <div className="px-6 py-12 text-center">
-                <Users size={18} strokeWidth={1.5} className="mx-auto mb-3 text-[var(--sa-text-muted)]" />
-                {staff.length === 0 ? (
-                  <>
-                    <p className="sa-empty-title">No users yet</p>
-                    <p className="sa-empty-sub">Create your first platform account to get started.</p>
-                    <button
-                      onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
-                      className="sa-btn sa-btn--primary mt-4"
-                    >
-                      <UserPlus size={14} strokeWidth={1.5} /> Create first user
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="sa-empty-title">No users match this filter</p>
-                    <p className="sa-empty-sub">Try a different role filter or clear the search query.</p>
-                  </>
-                )}
-              </div>
-            )}
+          <div className="relative sm:ml-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full sm:w-72 pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+            />
           </div>
         </div>
-      )}
 
-      {/* ── 2. AUDIT TRAIL TAB ── */}
-      {activeTab === 'audit' && (
-        <AuditPanel
-          fetchAuditLogs={fetchAuditLogs}
-          auditLoading={auditLoading}
-          auditSearch={auditSearch}
-          setAuditSearch={setAuditSearch}
-          auditCategory={auditCategory}
-          setAuditCategory={setAuditCategory}
-          auditSeverity={auditSeverity}
-          setAuditSeverity={setAuditSeverity}
-          auditFrom={auditFrom}
-          setAuditFrom={setAuditFrom}
-          auditTo={auditTo}
-          setAuditTo={setAuditTo}
-          auditLogs={auditLogs}
-          filteredAuditLogs={filteredAuditLogs}
-          expandedLogIds={expandedLogIds}
-          toggleExpandLog={toggleExpandLog}
-          staff={staff}
-          getAuditBadge={getAuditBadge}
-        />
-      )}
+        {/* User Table */}
+        <div className="border border-[var(--sa-line-default)] overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--sa-line-default)]">
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">User</th>
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">App Role</th>
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Department</th>
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Email</th>
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Status</th>
+                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--sa-line-hairline)]">
+              {filteredStaff.map((member, index) => (
+                <tr key={member.id} className="hover:bg-[var(--sa-surface-2)] transition-colors">
+                  <td className="px-6 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 border border-[var(--sa-line-default)] sa-t-warm text-[11px] tabular-nums flex items-center justify-center shrink-0">
+                        {member.name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="sa-row-title truncate">{member.name}</p>
+                        <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{member.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <span className="sa-badge whitespace-nowrap">{ROLE_LABELS[member.app_role] || member.app_role || 'teacher'}</span>
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <span className="text-sm text-[var(--sa-text-muted)]">{member.department || 'General'}</span>
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <span className="text-sm text-[var(--sa-text-muted)]">{member.email}</span>
+                  </td>
+                  <td className="px-6 py-3.5">
+                    <span className={clsx(
+                      'sa-badge',
+                      member.is_active !== false && 'sa-badge--positive'
+                    )}>
+                      {member.is_active === false ? 'Inactive' : 'Active'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3.5 text-right">
+                    <div className="relative inline-block text-left">
+                      <button
+                        onClick={(e) => {
+                          rowMenuTriggerRef.current = e.currentTarget;
+                          setOpenMenuId(openMenuId === member.id ? null : member.id);
+                        }}
+                        aria-label={`Actions for ${member.name}`}
+                        className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] transition-colors"
+                      >
+                        <MoreVertical size={16} strokeWidth={1.5} />
+                      </button>
 
-      {/* ── 3. PLATFORM CONFIG TAB ── */}
-      {activeTab === 'config' && (
-        <ConfigPanel
-          configForm={configForm}
-          setConfigForm={setConfigForm}
-          handleSaveConfig={handleSaveConfig}
-          configLoading={configLoading}
-          isConfigDirty={isConfigDirty}
-        />
-      )}
+                      {openMenuId === member.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setOpenMenuId(null)}
+                          />
+                          <div className={clsx(
+                            'absolute right-0 w-48 bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] z-50 p-1',
+                            // The table scrolls (min-w), so it clips; the last rows open upward.
+                            index >= 2 && index >= filteredStaff.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'
+                          )}>
+                            <button
+                              onClick={() => {
+                                handleToggleActive(member.id, member.is_active !== false);
+                                setOpenMenuId(null);
+                              }}
+                              className={clsx(
+                                "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]",
+                                member.is_active === false ? "sa-t-warm" : "text-[var(--sa-text-secondary)]"
+                              )}
+                            >
+                              {member.is_active === false ? <ToggleLeft size={16} strokeWidth={1.5} /> : <ToggleRight size={16} strokeWidth={1.5} />}
+                              {member.is_active === false ? 'Activate User' : 'Deactivate User'}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                rowMenuTriggerRef.current?.focus();
+                                setShowRoleModal(member.id);
+                                setSelectedRole(member.app_role || 'teacher');
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left text-[var(--sa-text-secondary)] transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]"
+                            >
+                              <Shield size={16} strokeWidth={1.5} />
+                              Change Role
+                            </button>
+
+                            <div className="h-px bg-[var(--sa-line-hairline)] my-1" />
+
+                            <button
+                              onClick={() => handleDeleteUser(member)}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left sa-t-danger transition-colors hover:bg-[var(--sa-surface-2)]"
+                            >
+                              <Trash2 size={16} strokeWidth={1.5} />
+                              Delete User
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {filteredStaff.length === 0 && (
+            <div className="px-6 py-12 text-center">
+              <Users size={18} strokeWidth={1.5} className="mx-auto mb-3 text-[var(--sa-text-muted)]" />
+              {staff.length === 0 ? (
+                <>
+                  <p className="sa-empty-title">No users yet</p>
+                  <p className="sa-empty-sub">Create your first platform account to get started.</p>
+                  <button
+                    onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
+                    className="sa-btn sa-btn--primary mt-4"
+                  >
+                    <UserPlus size={14} strokeWidth={1.5} /> Create first user
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="sa-empty-title">No users match this filter</p>
+                  <p className="sa-empty-sub">Try a different role filter or clear the search query.</p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ── Change Role Modal ── */}
       <AppModal isOpen={Boolean(showRoleModal)} onClose={() => setShowRoleModal(null)} labelledBy="change-role-title" maxWidth="max-w-sm">

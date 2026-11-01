@@ -29,28 +29,24 @@ export const AuditPanel = ({
 }) => (
   <div className="border border-[var(--sa-line-default)] bg-[var(--sa-surface-1)] overflow-hidden">
     <div className="px-6 py-4 border-b border-[var(--sa-line-hairline)]">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <h2 className="sa-panel-title">Security Audit Trail</h2>
-          <p className="sa-panel-sub">Privileged actions and account events</p>
-        </div>
-        <button
-          onClick={fetchAuditLogs}
-          className="sa-link shrink-0"
-        >
-          Refresh
-        </button>
-      </div>
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
-          <input
-            type="text"
-            value={auditSearch}
-            onChange={e => setAuditSearch(e.target.value)}
-            placeholder="Search action, actor, or target..."
-            className="w-full pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
-          />
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
+            <input
+              type="text"
+              value={auditSearch}
+              onChange={e => setAuditSearch(e.target.value)}
+              placeholder="Search action, actor, or target..."
+              className="w-full pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+            />
+          </div>
+          <button
+            onClick={fetchAuditLogs}
+            className="sa-link shrink-0 sm:px-2"
+          >
+            Refresh
+          </button>
         </div>
         <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar shrink-0">
           {[['all','All'],['account','Accounts'],['role','Role Changes'],['status','Status']].map(([id, label]) => (

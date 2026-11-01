@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon } from 'lucide-react';
+import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
@@ -137,13 +137,31 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
       }
 
       // Phase 2.5 — superadmin/admin page results
-      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['user management', 'users', 'accounts'])) {
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['identity', 'user management', 'users', 'accounts'])) {
         searchResults.push({
           id: 'nav-usermgmt',
-          title: 'User Management',
+          title: 'Identity & Access',
           sub: 'Create accounts, manage roles and permissions',
           icon: Users,
           action: () => navigate('/admin/users'),
+        });
+      }
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['audit', 'logs', 'security'])) {
+        searchResults.push({
+          id: 'nav-audit',
+          title: 'Audit Trail',
+          sub: 'Privileged actions and account events',
+          icon: FileClock,
+          action: () => navigate('/admin/audit'),
+        });
+      }
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['config', 'configuration', 'engine', 'runtime'])) {
+        searchResults.push({
+          id: 'nav-config',
+          title: 'System Config',
+          sub: 'Scheduler rules and runtime settings',
+          icon: SlidersHorizontal,
+          action: () => navigate('/admin/config'),
         });
       }
       if (isAdminOnly && matchesAnyKeyword(lowerQuery, ['directory', 'staff', 'people'])) {

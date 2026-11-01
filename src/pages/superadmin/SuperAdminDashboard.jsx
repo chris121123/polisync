@@ -246,7 +246,7 @@ const SuperAdminDashboard = () => {
               <p className="sa-panel-sub">Accounts by access level</p>
             </div>
             <button
-              onClick={() => navigate('/admin/users', { state: { tab: 'audit' } })}
+              onClick={() => navigate('/admin/audit')}
               className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
             >
               Inspect audit <ChevronRight size={13} strokeWidth={1.5} />
@@ -304,7 +304,7 @@ const SuperAdminDashboard = () => {
               <p className="sa-panel-sub">Privileged actions</p>
             </div>
             <button
-              onClick={() => navigate('/admin/users', { state: { tab: 'audit' } })}
+              onClick={() => navigate('/admin/audit')}
               className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
             >
               Full trail <ChevronRight size={13} strokeWidth={1.5} />
