@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -105,6 +105,7 @@ const Layout = () => {
     ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'Identity & Access', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/audit', icon: FileClock, label: 'Audit Trail', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/config', icon: SlidersHorizontal, label: 'System Config', section: 'System' }] : []),
+    ...(appRole === 'superadmin' ? [{ to: '/admin/health', icon: Activity, label: 'System Health', section: 'System' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings', section: 'System' },
   ];
 

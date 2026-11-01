@@ -15,68 +15,15 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine, formatAuditStamp } from '../../lib/auditLog';
 import { supabase } from '../../lib/supabase';
 import { ROLE_LABELS } from '../../lib/rolePalette';
+import { EDGE_FUNCTIONS } from '../../lib/edges';
+import { pingDatabase } from '../../state/systemHealth';
 import { getAuditSeverity } from '../admin/userManagementConstants';
 
-// Zone D ships the static manifest on purpose: all four functions mutate, so
-// there is no health endpoint to call (plan §0.2).
-const EDGE_FUNCTIONS = [
-  'admin-create-user',
-  'admin-delete-user',
-  'auto-scheduler',
-  'send-notification',
-];
-
 const ROLES = ['superadmin', 'admin', 'teacher', 'therapist', 'parent'];
-
-const COUNT_TABLES = [
-  { table: 'profiles', label: 'Profiles' },
-  { table: 'students', label: 'Students' },
-  { table: 'sessions', label: 'Sessions' },
-  { table: 'audit_logs', label: 'Audit log' },
-];
 
 const shortDate = (value) => value
   ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   : '—';
-
-// A channel exists once the provider has subscribed; its state is the real
-// client state, never a guess.
-const channelState = () => {
-  if (!supabase) return 'Unavailable';
-  const channels = supabase.getChannels?.() ?? [];
-  const channel = channels.find(c => c.topic?.includes('system-changes'));
-  return channel ? (channel.state || 'Unknown') : 'Not connected';
-};
-
-// Client round-trip: three trivial reads, averaged. Not a server-side metric.
-const measureRoundTrip = async () => {
-  if (!supabase) return { status: 'unverified', latency: null };
-  const samples = [];
-  try {
-    for (let i = 0; i < 3; i++) {
-      const started = performance.now();
-      const { error } = await supabase.from('profiles').select('id').limit(1);
-      if (error) return { status: 'unverified', latency: null };
-      samples.push(performance.now() - started);
-    }
-  } catch {
-    return { status: 'unverified', latency: null };
-  }
-  return { status: 'online', latency: Math.round(samples.reduce((a, b) => a + b, 0) / samples.length) };
-};
-
-const readCounts = async () => {
-  if (!supabase) return {};
-  const entries = await Promise.all(COUNT_TABLES.map(async ({ table }) => {
-    try {
-      const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-      return [table, error ? null : count];
-    } catch {
-      return [table, null];
-    }
-  }));
-  return Object.fromEntries(entries);
-};
 
 // ── Local KPI card ─────────────────────────────────────────────────────
 // Mirrors the shared StatCard; separate only for the 32px lead value.
@@ -100,15 +47,11 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
 
   const [audit, setAudit] = useState({ rows: [], loading: true });
-  const [counts, setCounts] = useState(null);
   const [db, setDb] = useState({ status: 'checking', latency: null });
-  const [channel, setChannel] = useState(channelState);
 
   const refresh = useCallback(async () => {
     setAudit(prev => ({ ...prev, loading: true }));
     setDb({ status: 'checking', latency: null });
-    setCounts(null);
-    setChannel(channelState());
 
     await Promise.allSettled([
       (async () => {
@@ -119,8 +62,7 @@ const SuperAdminDashboard = () => {
           setAudit({ rows: [], loading: false });
         }
       })(),
-      (async () => setDb(await measureRoundTrip()))(),
-      (async () => setCounts(await readCounts()))(),
+      (async () => setDb(await pingDatabase()))(),
     ]);
     // Factory actions are state-free and recreated per render by design (ADR-001).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,10 +70,6 @@ const SuperAdminDashboard = () => {
 
   useEffect(() => {
     refresh();
-    // The provider subscribes to system-changes after this page mounts, so the
-    // channel joins late; re-read it once instead of polling.
-    const timer = setTimeout(() => setChannel(channelState()), 2000);
-    return () => clearTimeout(timer);
   }, [refresh]);
 
   // ── Derived identity metrics ─────────────────────────────────────────
@@ -160,9 +98,6 @@ const SuperAdminDashboard = () => {
   const dbSub = db.latency != null
     ? `${db.latency} ms round-trip`
     : supabase ? 'Ping pending' : 'No client configured';
-  const channelTone = channel === 'joined'
-    ? ' sa-dot--ok'
-    : channel === 'errored' || channel === 'closed' ? ' sa-dot--error' : '';
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
@@ -349,60 +284,23 @@ const SuperAdminDashboard = () => {
         </section>
       </div>
 
-      {/* ── Zone D: service endpoints ────────────────────────────────── */}
-      <section className="sa-panel">
-        <div className="sa-panel-head">
-          <div>
-            <h2 className="sa-panel-title">Service Endpoints</h2>
-            <p className="sa-panel-sub">Connection, functions, and table volume</p>
-          </div>
+      {/* Zone D moved to /admin/health; this row is the way in. */}
+      <button
+        onClick={() => navigate('/admin/health')}
+        className="sa-row group w-full border-t border-[var(--sa-line-hairline)] px-4 text-left"
+      >
+        <Activity size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 sa-t-muted" />
+        <div className="flex-1 min-w-0">
+          <p className="sa-row-title">System Health</p>
+          <p className="sa-row-meta">Connection, endpoints, and data exports</p>
         </div>
-
-        <div className="-mx-5 -mb-5 mt-5 grid grid-cols-1 gap-px bg-[var(--sa-line-hairline)] sm:grid-cols-3">
-          {/* Realtime */}
-          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
-            <p className="sa-micro">Realtime</p>
-            <div className="mt-3 flex items-center gap-2">
-              <span className={`sa-dot${channelTone}`} aria-hidden="true" />
-              <p className="text-sm capitalize text-[var(--sa-text-primary)]">{channel}</p>
-            </div>
-            <p className="sa-mono mt-1">system-changes</p>
-            <p className="mt-2 text-[11px] text-[var(--sa-text-muted)]">Listens to app tables</p>
-          </div>
-
-          {/* Edge Functions */}
-          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
-            <p className="sa-micro">Edge Functions</p>
-            <ul className="mt-3 space-y-1.5">
-              {EDGE_FUNCTIONS.map(fn => (
-                <li key={fn} className="flex items-baseline justify-between gap-3">
-                  <span className="sa-mono">{fn}</span>
-                  <span className="text-[11px] text-[var(--sa-text-muted)]">configured</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-[11px] text-[var(--sa-text-muted)]">No health endpoint — static manifest</p>
-          </div>
-
-          {/* Table records */}
-          <div className="bg-[var(--sa-surface-1)] px-5 py-4">
-            <p className="sa-micro">Table records</p>
-            <div className="mt-2">
-              {COUNT_TABLES.map(({ table, label }) => (
-                <div
-                  key={table}
-                  className="flex items-baseline justify-between gap-3 border-b border-[var(--sa-line-row)] py-1.5 last:border-0"
-                >
-                  <span className="text-[13px] text-[var(--sa-text-secondary)]">{label}</span>
-                  <span className="text-[13px] tabular-nums text-[var(--sa-text-primary)]">
-                    {counts?.[table] ?? '—'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+        <ChevronRight
+          size={14}
+          strokeWidth={1.5}
+          className="mt-0.5 shrink-0 sa-t-muted transition-colors group-hover:text-[var(--sa-text-primary)]"
+          aria-hidden="true"
+        />
+      </button>
 
     </div>
   );

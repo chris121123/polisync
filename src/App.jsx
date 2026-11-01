@@ -18,6 +18,7 @@ import TherapistDashboard from './pages/therapist/TherapistDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import AuditPage from './pages/admin/AuditPage';
 import ConfigPage from './pages/admin/ConfigPage';
+import HealthPage from './pages/admin/HealthPage';
 import SessionNotes from './pages/therapist/SessionNotes';
 import { ProtectedRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
@@ -81,6 +82,7 @@ function App() {
           <Route path="admin/users" element={<SuperAdminRoute><UserManagement /></SuperAdminRoute>} />
           <Route path="admin/audit" element={<SuperAdminRoute><AuditPage /></SuperAdminRoute>} />
           <Route path="admin/config" element={<SuperAdminRoute><ConfigPage /></SuperAdminRoute>} />
+          <Route path="admin/health" element={<SuperAdminRoute><HealthPage /></SuperAdminRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<RoleRoute allowedRoles={['admin']}><ScheduleCalendar /></RoleRoute>} />
           <Route path="directory" element={<RoleRoute allowedRoles={['admin']}><Directory /></RoleRoute>} />

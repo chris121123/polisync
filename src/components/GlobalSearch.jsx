@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal } from 'lucide-react';
+import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
@@ -162,6 +162,15 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           sub: 'Scheduler rules and runtime settings',
           icon: SlidersHorizontal,
           action: () => navigate('/admin/config'),
+        });
+      }
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['health', 'status', 'database', 'export', 'backup'])) {
+        searchResults.push({
+          id: 'nav-health',
+          title: 'System Health',
+          sub: 'Runtime checks, endpoints, and data exports',
+          icon: Activity,
+          action: () => navigate('/admin/health'),
         });
       }
       if (isAdminOnly && matchesAnyKeyword(lowerQuery, ['directory', 'staff', 'people'])) {
