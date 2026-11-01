@@ -15,7 +15,7 @@ const FEATURES = [
   'Student records and program enrolment, linked to the staff who deliver each program.',
   'A weekly schedule that assigns staff, rooms and time slots, with automatic conflict detection.',
   'Session notes written by therapists from their own dashboard.',
-  'A Platform Administration Console for account management, with an audit log of the changes made.',
+  'Administration pages for identity, audit, runtime configuration and system health.',
   'Notifications for the people affected by a scheduling or record change.',
 ];
 

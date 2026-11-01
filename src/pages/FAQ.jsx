@@ -27,7 +27,7 @@ const FAQS = [
   {
     id: 'after-login',
     q: 'What happens after I log in?',
-    a: 'You land on your dashboard. The sidebar lists only the pages your role can open — administrators get Schedule, Directory and Rooms, therapists get Session Notes, IT managers get the Platform Administration Console, and every role has its own profile page and settings.',
+    a: 'You land on your dashboard. The sidebar lists only the pages your role can open — administrators get Schedule, Directory and Rooms, therapists get Session Notes, IT managers get Identity & Access, Audit Trail, System Config and System Health, and every role has its own profile page and settings.',
   },
   {
     id: 'change-own-password',
@@ -42,7 +42,7 @@ const FAQS = [
   {
     id: 'account-issues',
     q: 'Who do I contact for account issues?',
-    a: 'Your center’s administrator or IT Manager. They manage accounts from the Platform Administration Console: creating users, changing roles, deactivating or deleting accounts, and reviewing the audit log.',
+    a: 'Your center’s administrator or IT Manager. They manage accounts from Identity & Access: creating users, changing roles, deactivating or deleting accounts, and reviewing the audit trail.',
   },
   {
     id: 'data-security',
