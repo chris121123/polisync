@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, CalendarRange, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, CalendarRange, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -107,6 +107,8 @@ const Layout = () => {
     ...(appRole === 'superadmin' ? [{ to: '/admin/audit', icon: FileClock, label: 'Audit Trail', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/config', icon: SlidersHorizontal, label: 'System Config', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/health', icon: Activity, label: 'System Health', section: 'System' }] : []),
+    ...(appRole === 'superadmin' ? [{ to: '/admin/ai', icon: Cpu, label: 'AI Provider', section: 'System' }] : []),
+    ...(appRole === 'admin' || appRole === 'superadmin' ? [{ to: '/assistant', icon: Sparkles, label: 'AI Assistant', section: appRole === 'superadmin' ? 'System' : 'Operations' }] : []),
     { to: '/settings', icon: SettingsIcon, label: 'Settings', section: 'System' },
   ];
 

@@ -19,7 +19,9 @@ import UserManagement from './pages/admin/UserManagement';
 import AuditPage from './pages/admin/AuditPage';
 import ConfigPage from './pages/admin/ConfigPage';
 import HealthPage from './pages/admin/HealthPage';
+import AiProviderPage from './pages/admin/AiProviderPage';
 import PlannerPage from './pages/admin/PlannerPage';
+import AssistantPage from './pages/assistant/AssistantPage';
 import SessionNotes from './pages/therapist/SessionNotes';
 import { ProtectedRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, TherapistRoute } from './components/RouteGuards';
 import { useGlobalState } from './context/GlobalStateContext';
@@ -84,6 +86,8 @@ function App() {
           <Route path="admin/audit" element={<SuperAdminRoute><AuditPage /></SuperAdminRoute>} />
           <Route path="admin/config" element={<SuperAdminRoute><ConfigPage /></SuperAdminRoute>} />
           <Route path="admin/health" element={<SuperAdminRoute><HealthPage /></SuperAdminRoute>} />
+          <Route path="admin/ai" element={<SuperAdminRoute><AiProviderPage /></SuperAdminRoute>} />
+          <Route path="assistant" element={<RoleRoute allowedRoles={['admin', 'superadmin']}><AssistantPage /></RoleRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
           <Route path="schedule" element={<RoleRoute allowedRoles={['admin']}><ScheduleCalendar /></RoleRoute>} />
           <Route path="planner" element={<RoleRoute allowedRoles={['admin', 'superadmin']}><PlannerPage /></RoleRoute>} />

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Activity,
   ChevronRight,
+  Cpu,
   Database,
   Loader2,
   RefreshCw,
@@ -14,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { auditLine, formatAuditStamp } from '../../lib/auditLog';
 import { supabase } from '../../lib/supabase';
+import { getAiConfig } from '../../lib/ai/client';
 import { ROLE_LABELS } from '../../lib/rolePalette';
 import { EDGE_FUNCTIONS } from '../../lib/edges';
 import { pingDatabase } from '../../state/systemHealth';
@@ -24,6 +26,8 @@ const ROLES = ['superadmin', 'admin', 'teacher', 'therapist', 'parent'];
 const shortDate = (value) => value
   ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   : '—';
+
+const count = (value) => Number(value ?? 0).toLocaleString('en-US');
 
 // ── Local KPI card ─────────────────────────────────────────────────────
 // Mirrors the shared StatCard; separate only for the 32px lead value.
@@ -48,6 +52,7 @@ const SuperAdminDashboard = () => {
 
   const [audit, setAudit] = useState({ rows: [], loading: true });
   const [db, setDb] = useState({ status: 'checking', latency: null });
+  const [ai, setAi] = useState({ status: 'loading', config: null });
 
   const refresh = useCallback(async () => {
     setAudit(prev => ({ ...prev, loading: true }));
@@ -71,6 +76,16 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // One read of the AI provider state; a failure reads as "Not configured".
+  useEffect(() => {
+    let alive = true;
+    getAiConfig().then(({ data, error }) => {
+      if (!alive) return;
+      setAi(error || !data ? { status: 'error', config: null } : { status: 'ready', config: data });
+    });
+    return () => { alive = false; };
+  }, []);
 
   // ── Derived identity metrics ─────────────────────────────────────────
   const totalAccounts = staff.length;
@@ -168,6 +183,19 @@ const SuperAdminDashboard = () => {
   const dbSub = db.latency != null
     ? `${db.latency} ms round-trip`
     : supabase ? 'Ping pending' : 'No client configured';
+
+  const aiTest = ai.config?.lastTest?.ok === true
+    ? 'Reachable'
+    : ai.config?.lastTest?.ok === false ? 'Unreachable' : 'Not tested';
+  const aiLine = ai.status === 'loading'
+    ? 'Checking…'
+    : ai.status === 'error' || !ai.config
+      ? 'Not configured'
+      : [
+        ai.config.enabled ? 'Enabled' : 'Disabled',
+        aiTest,
+        `${count(ai.config.usage?.tokensThisMonth)} / ${count(ai.config.monthlyTokenCap)} tokens`,
+      ].join(' · ');
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
@@ -479,6 +507,23 @@ const SuperAdminDashboard = () => {
         <div className="flex-1 min-w-0">
           <p className="sa-row-title">System Health</p>
           <p className="sa-row-meta">Connection, endpoints, and data exports</p>
+        </div>
+        <ChevronRight
+          size={14}
+          strokeWidth={1.5}
+          className="mt-0.5 shrink-0 sa-t-muted transition-colors group-hover:text-[var(--sa-text-primary)]"
+          aria-hidden="true"
+        />
+      </button>
+
+      <button
+        onClick={() => navigate('/admin/ai')}
+        className="sa-row group w-full border-t border-[var(--sa-line-hairline)] px-4 text-left"
+      >
+        <Cpu size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 sa-t-muted" />
+        <div className="flex-1 min-w-0">
+          <p className="sa-row-title">AI Provider</p>
+          <p className="sa-row-meta">{aiLine}</p>
         </div>
         <ChevronRight
           size={14}

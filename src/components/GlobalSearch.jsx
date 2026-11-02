@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, CalendarRange, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
+import { Search, Loader2, Calendar, CalendarRange, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
@@ -171,6 +171,24 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           sub: 'Runtime checks, endpoints, and data exports',
           icon: Activity,
           action: () => navigate('/admin/health'),
+        });
+      }
+      if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['ai', 'provider', 'model', 'api key'])) {
+        searchResults.push({
+          id: 'nav-ai-provider',
+          title: 'AI Provider',
+          sub: 'Connect a provider, choose features, and cap spend',
+          icon: Cpu,
+          action: () => navigate('/admin/ai'),
+        });
+      }
+      if ((isAdminOnly || appRole === 'superadmin') && matchesAnyKeyword(lowerQuery, ['assistant', 'ai', 'chat', 'ask'])) {
+        searchResults.push({
+          id: 'nav-assistant',
+          title: 'AI Assistant',
+          sub: 'Ask about the schedule, staff, students, and rooms',
+          icon: Sparkles,
+          action: () => navigate('/assistant'),
         });
       }
       if (isAdminOnly && matchesAnyKeyword(lowerQuery, ['directory', 'staff', 'people'])) {
