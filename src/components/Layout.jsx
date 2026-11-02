@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, CalendarRange, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -100,6 +100,7 @@ const Layout = () => {
     },
     ...(appRole === 'therapist' ? [{ to: '/therapist/notes', icon: FileText, label: 'Session Notes', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/schedule', icon: CalendarDays, label: 'Schedule', section: 'Operations' }] : []),
+    ...(appRole === 'admin' || appRole === 'superadmin' ? [{ to: '/planner', icon: CalendarRange, label: 'Year Planner', section: appRole === 'superadmin' ? 'System' : 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'Identity & Access', section: 'System' }] : []),

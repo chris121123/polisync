@@ -5,6 +5,8 @@ export const EMPTY_CONFIG = {
   max_daily_hours_per_student: 4.0,
   auto_schedule_enabled: false,
   min_break_minutes: 15,
+  year_start: '',
+  year_end: '',
 };
 
 // Audit category mapping

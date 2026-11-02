@@ -1,5 +1,6 @@
 // Pure calendar helpers extracted from ScheduleCalendar. No React, no state.
 import { formatDateISO } from '../../lib/dates.js';
+import { getSessionDay } from '../../lib/scheduling/time.js';
 
 export const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
@@ -9,11 +10,8 @@ export const formatHour = (h) => {
   return `${h}:00 AM`;
 };
 
-// Day derived from the DB id by design; pinned by tests, do not change to day_of_week.
-export const getSessionDay = (session) => session.id % 5;
-
 // Re-exported so every existing `./calendarMath.js` import keeps working.
-export { formatDateISO };
+export { formatDateISO, getSessionDay };
 
 // Get the Monday of the selected week
 export const getWeekStart = (d) => {

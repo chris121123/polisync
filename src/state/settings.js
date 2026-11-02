@@ -47,6 +47,8 @@ export const createSettingsActions = ({ setLoading, setSessions, setStudents, se
         max_daily_hours_per_student: Number(values.max_daily_hours_per_student),
         auto_schedule_enabled: values.auto_schedule_enabled,
         min_break_minutes: Number(values.min_break_minutes),
+        year_start: values.year_start || null,
+        year_end: values.year_end || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id || 1);

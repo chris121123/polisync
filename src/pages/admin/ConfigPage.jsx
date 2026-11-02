@@ -23,6 +23,8 @@ const ConfigPage = () => {
         max_daily_hours_per_student: schedulingSettings.max_daily_hours_per_student ?? 4.0,
         auto_schedule_enabled: !!schedulingSettings.auto_schedule_enabled,
         min_break_minutes: schedulingSettings.min_break_minutes ?? 15,
+        year_start: schedulingSettings.year_start || '',
+        year_end: schedulingSettings.year_end || '',
       };
       setConfigForm(loaded);
       setInitialConfigForm(loaded);

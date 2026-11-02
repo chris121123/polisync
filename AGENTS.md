@@ -1,7 +1,7 @@
 # polisync Agent Guidelines
 
 ## Commands
-- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint; `npm run test:golden` — 105 golden tests
+- `npm run dev` — Vite dev server (`--host`); `npm run build` — prod build to `dist/`; `npm run preview` — serve build; `npm run lint` — ESLint; `npm run test:golden` — 113 golden tests
 - No typecheck script. Verify with `npm run test:golden` + `npm run lint` + `npm run build` + manual check in dev server
 - One-off: `node promote-superadmin.mjs` — promotes existing `admin` rows to `superadmin` (reads `.env`)
 

@@ -93,6 +93,36 @@ export const ConfigPanel = ({
         </div>
       </div>
 
+      {/* School year window — read by the Year Planner */}
+      <div className="border-t border-[var(--sa-line-hairline)] pt-4">
+        <p className="sa-label">School year window</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="year_start" className="sa-label">Start</label>
+            <input
+              id="year_start"
+              type="date"
+              value={configForm.year_start}
+              max={configForm.year_end || undefined}
+              onChange={e => setConfigForm(p => ({ ...p, year_start: e.target.value }))}
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <label htmlFor="year_end" className="sa-label">End</label>
+            <input
+              id="year_end"
+              type="date"
+              value={configForm.year_end}
+              min={configForm.year_start || undefined}
+              onChange={e => setConfigForm(p => ({ ...p, year_end: e.target.value }))}
+              className={fieldClass}
+            />
+          </div>
+        </div>
+        <span className="mt-1 block text-[11px] text-[var(--sa-text-muted)]">Used by the Year Planner. Leave empty for the current calendar year.</span>
+      </div>
+
       {/* Allow Overbooking Toggle */}
       <div className="border-t border-[var(--sa-line-hairline)] pt-4">
         <label className="flex items-start gap-3 cursor-pointer">

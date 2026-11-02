@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
+import { Search, Loader2, Calendar, CalendarRange, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
@@ -189,6 +189,16 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           sub: 'Schedule unmet student requirements',
           icon: Calendar,
           action: () => navigate('/schedule?tab=pending'),
+        });
+      }
+
+      if ((isAdminOnly || appRole === 'superadmin') && matchesAnyKeyword(lowerQuery, ['planner', 'year', 'calendar', 'week'])) {
+        searchResults.push({
+          id: 'nav-planner',
+          title: 'Year Planner',
+          sub: 'The school year at a glance, and any week in detail',
+          icon: CalendarRange,
+          action: () => navigate('/planner'),
         });
       }
 
