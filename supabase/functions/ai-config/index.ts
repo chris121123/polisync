@@ -2,12 +2,14 @@
  * AI provider configuration — Edge Function (phase 13a, plan §5.0).
  *
  * POST /functions/v1/ai-config
- * Body: { action: 'get' | 'save' | 'test', patch? }
+ * Body: { action: 'get' | 'save' | 'test' | 'models', patch?, preset?, baseUrl? }
  *
  * Superadmin only. Backs /admin/ai. `get` never returns `api_key`; `save` audits
  * field names (never values); `test` makes one 5-token probe and stores the
- * provider's verdict. The key exists only inside this process and the
- * Authorization header of the probe.
+ * provider's verdict. `models` reads a provider's public model list server-side:
+ * the page never fetches a provider, and only two constant URLs are ever called.
+ * The key exists only inside this process and the Authorization header of the
+ * probe.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
@@ -23,8 +25,14 @@ import {
   verifyCaller,
 } from '../_shared/ai.ts'
 import type { AiConfig } from '../_shared/ai.ts'
+import { MODELS_UNAVAILABLE_NOTE, modelsUrl, normalizeModels, providerFor } from '../_shared/providerModels.js'
 
 type Service = ReturnType<typeof createClient>
+
+const PRESETS = ['commandcode', 'opencode', 'custom']
+
+// Cloudflare/providers can hang; a models list is never worth blocking the edge.
+const MODELS_TIMEOUT_MS = 15_000
 
 // ─── Safe projection ─────────────────────────────────────────────────────────
 // Explicit whitelist: adding a column to ai_config can never leak it by default.
@@ -46,6 +54,7 @@ async function buildState(service: Service, config: AiConfig) {
 
   return {
     enabled: config.enabled,
+    providerPreset: config.providerPreset,
     features: {
       assistant: config.assistantOn,
       planner: config.plannerOn,
@@ -156,6 +165,15 @@ Deno.serve(async (req: Request) => {
       const enabledKey = first('enabled')
       if (enabledKey) updates.enabled = toBool(patch[enabledKey])
 
+      const presetKey = first('providerPreset', 'provider_preset')
+      if (presetKey) {
+        const value = typeof patch[presetKey] === 'string' ? patch[presetKey].trim() : ''
+        if (!PRESETS.includes(value)) {
+          return invalid('Provider preset must be commandcode, opencode or custom')
+        }
+        updates.provider_preset = value
+      }
+
       const zdrKey = first('zdr')
       if (zdrKey) {
         if (typeof patch[zdrKey] !== 'boolean') return invalid('zdr must be a boolean')
@@ -244,6 +262,35 @@ Deno.serve(async (req: Request) => {
       if (auditError) console.error('AI config audit insert failed:', auditError.message)
 
       return json({ ok: true, fields }, 200, req)
+    }
+
+    if (action === 'models') {
+      const provider = providerFor({
+        preset: typeof body.preset === 'string' ? body.preset : '',
+        baseUrl: typeof body.baseUrl === 'string' ? body.baseUrl : '',
+      })
+      if (!provider) {
+        return json({ models: [], visionModels: [], note: MODELS_UNAVAILABLE_NOTE }, 200, req)
+      }
+
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), MODELS_TIMEOUT_MS)
+      try {
+        const response = await fetch(modelsUrl(provider)!, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const payload = await response.json()
+        const models = normalizeModels(payload?.data, provider)
+        return json({ models, visionModels: models.filter((model: { vision: boolean }) => model.vision) }, 200, req)
+      } catch (error) {
+        // Never throw: the page shows a hint and the operator types the ID.
+        console.error('ai-config models:', error instanceof Error ? error.message : String(error))
+        return jsonError('MODELS_UNAVAILABLE', "Couldn't load models — type the ID manually.", 502, req)
+      } finally {
+        clearTimeout(timer)
+      }
     }
 
     if (action === 'test') {

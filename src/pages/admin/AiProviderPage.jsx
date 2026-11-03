@@ -1,18 +1,20 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Check, Info, Loader2, Save, Trash2, Zap } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
-import { getAiConfig, saveAiConfig, testAiConfig } from '../../lib/ai/client.js';
+import { getAiConfig, listProviderModels, saveAiConfig, testAiConfig } from '../../lib/ai/client.js';
 
 const fieldClass = 'w-full min-h-11 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
 
-// Presets fill the three connection fields only; Save still writes them.
+// Presets fill the connection fields; Save is what persists the choice.
 const PRESETS = {
   commandcode: {
     label: 'CommandCode Provider API',
     baseUrl: 'https://api.commandcode.ai/provider/v1',
     model: 'deepseek/deepseek-v4.1-flash',
     visionModel: 'deepseek/deepseek-v4-flash-vision-exp',
+    zdr: true,
+    freeTag: 'free — testing only',
     help: 'Key: CommandCode Studio → API keys (any plan except Go has API access).',
   },
   opencode: {
@@ -20,6 +22,8 @@ const PRESETS = {
     baseUrl: 'https://opencode.ai/inference/openai/v1',
     model: 'deepseek-v4.1-flash',
     visionModel: '',
+    zdr: false,
+    freeTag: 'free — OpenCode-only',
     help: 'Key: OpenCode Console (paid models only; free models cannot be used from external clients).',
   },
 };
@@ -70,6 +74,22 @@ const formFrom = (config) => ({
   },
 });
 
+// A row saved before the preset column existed has 'custom' but a recognisable
+// URL; show the matching choice — Save then persists it.
+const presetFrom = (config) => {
+  if (config.providerPreset === 'commandcode' || config.providerPreset === 'opencode') return config.providerPreset;
+  if (/^https:\/\/api\.commandcode\.ai\//i.test(config.baseUrl ?? '')) return 'commandcode';
+  if (/^https:\/\/opencode\.ai\//i.test(config.baseUrl ?? '')) return 'opencode';
+  return 'custom';
+};
+
+// The saved model may predate the list (or come from another provider).
+const withSaved = (list, saved) => (
+  !saved || list.some((model) => model.id === saved)
+    ? list
+    : [...list, { id: saved, name: saved, free: /free/i.test(saved), vision: false }]
+);
+
 const validate = (form) => {
   const errors = {};
   const url = form.baseUrl.trim().replace(/\/+$/, '');
@@ -92,9 +112,10 @@ const validate = (form) => {
   return errors;
 };
 
-const patchFrom = (form) => {
+const patchFrom = (form, preset) => {
   const patch = {
     enabled: form.enabled,
+    providerPreset: preset,
     baseUrl: form.baseUrl.trim(),
     model: form.model.trim(),
     visionModel: form.visionModel.trim(),
@@ -158,6 +179,27 @@ const AiProviderPage = () => {
   const [testError, setTestError] = useState(null);
   const [showClear, setShowClear] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [modelList, setModelList] = useState({ status: 'idle', models: [], visionModels: [], note: null });
+  const modelRequest = useRef(0);
+
+  // Server-side fetch (the browser never calls a provider); a newer choice wins.
+  const loadModels = useCallback(async (presetValue, baseUrlValue) => {
+    const request = modelRequest.current + 1;
+    modelRequest.current = request;
+    setModelList({ status: 'loading', models: [], visionModels: [], note: null });
+    const { data, error } = await listProviderModels({ preset: presetValue, baseUrl: baseUrlValue ?? '' });
+    if (request !== modelRequest.current) return;
+    if (error) {
+      setModelList({ status: 'error', models: [], visionModels: [], note: error.message });
+      return;
+    }
+    setModelList({
+      status: 'ready',
+      models: data?.models ?? [],
+      visionModels: data?.visionModels ?? [],
+      note: data?.note ?? null,
+    });
+  }, []);
 
   const load = useCallback(async ({ keepForm = false } = {}) => {
     if (!keepForm) setState({ status: 'loading', config: null, error: null });
@@ -167,8 +209,13 @@ const AiProviderPage = () => {
       return;
     }
     setState({ status: 'ready', config: data, error: null });
-    if (!keepForm) setForm(formFrom(data));
-  }, []);
+    if (!keepForm) {
+      const nextPreset = presetFrom(data);
+      setForm(formFrom(data));
+      setPreset(nextPreset);
+      loadModels(nextPreset, data.baseUrl);
+    }
+  }, [loadModels]);
 
   useEffect(() => {
     // Deferred like GlobalSearch's reset: the first paint lands, then the fetch starts.
@@ -177,18 +224,29 @@ const AiProviderPage = () => {
 
   const set = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    // A hand-edited connection field no longer matches a preset; keep the values.
-    if (key === 'baseUrl' || key === 'model' || key === 'visionModel') setPreset('custom');
+    // Only a hand-edited base URL breaks the preset; a typed model may still be right.
+    if (key === 'baseUrl' && preset !== 'custom') {
+      setPreset('custom');
+      // The list belongs to the previous provider: empty it, never refetch per keystroke.
+      modelRequest.current += 1;
+      setModelList({ status: 'idle', models: [], visionModels: [], note: null });
+    }
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
     setFormError(null);
   };
   const applyPreset = (value) => {
     setPreset(value);
     const choice = PRESETS[value];
-    if (!choice) return;
-    setForm((prev) => ({ ...prev, baseUrl: choice.baseUrl, model: choice.model, visionModel: choice.visionModel }));
-    setFieldErrors((prev) => ({ ...prev, baseUrl: undefined, model: undefined }));
+    setForm((prev) => ({
+      ...prev,
+      baseUrl: choice?.baseUrl ?? '',
+      model: choice?.model ?? '',
+      visionModel: choice?.visionModel ?? '',
+      zdr: choice ? choice.zdr : prev.zdr,
+    }));
+    setFieldErrors((prev) => ({ ...prev, baseUrl: undefined, model: undefined, visionModel: undefined }));
     setFormError(null);
+    loadModels(value, choice?.baseUrl ?? '');
   };
   const setFeature = (key, value) => {
     setForm((prev) => ({ ...prev, features: { ...prev.features, [key]: value } }));
@@ -203,7 +261,7 @@ const AiProviderPage = () => {
 
     setSaving(true);
     setFormError(null);
-    const { data, error } = await saveAiConfig(patchFrom(form));
+    const { data, error } = await saveAiConfig(patchFrom(form, preset));
     setSaving(false);
     if (error) {
       setFormError(error);
@@ -244,6 +302,10 @@ const AiProviderPage = () => {
 
   const config = state.config;
   const errors = fieldErrors;
+  const modelOptions = withSaved(modelList.models, config?.model);
+  const visionOptions = withSaved(modelList.visionModels, config?.visionModel);
+  const freeTag = PRESETS[preset]?.freeTag ?? PRESETS.commandcode.freeTag;
+  const freeChosen = Boolean(form) && (/free/i.test(form.model) || /free/i.test(form.visionModel));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
@@ -345,6 +407,9 @@ const AiProviderPage = () => {
                   <span className="min-w-0">
                     <span className="block text-sm text-[var(--sa-text-primary)]">Require zero data retention</span>
                     <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">Sends x-cmd-zdr: 1. Recommended for student data; a model with no ZDR upstream fails with 422 instead of falling back.</span>
+                    {preset === 'opencode' && (
+                      <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">The ZDR header is CommandCode-specific — OpenCode ignores it.</span>
+                    )}
                   </span>
                 </label>
 
@@ -369,35 +434,71 @@ const AiProviderPage = () => {
                   {errors.baseUrl && <p className="mt-1 text-[11px] sa-t-danger">{errors.baseUrl}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="ai-model" className="sa-label">Model</label>
-                    <input
-                      id="ai-model"
-                      type="text"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={form.model}
-                      onChange={(e) => set('model', e.target.value)}
-                      placeholder="gpt-4o-mini"
-                      aria-invalid={errors.model ? 'true' : undefined}
-                      className={fieldClass}
-                    />
-                    {errors.model && <p className="mt-1 text-[11px] sa-t-danger">{errors.model}</p>}
+                <div className="space-y-1">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="ai-model" className="sa-label">Model</label>
+                      <input
+                        id="ai-model"
+                        type="text"
+                        list="ai-model-options"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={form.model}
+                        onChange={(e) => set('model', e.target.value)}
+                        placeholder="gpt-4o-mini"
+                        aria-invalid={errors.model ? 'true' : undefined}
+                        aria-describedby="ai-model-help"
+                        className={fieldClass}
+                      />
+                      <datalist id="ai-model-options">
+                        {modelOptions.map((model) => {
+                          const label = model.free ? `${model.name} (${freeTag})` : model.name;
+                          return <option key={model.id} value={model.id} label={label}>{label}</option>;
+                        })}
+                      </datalist>
+                      {errors.model && <p className="mt-1 text-[11px] sa-t-danger">{errors.model}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="ai-vision-model" className="sa-label">Vision model (optional)</label>
+                      <input
+                        id="ai-vision-model"
+                        type="text"
+                        list="ai-vision-model-options"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={form.visionModel}
+                        onChange={(e) => set('visionModel', e.target.value)}
+                        placeholder="Uses the model above when blank"
+                        aria-describedby="ai-model-help"
+                        className={fieldClass}
+                      />
+                      <datalist id="ai-vision-model-options">
+                        {visionOptions.map((model) => {
+                          const label = model.free ? `${model.name} (${freeTag})` : model.name;
+                          return <option key={model.id} value={model.id} label={label}>{label}</option>;
+                        })}
+                      </datalist>
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="ai-vision-model" className="sa-label">Vision model (optional)</label>
-                    <input
-                      id="ai-vision-model"
-                      type="text"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={form.visionModel}
-                      onChange={(e) => set('visionModel', e.target.value)}
-                      placeholder="Uses the model above when blank"
-                      className={fieldClass}
-                    />
-                  </div>
+                  <p id="ai-model-help" className="text-[11px] text-[var(--sa-text-muted)]">
+                    Choose a listed model or type an ID.
+                  </p>
+                  {modelList.status === 'loading' && (
+                    <p className="text-[11px] text-[var(--sa-text-muted)]" role="status">Loading models…</p>
+                  )}
+                  {modelList.status === 'error' && (
+                    <p className="text-[11px] sa-t-danger" role="status">Couldn&apos;t load models — type the ID manually.</p>
+                  )}
+                  {modelList.status === 'ready' && modelList.note && (
+                    <p className="text-[11px] text-[var(--sa-text-muted)]">{modelList.note}</p>
+                  )}
+                  {freeChosen && (
+                    <div className="sa-alert mt-2" role="note">
+                      <AlertTriangle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
+                      <p>Free models may retain or train data — testing only, never student data.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

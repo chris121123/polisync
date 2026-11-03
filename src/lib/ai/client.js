@@ -48,6 +48,9 @@ export const saveAiConfig = (patch) => invoke('ai-config', { action: 'save', pat
 
 export const testAiConfig = () => invoke('ai-config', { action: 'test' });
 
+// Server-side model list for the selected provider; the browser never calls one.
+export const listProviderModels = ({ preset, baseUrl }) => invoke('ai-config', { action: 'models', preset, baseUrl });
+
 export const listThreads = () => invoke('ai-assistant', { action: 'threads' });
 
 export const getThreadMessages = (threadId) => invoke('ai-assistant', { action: 'messages', threadId });

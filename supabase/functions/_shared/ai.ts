@@ -109,8 +109,12 @@ export async function verifyCaller(
 
 // ─── Provider config ─────────────────────────────────────────────────────────
 
+export type ProviderPreset = 'commandcode' | 'opencode' | 'custom'
+
 export type AiConfig = {
   enabled: boolean
+  /** Console preset chosen on /admin/ai; 'custom' = hand-entered connection. */
+  providerPreset: ProviderPreset
   assistantOn: boolean
   plannerOn: boolean
   repairOn: boolean
@@ -156,6 +160,9 @@ export async function loadAiConfig(service: SupabaseClient): Promise<AiConfig> {
 
   return {
     enabled: row.enabled === true,
+    providerPreset: row.provider_preset === 'commandcode' || row.provider_preset === 'opencode'
+      ? row.provider_preset
+      : 'custom',
     assistantOn: row.assistant_on !== false,
     plannerOn: row.planner_on === true,
     repairOn: row.repair_on === true,
