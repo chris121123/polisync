@@ -56,6 +56,7 @@ async function buildState(service: Service, config: AiConfig) {
     baseUrl: config.baseUrl,
     model: config.model,
     visionModel: config.visionModel,
+    zdr: config.zdr,
     hasKey: config.hasKey,
     monthlyTokenCap: config.monthlyTokenCap,
     timeoutSeconds: config.timeoutSeconds,
@@ -154,6 +155,12 @@ Deno.serve(async (req: Request) => {
 
       const enabledKey = first('enabled')
       if (enabledKey) updates.enabled = toBool(patch[enabledKey])
+
+      const zdrKey = first('zdr')
+      if (zdrKey) {
+        if (typeof patch[zdrKey] !== 'boolean') return invalid('zdr must be a boolean')
+        updates.zdr = patch[zdrKey]
+      }
 
       const featuresKey = first('features')
       if (featuresKey) {

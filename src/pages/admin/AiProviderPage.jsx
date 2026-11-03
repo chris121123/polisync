@@ -6,6 +6,24 @@ import { getAiConfig, saveAiConfig, testAiConfig } from '../../lib/ai/client.js'
 
 const fieldClass = 'w-full min-h-11 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
 
+// Presets fill the three connection fields only; Save still writes them.
+const PRESETS = {
+  commandcode: {
+    label: 'CommandCode Provider API',
+    baseUrl: 'https://api.commandcode.ai/provider/v1',
+    model: 'deepseek/deepseek-v4.1-flash',
+    visionModel: 'deepseek/deepseek-v4-flash-vision-exp',
+    help: 'Key: CommandCode Studio → API keys (any plan except Go has API access).',
+  },
+  opencode: {
+    label: 'OpenCode Console',
+    baseUrl: 'https://opencode.ai/inference/openai/v1',
+    model: 'deepseek-v4.1-flash',
+    visionModel: '',
+    help: 'Key: OpenCode Console (paid models only; free models cannot be used from external clients).',
+  },
+};
+
 const FEATURES = [
   { key: 'assistant', label: 'Assistant', description: 'Answers questions about the schedule and records.' },
   { key: 'planner', label: 'Year Planner', description: 'Proposes a full-year weekly base plan.' },
@@ -38,6 +56,7 @@ const formFrom = (config) => ({
   baseUrl: config.baseUrl ?? '',
   model: config.model ?? '',
   visionModel: config.visionModel ?? '',
+  zdr: config.zdr !== false,
   apiKey: '',
   monthlyTokenCap: String(config.monthlyTokenCap ?? 100000),
   timeoutSeconds: String(config.timeoutSeconds ?? 60),
@@ -79,6 +98,7 @@ const patchFrom = (form) => {
     baseUrl: form.baseUrl.trim(),
     model: form.model.trim(),
     visionModel: form.visionModel.trim(),
+    zdr: form.zdr,
     monthlyTokenCap: Number(form.monthlyTokenCap),
     timeoutSeconds: Number(form.timeoutSeconds),
     maxOutputTokens: form.maxOutputTokens.trim() === '' ? null : Number(form.maxOutputTokens),
@@ -112,6 +132,7 @@ const StatusStrip = ({ config }) => {
               <p className="mt-1 flex items-center gap-2 truncate text-base text-[var(--sa-text-primary)]" title={item.value}>
                 <span className={`sa-dot${item.dot ? ` ${item.dot}` : ''}`} aria-hidden="true" />
                 {item.value}
+                {config.zdr && <span className="sa-badge" title="Require zero data retention">ZDR</span>}
               </p>
             ) : (
               <p className="mt-1 truncate text-[13px] tabular-nums text-[var(--sa-text-primary)]" title={item.value}>{item.value}</p>
@@ -128,6 +149,7 @@ const AiProviderPage = () => {
 
   const [state, setState] = useState({ status: 'loading', config: null, error: null });
   const [form, setForm] = useState(null);
+  const [preset, setPreset] = useState('custom');
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -155,7 +177,17 @@ const AiProviderPage = () => {
 
   const set = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // A hand-edited connection field no longer matches a preset; keep the values.
+    if (key === 'baseUrl' || key === 'model' || key === 'visionModel') setPreset('custom');
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    setFormError(null);
+  };
+  const applyPreset = (value) => {
+    setPreset(value);
+    const choice = PRESETS[value];
+    if (!choice) return;
+    setForm((prev) => ({ ...prev, baseUrl: choice.baseUrl, model: choice.model, visionModel: choice.visionModel }));
+    setFieldErrors((prev) => ({ ...prev, baseUrl: undefined, model: undefined }));
     setFormError(null);
   };
   const setFeature = (key, value) => {
@@ -269,6 +301,27 @@ const AiProviderPage = () => {
               </div>
 
               <form onSubmit={handleSave} className="mt-4 space-y-5" noValidate>
+                <div>
+                  <label htmlFor="ai-preset" className="sa-label">Provider preset</label>
+                  <select
+                    id="ai-preset"
+                    value={preset}
+                    onChange={(e) => applyPreset(e.target.value)}
+                    className={fieldClass}
+                  >
+                    {Object.entries(PRESETS).map(([value, choice]) => (
+                      <option key={value} value={value}>{choice.label}</option>
+                    ))}
+                    <option value="custom">Custom / other</option>
+                  </select>
+                  <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+                    Presets only fill the fields below — Save is still required.
+                  </p>
+                  {PRESETS[preset] && (
+                    <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">{PRESETS[preset].help}</p>
+                  )}
+                </div>
+
                 <label className="flex min-h-11 cursor-pointer items-start gap-3">
                   <input
                     type="checkbox"
@@ -279,6 +332,19 @@ const AiProviderPage = () => {
                   <span className="min-w-0">
                     <span className="block text-sm text-[var(--sa-text-primary)]">AI enabled</span>
                     <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">The kill switch. Off leaves every page on its non-AI path.</span>
+                  </span>
+                </label>
+
+                <label className="flex min-h-11 cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.zdr}
+                    onChange={(e) => set('zdr', e.target.checked)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--sa-gold)]"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-[var(--sa-text-primary)]">Require zero data retention</span>
+                    <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">Sends x-cmd-zdr: 1. Recommended for student data; a model with no ZDR upstream fails with 422 instead of falling back.</span>
                   </span>
                 </label>
 

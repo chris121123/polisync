@@ -119,6 +119,8 @@ export type AiConfig = {
   baseUrl: string | null
   model: string | null
   visionModel: string | null
+  /** Send `x-cmd-zdr: 1`; a provider without a ZDR upstream answers 422. */
+  zdr: boolean
   /** Internal only. Never project this into a response body. */
   apiKey: string | null
   hasKey: boolean
@@ -162,6 +164,7 @@ export async function loadAiConfig(service: SupabaseClient): Promise<AiConfig> {
     baseUrl: envBaseUrl || str(row.base_url),
     model: envModel || str(row.model),
     visionModel: envVisionModel || str(row.vision_model),
+    zdr: row.zdr !== false,
     apiKey: apiKey || null,
     hasKey: Boolean(apiKey),
     monthlyTokenCap: num(row.monthly_token_cap, 1_000_000),
@@ -244,7 +247,11 @@ export async function callProvider(config: AiConfig, options: ProviderOptions): 
   // stalled stream still hits PROVIDER_UNREACHABLE.
   const { response, raw } = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.apiKey}`,
+      ...(config.zdr ? { 'x-cmd-zdr': '1' } : {}),
+    },
     body: JSON.stringify(payload),
     signal: controller.signal,
   })
