@@ -13,12 +13,29 @@ const readFailure = async (error) => {
   return { code: 'UNREACHABLE', message: error?.message || 'The AI service could not be reached' };
 };
 
-const invoke = async (fn, body) => {
+const EXPIRED = { code: 'UNAUTHORIZED', message: 'Session expired — sign out and sign back in.' };
+const SIGN_IN = { code: 'UNAUTHORIZED', message: 'Sign in required.' };
+
+// The edge answers 401 when the access token has expired; one refresh + retry is enough.
+const retryOnExpired = async (fn, body, retried) => {
+  if (retried) return { error: EXPIRED };
+  const { data } = await supabase.auth.getSession();
+  if (!data?.session) return { error: SIGN_IN };
+  const { error } = await supabase.auth.refreshSession();
+  return error ? { error: EXPIRED } : invoke(fn, body, true);
+};
+
+const invoke = async (fn, body, retried = false) => {
   if (!supabase) return { error: { code: 'UNREACHABLE', message: 'No database client configured' } };
   try {
     const { data, error } = await supabase.functions.invoke(fn, { body });
-    if (error) return { error: await readFailure(error) };
-    if (data?.error?.code) return { error: { code: data.error.code, message: data.error.message } };
+    const failure = error ? await readFailure(error) : data?.error;
+    if (failure?.code) {
+      if (failure.code === 'UNAUTHORIZED' || error?.context?.status === 401) {
+        return retryOnExpired(fn, body, retried);
+      }
+      return { error: { code: failure.code, message: failure.message } };
+    }
     return { data };
   } catch (error) {
     return { error: { code: 'UNREACHABLE', message: error?.message || 'The AI service could not be reached' } };
