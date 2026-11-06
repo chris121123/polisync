@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Check, Info, Loader2, Save, Trash2, Zap } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
+import ItxSelect from '../../components/ItxSelect';
 import { getAiConfig, listProviderModels, saveAiConfig, testAiConfig } from '../../lib/ai/client.js';
 
-const fieldClass = 'w-full min-h-11 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
+const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 tabular-nums text-[var(--sa-text-primary)]';
 
 // Presets fill the connection fields; Save is what persists the choice.
 const PRESETS = {
@@ -83,12 +84,26 @@ const presetFrom = (config) => {
   return 'custom';
 };
 
-// The saved model may predate the list (or come from another provider).
+// The chosen model may predate the list (or come from another provider).
 const withSaved = (list, saved) => (
   !saved || list.some((model) => model.id === saved)
     ? list
     : [...list, { id: saved, name: saved, free: /free/i.test(saved), vision: false }]
 );
+
+const CUSTOM_ID = '__CUSTOM__';
+
+// Paid first, then the provider's free models tagged in the option label.
+const modelSections = (options, freeTag, freeGroup) => {
+  const paid = options.filter((model) => !model.free);
+  const free = options.filter((model) => model.free);
+  const groups = [];
+  if (paid.length > 0) groups.push({ label: 'Paid models', options: paid.map((model) => ({ value: model.id, label: model.name })) });
+  if (free.length > 0) groups.push({ label: freeGroup, options: free.map((model) => ({ value: model.id, label: `${model.name} — ${freeTag}` })) });
+  return groups;
+};
+
+const customSection = { options: [{ value: CUSTOM_ID, label: 'Custom model ID…' }] };
 
 const validate = (form) => {
   const errors = {};
@@ -142,15 +157,15 @@ const StatusStrip = ({ config }) => {
   ];
   return (
     <section className="sa-panel" aria-label="Provider status">
-      <div className="grid grid-cols-2 gap-px bg-[var(--sa-line-hairline)] sm:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 xl:grid-cols-5">
         {items.map((item, i) => (
           <div
             key={item.label}
-            className={`min-w-0 bg-[var(--sa-surface-1)] px-3 py-2.5${i === items.length - 1 ? ' col-span-2 sm:col-span-1' : ''}`}
+            className={`min-w-0 py-2.5${i === items.length - 1 ? ' col-span-2 sm:col-span-1' : ''}`}
           >
             <p className="sa-micro">{item.label}</p>
             {item.lead ? (
-              <p className="mt-1 flex items-center gap-2 truncate text-base text-[var(--sa-text-primary)]" title={item.value}>
+              <p className="mt-1 flex items-center gap-2 truncate text-sm text-[var(--sa-text-primary)]" title={item.value}>
                 <span className={`sa-dot${item.dot ? ` ${item.dot}` : ''}`} aria-hidden="true" />
                 {item.value}
                 {config.zdr && <span className="sa-badge" title="Require zero data retention">ZDR</span>}
@@ -180,6 +195,10 @@ const AiProviderPage = () => {
   const [showClear, setShowClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [modelList, setModelList] = useState({ status: 'idle', models: [], visionModels: [], note: null });
+  // A custom ID is typed in the text input the "__CUSTOM__" option reveals.
+  const [customPick, setCustomPick] = useState({ model: false, visionModel: false });
+  const customModelRef = useRef(null);
+  const customVisionRef = useRef(null);
   const modelRequest = useRef(0);
 
   // Server-side fetch (the browser never calls a provider); a newer choice wins.
@@ -213,6 +232,7 @@ const AiProviderPage = () => {
       const nextPreset = presetFrom(data);
       setForm(formFrom(data));
       setPreset(nextPreset);
+      setCustomPick({ model: false, visionModel: false });
       loadModels(nextPreset, data.baseUrl);
     }
   }, [loadModels]);
@@ -221,6 +241,14 @@ const AiProviderPage = () => {
     // Deferred like GlobalSearch's reset: the first paint lands, then the fetch starts.
     queueMicrotask(() => load());
   }, [load]);
+
+  // A freshly revealed custom-ID input takes the focus.
+  useEffect(() => {
+    if (customPick.model) customModelRef.current?.focus();
+  }, [customPick.model]);
+  useEffect(() => {
+    if (customPick.visionModel) customVisionRef.current?.focus();
+  }, [customPick.visionModel]);
 
   const set = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -246,11 +274,17 @@ const AiProviderPage = () => {
     }));
     setFieldErrors((prev) => ({ ...prev, baseUrl: undefined, model: undefined, visionModel: undefined }));
     setFormError(null);
+    setCustomPick({ model: false, visionModel: false });
     loadModels(value, choice?.baseUrl ?? '');
   };
   const setFeature = (key, value) => {
     setForm((prev) => ({ ...prev, features: { ...prev.features, [key]: value } }));
     setFormError(null);
+  };
+  // "__CUSTOM__" only switches the field; the typed ID still lives in the form.
+  const pickModel = (key, value) => {
+    setCustomPick((prev) => ({ ...prev, [key]: value === CUSTOM_ID }));
+    if (value !== CUSTOM_ID) set(key, value);
   };
 
   const handleSave = async (event) => {
@@ -302,14 +336,28 @@ const AiProviderPage = () => {
 
   const config = state.config;
   const errors = fieldErrors;
-  const modelOptions = withSaved(modelList.models, config?.model);
-  const visionOptions = withSaved(modelList.visionModels, config?.visionModel);
-  const freeTag = PRESETS[preset]?.freeTag ?? PRESETS.commandcode.freeTag;
+  const modelOptions = withSaved(modelList.models, form?.model);
+  const visionOptions = withSaved(modelList.visionModels, form?.visionModel);
+  // The list can belong to a provider chosen by URL while the select says Custom.
+  const listPreset = PRESETS[preset] ? preset : presetFrom({ baseUrl: form?.baseUrl });
+  const freeTag = PRESETS[listPreset]?.freeTag ?? PRESETS.commandcode.freeTag;
+  const freeGroup = freeTag.replace(/^free/, 'Free models');
+  const providerLabel = PRESETS[listPreset]?.label ?? 'this provider';
+  const listReady = modelList.status === 'ready';
+  // A select only when the provider really returned a list; a pinned saved ID
+  // alone must never stand in for one.
+  const modelsAvailable = listReady && modelList.models.length > 0;
+  const visionAvailable = listReady && modelList.visionModels.length > 0;
   const freeChosen = Boolean(form) && (/free/i.test(form.model) || /free/i.test(form.visionModel));
+  // A key saved under another provider cannot be cleared from this one.
+  const keyProvider = config?.keyProvider ?? null;
+  const keyElsewhere = Boolean(config?.hasKey && keyProvider && keyProvider !== preset);
+  // Fill geometry only; the text keeps the raw percentage.
+  const capPct = Math.min(Math.max(config?.usage?.capPct ?? 0, 0), 100);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
+      <div className="pb-4">
         <h1 className="sa-title">AI Provider</h1>
         <p className="sa-sub">Connect a provider, choose features, and cap spend.</p>
       </div>
@@ -335,7 +383,7 @@ const AiProviderPage = () => {
               <p className="mt-0.5 break-words">{state.error?.message}</p>
             </div>
           </div>
-          <button type="button" onClick={() => load()} className="sa-btn mt-4 min-h-11">Try again</button>
+          <button type="button" onClick={() => load()} className="sa-btn mt-4">Try again</button>
         </section>
       )}
 
@@ -365,22 +413,21 @@ const AiProviderPage = () => {
               <form onSubmit={handleSave} className="mt-4 space-y-5" noValidate>
                 <div>
                   <label htmlFor="ai-preset" className="sa-label">Provider preset</label>
-                  <select
+                  <ItxSelect
                     id="ai-preset"
                     value={preset}
-                    onChange={(e) => applyPreset(e.target.value)}
+                    onChange={applyPreset}
+                    options={[
+                      ...Object.entries(PRESETS).map(([value, choice]) => ({ value, label: choice.label })),
+                      { value: 'custom', label: 'Custom / other' },
+                    ]}
                     className={fieldClass}
-                  >
-                    {Object.entries(PRESETS).map(([value, choice]) => (
-                      <option key={value} value={value}>{choice.label}</option>
-                    ))}
-                    <option value="custom">Custom / other</option>
-                  </select>
-                  <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+                  />
+                  <p className="mt-1 text-xs text-[var(--sa-text-muted)]">
                     Presets only fill the fields below — Save is still required.
                   </p>
                   {PRESETS[preset] && (
-                    <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">{PRESETS[preset].help}</p>
+                    <p className="mt-1 text-xs text-[var(--sa-text-muted)]">{PRESETS[preset].help}</p>
                   )}
                 </div>
 
@@ -389,11 +436,11 @@ const AiProviderPage = () => {
                     type="checkbox"
                     checked={form.enabled}
                     onChange={(e) => set('enabled', e.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--sa-gold)]"
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
                   />
                   <span className="min-w-0">
                     <span className="block text-sm text-[var(--sa-text-primary)]">AI enabled</span>
-                    <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">The kill switch. Off leaves every page on its non-AI path.</span>
+                    <span className="mt-0.5 block text-xs text-[var(--sa-text-muted)]">The kill switch. Off leaves every page on its non-AI path.</span>
                   </span>
                 </label>
 
@@ -402,13 +449,13 @@ const AiProviderPage = () => {
                     type="checkbox"
                     checked={form.zdr}
                     onChange={(e) => set('zdr', e.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--sa-gold)]"
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
                   />
                   <span className="min-w-0">
                     <span className="block text-sm text-[var(--sa-text-primary)]">Require zero data retention</span>
-                    <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">Sends x-cmd-zdr: 1. Recommended for student data; a model with no ZDR upstream fails with 422 instead of falling back.</span>
+                    <span className="mt-0.5 block text-xs text-[var(--sa-text-muted)]">Sends x-cmd-zdr: 1. Recommended for student data; a model with no ZDR upstream fails with 422 instead of falling back.</span>
                     {preset === 'opencode' && (
-                      <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">The ZDR header is CommandCode-specific — OpenCode ignores it.</span>
+                      <span className="mt-0.5 block text-xs text-[var(--sa-text-muted)]">The ZDR header is CommandCode-specific — OpenCode ignores it.</span>
                     )}
                   </span>
                 </label>
@@ -428,70 +475,140 @@ const AiProviderPage = () => {
                     aria-describedby="ai-base-url-help"
                     className={fieldClass}
                   />
-                  <p id="ai-base-url-help" className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+                  <p id="ai-base-url-help" className="mt-1 text-xs text-[var(--sa-text-muted)]">
                     https:// only; http://localhost and http://127.0.0.1 are allowed for local models.
                   </p>
-                  {errors.baseUrl && <p className="mt-1 text-[11px] sa-t-danger">{errors.baseUrl}</p>}
+                  {errors.baseUrl && <p className="mt-1 text-xs sa-t-danger">{errors.baseUrl}</p>}
                 </div>
 
                 <div className="space-y-1">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label htmlFor="ai-model" className="sa-label">Model</label>
-                      <input
-                        id="ai-model"
-                        type="text"
-                        list="ai-model-options"
-                        autoComplete="off"
-                        spellCheck={false}
-                        value={form.model}
-                        onChange={(e) => set('model', e.target.value)}
-                        placeholder="gpt-4o-mini"
-                        aria-invalid={errors.model ? 'true' : undefined}
-                        aria-describedby="ai-model-help"
-                        className={fieldClass}
-                      />
-                      <datalist id="ai-model-options">
-                        {modelOptions.map((model) => {
-                          const label = model.free ? `${model.name} (${freeTag})` : model.name;
-                          return <option key={model.id} value={model.id} label={label}>{label}</option>;
-                        })}
-                      </datalist>
-                      {errors.model && <p className="mt-1 text-[11px] sa-t-danger">{errors.model}</p>}
+                      {modelsAvailable ? (
+                        <div className="space-y-2">
+                          <ItxSelect
+                            id="ai-model"
+                            value={customPick.model ? CUSTOM_ID : form.model}
+                            onChange={(value) => pickModel('model', value)}
+                            placeholder="Select a model"
+                            groups={[...modelSections(modelOptions, freeTag, freeGroup), customSection]}
+                            aria-describedby="ai-model-help"
+                            aria-invalid={errors.model ? 'true' : undefined}
+                            required
+                            className={fieldClass}
+                          />
+                          {customPick.model && (
+                            <input
+                              ref={customModelRef}
+                              id="ai-model-custom"
+                              type="text"
+                              autoComplete="off"
+                              spellCheck={false}
+                              value={form.model}
+                              onChange={(e) => set('model', e.target.value)}
+                              placeholder="Exact model ID"
+                              aria-label="Custom model ID"
+                              aria-invalid={errors.model ? 'true' : undefined}
+                              aria-describedby="ai-model-help"
+                              className={fieldClass}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            id="ai-model"
+                            type="text"
+                            list="ai-model-options"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={form.model}
+                            onChange={(e) => set('model', e.target.value)}
+                            placeholder="gpt-4o-mini"
+                            aria-invalid={errors.model ? 'true' : undefined}
+                            aria-describedby="ai-model-help"
+                            className={fieldClass}
+                          />
+                          <datalist id="ai-model-options">
+                            {modelOptions.map((model) => {
+                              const label = model.free ? `${model.name} (${freeTag})` : model.name;
+                              return <option key={model.id} value={model.id} label={label}>{label}</option>;
+                            })}
+                          </datalist>
+                        </>
+                      )}
+                      {errors.model && <p className="mt-1 text-xs sa-t-danger">{errors.model}</p>}
                     </div>
                     <div>
                       <label htmlFor="ai-vision-model" className="sa-label">Vision model (optional)</label>
-                      <input
-                        id="ai-vision-model"
-                        type="text"
-                        list="ai-vision-model-options"
-                        autoComplete="off"
-                        spellCheck={false}
-                        value={form.visionModel}
-                        onChange={(e) => set('visionModel', e.target.value)}
-                        placeholder="Uses the model above when blank"
-                        aria-describedby="ai-model-help"
-                        className={fieldClass}
-                      />
-                      <datalist id="ai-vision-model-options">
-                        {visionOptions.map((model) => {
-                          const label = model.free ? `${model.name} (${freeTag})` : model.name;
-                          return <option key={model.id} value={model.id} label={label}>{label}</option>;
-                        })}
-                      </datalist>
+                      {visionAvailable ? (
+                        <div className="space-y-2">
+                          <ItxSelect
+                            id="ai-vision-model"
+                            value={customPick.visionModel ? CUSTOM_ID : form.visionModel}
+                            onChange={(value) => pickModel('visionModel', value)}
+                            groups={[
+                              { options: [{ value: '', label: '(none — use the model above)' }] },
+                              ...modelSections(visionOptions, freeTag, freeGroup),
+                              customSection,
+                            ]}
+                            aria-describedby="ai-model-help"
+                            className={fieldClass}
+                          />
+                          {customPick.visionModel && (
+                            <input
+                              ref={customVisionRef}
+                              id="ai-vision-model-custom"
+                              type="text"
+                              autoComplete="off"
+                              spellCheck={false}
+                              value={form.visionModel}
+                              onChange={(e) => set('visionModel', e.target.value)}
+                              placeholder="Exact model ID"
+                              aria-label="Custom vision model ID"
+                              aria-describedby="ai-model-help"
+                              className={fieldClass}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            id="ai-vision-model"
+                            type="text"
+                            list="ai-vision-model-options"
+                            autoComplete="off"
+                            spellCheck={false}
+                            value={form.visionModel}
+                            onChange={(e) => set('visionModel', e.target.value)}
+                            placeholder="Uses the model above when blank"
+                            aria-describedby="ai-model-help"
+                            className={fieldClass}
+                          />
+                          <datalist id="ai-vision-model-options">
+                            {visionOptions.map((model) => {
+                              const label = model.free ? `${model.name} (${freeTag})` : model.name;
+                              return <option key={model.id} value={model.id} label={label}>{label}</option>;
+                            })}
+                          </datalist>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <p id="ai-model-help" className="text-[11px] text-[var(--sa-text-muted)]">
-                    Choose a listed model or type an ID.
+                  <p id="ai-model-help" className="text-xs text-[var(--sa-text-muted)]">
+                    {modelsAvailable
+                      ? `${modelList.models.length} ${modelList.models.length === 1 ? 'model' : 'models'} from ${providerLabel} — ${freeTag}.`
+                      : 'Choose a listed model or type an ID.'}
                   </p>
                   {modelList.status === 'loading' && (
-                    <p className="text-[11px] text-[var(--sa-text-muted)]" role="status">Loading models…</p>
+                    <p className="text-xs text-[var(--sa-text-muted)]" role="status">Loading models…</p>
                   )}
                   {modelList.status === 'error' && (
-                    <p className="text-[11px] sa-t-danger" role="status">Couldn&apos;t load models — type the ID manually.</p>
+                    <p className="text-xs sa-t-danger" role="status">Couldn&apos;t load models — type the ID manually.</p>
                   )}
                   {modelList.status === 'ready' && modelList.note && (
-                    <p className="text-[11px] text-[var(--sa-text-muted)]">{modelList.note}</p>
+                    <p className="text-xs text-[var(--sa-text-muted)]">{modelList.note}</p>
                   )}
                   {freeChosen && (
                     <div className="sa-alert mt-2" role="note">
@@ -510,22 +627,29 @@ const AiProviderPage = () => {
                       autoComplete="new-password"
                       value={form.apiKey}
                       onChange={(e) => set('apiKey', e.target.value)}
-                      placeholder={config.hasKey ? 'Saved — paste a new key to replace' : 'Paste API key'}
-                      aria-describedby="ai-api-key-help"
+                      placeholder={!config.hasKey
+                        ? 'Paste API key'
+                        : keyElsewhere ? 'Paste a new key for this provider' : 'Saved — paste a new key to replace'}
+                      aria-describedby={keyElsewhere ? 'ai-api-key-warning ai-api-key-help' : 'ai-api-key-help'}
                       className={`${fieldClass} min-w-0 flex-1`}
                     />
-                    {config.hasKey && (
+                    {config.hasKey && !keyElsewhere && (
                       <button
                         type="button"
                         onClick={() => setShowClear(true)}
-                        className="flex min-h-11 shrink-0 items-center justify-center gap-2 border border-[var(--sa-danger)] px-3 text-[11px] uppercase tracking-[0.1em] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)]"
+                        className="sa-btn itx-danger shrink-0 justify-center"
                       >
                         <Trash2 size={14} strokeWidth={1.5} />
                         <span>Clear saved key</span>
                       </button>
                     )}
                   </div>
-                  <p id="ai-api-key-help" className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+                  {keyElsewhere && (
+                    <p id="ai-api-key-warning" className="mt-1 text-xs text-[var(--sa-text-secondary)]">
+                      A key is saved for {PRESETS[keyProvider]?.label ?? 'Custom / other'}; this provider may need its own key.
+                    </p>
+                  )}
+                  <p id="ai-api-key-help" className="mt-1 text-xs text-[var(--sa-text-muted)]">
                     The key is write-only: it is never shown again.
                   </p>
                 </div>
@@ -543,11 +667,11 @@ const AiProviderPage = () => {
                     aria-invalid={errors.monthlyTokenCap ? 'true' : undefined}
                     className={`${fieldClass} max-w-xs`}
                   />
-                  {errors.monthlyTokenCap && <p className="mt-1 text-[11px] sa-t-danger">{errors.monthlyTokenCap}</p>}
-                  <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">Calls stop with CAP_EXCEEDED once the month reaches this figure.</p>
+                  {errors.monthlyTokenCap && <p className="mt-1 text-xs sa-t-danger">{errors.monthlyTokenCap}</p>}
+                  <p className="mt-1 text-xs text-[var(--sa-text-muted)]">Calls stop with CAP_EXCEEDED once the month reaches this figure.</p>
                 </div>
 
-                <details className="border-t border-[var(--sa-line-hairline)] pt-1">
+                <details className="pt-1">
                   <summary className="flex min-h-11 cursor-pointer items-center gap-2">
                     <span className="sa-micro">Advanced</span>
                   </summary>
@@ -566,7 +690,7 @@ const AiProviderPage = () => {
                         aria-invalid={errors.timeoutSeconds ? 'true' : undefined}
                         className={fieldClass}
                       />
-                      {errors.timeoutSeconds && <p className="mt-1 text-[11px] sa-t-danger">{errors.timeoutSeconds}</p>}
+                      {errors.timeoutSeconds && <p className="mt-1 text-xs sa-t-danger">{errors.timeoutSeconds}</p>}
                     </div>
                     <div>
                       <label htmlFor="ai-max-tokens" className="sa-label">Max output tokens</label>
@@ -583,7 +707,7 @@ const AiProviderPage = () => {
                         aria-invalid={errors.maxOutputTokens ? 'true' : undefined}
                         className={fieldClass}
                       />
-                      {errors.maxOutputTokens && <p className="mt-1 text-[11px] sa-t-danger">{errors.maxOutputTokens}</p>}
+                      {errors.maxOutputTokens && <p className="mt-1 text-xs sa-t-danger">{errors.maxOutputTokens}</p>}
                     </div>
                   </div>
                 </details>
@@ -622,11 +746,11 @@ const AiProviderPage = () => {
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3 border-t border-[var(--sa-line-hairline)] pt-4">
+                <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="submit"
                     disabled={saving}
-                    className="sa-btn sa-btn--primary min-h-11 justify-center disabled:cursor-not-allowed disabled:opacity-40"
+                    className="sa-btn sa-btn--primary justify-center disabled:cursor-not-allowed"
                   >
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} strokeWidth={1.5} />}
                     <span>{saving ? 'Saving…' : 'Save'}</span>
@@ -635,13 +759,13 @@ const AiProviderPage = () => {
                     type="button"
                     onClick={handleTest}
                     disabled={testing || !config.hasKey}
-                    className="sa-btn min-h-11 justify-center disabled:cursor-not-allowed disabled:opacity-40"
+                    className="sa-btn justify-center disabled:cursor-not-allowed"
                   >
                     {testing ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} strokeWidth={1.5} />}
                     <span>{testing ? 'Testing…' : 'Test connection'}</span>
                   </button>
                   {!config.hasKey && (
-                    <p className="text-[11px] text-[var(--sa-text-muted)]">Save first to test a new key.</p>
+                    <p className="text-xs text-[var(--sa-text-muted)]">Save first to test a new key.</p>
                   )}
                 </div>
               </form>
@@ -659,17 +783,17 @@ const AiProviderPage = () => {
                   {FEATURES.map((feature) => (
                     <label
                       key={feature.key}
-                      className="flex min-h-11 cursor-pointer items-start gap-3 border-b border-[var(--sa-line-row)] py-2.5 last:border-0"
+                      className="flex min-h-11 cursor-pointer items-start gap-3 py-2.5"
                     >
                       <input
                         type="checkbox"
                         checked={form.features[feature.key]}
                         onChange={(e) => setFeature(feature.key, e.target.checked)}
-                        className="mt-1 h-4 w-4 shrink-0 accent-[var(--sa-gold)]"
+                        className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent)]"
                       />
                       <span className="min-w-0">
                         <span className="block text-[13px] text-[var(--sa-text-primary)]">{feature.label}</span>
-                        <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">{feature.description}</span>
+                        <span className="mt-0.5 block text-xs text-[var(--sa-text-muted)]">{feature.description}</span>
                       </span>
                     </label>
                   ))}
@@ -691,22 +815,21 @@ const AiProviderPage = () => {
                       role="img"
                       aria-label={`${config.usage?.capPct ?? 0}% of the monthly cap used`}
                     >
-                      <div
-                        className="sa-bar-fill"
-                        style={{ width: `${Math.min(Math.max(config.usage?.capPct ?? 0, 0), 100)}%` }}
-                      />
+                      <svg className="block h-full w-full" viewBox="0 0 100 5" preserveAspectRatio="none" aria-hidden="true">
+                        <rect width={capPct} height="5" fill="var(--sa-bar-primary)" />
+                      </svg>
                     </div>
                     <span className="sa-bar-count tabular-nums">{config.usage?.capPct ?? 0}%</span>
                   </div>
                   <p className="tabular-nums text-[13px] text-[var(--sa-text-primary)]">
                     {num(config.usage?.tokensThisMonth)} <span className="text-[var(--sa-text-muted)]">of {num(config.monthlyTokenCap)}</span>
                   </p>
-                  <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+                  <p className="mt-1 text-xs text-[var(--sa-text-muted)]">
                     {(config.usage?.tokensThisMonth ?? 0) === 0
                       ? 'No usage recorded this month.'
                       : `${num(config.usage?.last30dCalls)} ${config.usage?.last30dCalls === 1 ? 'call' : 'calls'} in the last 30 days.`}
                   </p>
-                  <p className="mt-3 border-t border-[var(--sa-line-hairline)] pt-3 text-[11px] text-[var(--sa-text-muted)]">
+                  <p className="mt-4 text-xs text-[var(--sa-text-muted)]">
                     Saved <span className="tabular-nums">{dayWords(config.savedAt)}</span> by {config.savedBy || 'IT Manager'}
                   </p>
                 </div>
@@ -734,12 +857,12 @@ const AiProviderPage = () => {
             Every AI feature stops until a new key is pasted and saved. The saved key is never shown, so it cannot be recovered.
           </p>
         </div>
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
             type="button"
             onClick={() => setShowClear(false)}
             disabled={clearing}
-            className="sa-btn min-h-11 flex-1 justify-center"
+            className="sa-btn flex-1 justify-center"
           >
             Cancel
           </button>
@@ -747,9 +870,7 @@ const AiProviderPage = () => {
             type="button"
             onClick={handleClearKey}
             disabled={clearing}
-            className={clearing
-              ? 'flex min-h-11 flex-1 cursor-not-allowed items-center justify-center gap-2 border border-[var(--sa-line-default)] px-3 text-[11px] uppercase tracking-[0.1em] text-[var(--sa-text-muted)]'
-              : 'flex min-h-11 flex-1 items-center justify-center gap-2 border border-[var(--sa-danger)] px-3 text-[11px] uppercase tracking-[0.1em] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)]'}
+            className="sa-btn itx-danger flex-1 justify-center disabled:cursor-not-allowed"
           >
             {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={1.5} />}
             <span>{clearing ? 'Clearing…' : 'Clear key'}</span>

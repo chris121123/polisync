@@ -132,15 +132,17 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-[90] md:hidden"
+            transition={{ duration: 0.15 }}
+            className="itx-backdrop fixed inset-0 z-[90] md:hidden"
             onClick={onClose}
           />
           <motion.div
             ref={panelRef}
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            id="notification-panel"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
             className={clsx(
               "fixed md:absolute right-2 md:right-0 top-14 md:top-full md:mt-2 z-[100]",
               "w-[calc(100vw-16px)] md:w-[420px]",
@@ -162,8 +164,10 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                 <div className="flex shrink-0 items-center gap-2">
                   {unreadCount > 0 && (
                     <button
+                      type="button"
                       onClick={markAllNotificationsRead}
-                      className="sa-link min-h-6"
+                      aria-label="Read all notifications"
+                      className="sa-link min-h-9"
                       title="Mark all as read"
                     >
                       <CheckCheck size={14} strokeWidth={1.5} />
@@ -171,26 +175,29 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                     </button>
                   )}
                   <button
+                    type="button"
                     onClick={onClose}
-                    className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] md:hidden"
+                    aria-label="Close notifications"
+                    className="inline-flex min-h-9 min-w-9 items-center justify-center p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] md:hidden"
                   >
                     <X size={16} strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
 
-              {/* Filter Tabs — square hairline segmented control */}
-              <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
+              {/* Filter tabs — sunken track + raised pill */}
+              <div
+                role="group"
+                aria-label="Filter notifications"
+                className="itx-filter-track"
+              >
                 {FILTER_TABS.map((tab) => (
                   <button
                     key={tab.key}
+                    type="button"
                     onClick={() => setFilter(tab.key)}
-                    className={clsx(
-                      "flex-1 px-3 py-1.5 text-xs",
-                      filter === tab.key
-                        ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
-                        : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
-                    )}
+                    aria-pressed={filter === tab.key}
+                    className="itx-filter-cell flex-1 px-3 py-1.5 text-xs"
                   >
                     {tab.label}
                     {tab.key === 'unread' && unreadCount > 0 && (
@@ -216,7 +223,7 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
                   </span>
                 </div>
               ) : (
-                <div className="sa-list">
+                <div>
                   {filteredNotifications.map((notif) => {
                     const config = getConfig(notif);
                     const Icon = config.icon;
@@ -256,11 +263,13 @@ const NotificationPanel = ({ isOpen, onClose, anchorRef }) => {
 
                         {/* Delete button */}
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteNotification(notif.id);
                           }}
-                          className="shrink-0 p-1.5 text-[var(--sa-text-muted)] opacity-0 transition-opacity hover:text-[var(--sa-danger)] focus-visible:opacity-100 group-hover:opacity-100 max-md:opacity-100"
+                          aria-label={`Delete notification: ${notif.title}`}
+                          className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center p-1.5 text-[var(--sa-text-muted)] opacity-0 transition-opacity hover:text-[var(--sa-danger)] focus-visible:opacity-100 group-hover:opacity-100 max-md:opacity-100"
                           title="Delete notification"
                         >
                           <Trash2 size={14} strokeWidth={1.5} />

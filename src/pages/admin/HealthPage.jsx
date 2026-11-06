@@ -128,8 +128,8 @@ const HealthPage = () => {
     : channel === 'errored' || channel === 'closed' ? ' sa-dot--error' : '';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
+      <div>
         <h1 className="sa-title">System Health</h1>
         <p className="sa-sub">Runtime checks, endpoints, and data exports.</p>
       </div>
@@ -142,38 +142,39 @@ const HealthPage = () => {
             <p className="sa-panel-sub">PostgREST reachability</p>
           </div>
           <button
+            type="button"
             onClick={runPing}
             disabled={db.status === 'checking'}
-            className="sa-btn min-h-11 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="sa-btn disabled:cursor-not-allowed"
           >
             <RefreshCw size={14} strokeWidth={1.5} />
             <span>{db.status === 'checking' ? 'Testing…' : 'Test connection'}</span>
           </button>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
+        <div className="mt-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`sa-dot${db.status === 'online' ? ' sa-dot--ok' : ''}`} aria-hidden="true" />
             <p className="text-sm text-[var(--sa-text-primary)]" aria-live="polite">{statusLabel}</p>
-            <p className="sa-mono tabular-nums">{db.latency != null ? `${db.latency} ms` : '—'}</p>
+            <p className="text-[13px] tabular-nums">{db.latency != null ? `${db.latency} ms` : '—'}</p>
           </div>
-          <p className="text-[11px] text-[var(--sa-text-muted)]">
+          <p className="mt-2 max-w-[60ch] text-xs text-[var(--sa-text-muted)]">
             Three trivial <span className="sa-mono">profiles</span> reads, averaged — a client round-trip, never a server metric.
           </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1.5 border-t border-[var(--sa-line-hairline)] pt-3">
+        <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1.5">
           <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5">
-            <span className="text-[11px] text-[var(--sa-text-muted)]">Session pings</span>
+            <span className="sa-micro">Session pings</span>
             {pings.length === 0 ? (
-              <span className="sa-mono tabular-nums">—</span>
+              <span className="text-xs text-[var(--sa-text-muted)]">—</span>
             ) : pings.map((ping) => (
-              <span key={ping.at} className="sa-mono tabular-nums">
+              <span key={ping.at} className="text-xs tabular-nums text-[var(--sa-text-muted)]">
                 {clock(ping.at)} · {ping.latency != null ? `${ping.latency} ms` : '—'}
               </span>
             ))}
           </div>
-          <span className="text-[11px] text-[var(--sa-text-muted)]">Session only — not stored.</span>
+          <span className="text-xs text-[var(--sa-text-muted)]">Session only — not stored.</span>
         </div>
       </section>
 
@@ -188,7 +189,7 @@ const HealthPage = () => {
             </div>
           </div>
 
-          <div className="sa-list mt-1">
+          <div className="mt-1 space-y-3">
             <div className="flex min-h-11 items-center justify-between gap-3">
               <span className="text-[13px] text-[var(--sa-text-secondary)]">Channel</span>
               <span className="sa-mono">system-changes</span>
@@ -210,7 +211,7 @@ const HealthPage = () => {
             </div>
           </div>
 
-          <p className="mt-3 text-[11px] text-[var(--sa-text-muted)]">
+          <p className="mt-3 text-xs text-[var(--sa-text-muted)]">
             Listens to app tables: sessions, profiles, students, notifications.
           </p>
         </section>
@@ -224,16 +225,16 @@ const HealthPage = () => {
             </div>
           </div>
 
-          <div className="sa-list mt-1">
+          <div className="mt-1 space-y-3">
             {EDGE_FUNCTIONS.map((fn) => (
               <div key={fn} className="flex min-h-11 items-center justify-between gap-3">
                 <span className="sa-mono">{fn}</span>
-                <span className="text-[11px] text-[var(--sa-text-muted)]">configured</span>
+                <span className="sa-badge sa-badge--positive">configured</span>
               </div>
             ))}
           </div>
 
-          <p className="mt-3 text-[11px] text-[var(--sa-text-muted)]">No health endpoint — static manifest.</p>
+          <p className="mt-3 text-xs text-[var(--sa-text-muted)]">No health endpoint — static manifest.</p>
         </section>
       </div>
 
@@ -246,13 +247,13 @@ const HealthPage = () => {
               <h2 className="sa-panel-title">Table Records</h2>
               <p className="sa-panel-sub">Exact row counts</p>
             </div>
-            <button onClick={loadCounts} className="sa-btn min-h-11">
+            <button type="button" onClick={loadCounts} className="sa-btn">
               <RefreshCw size={14} strokeWidth={1.5} />
               <span>Refresh</span>
             </button>
           </div>
 
-          <div className="sa-list mt-1">
+          <div className="mt-1 space-y-3">
             {COUNT_TABLES.map(({ table, label }) => (
               <div key={table} className="flex min-h-11 items-center justify-between gap-3">
                 <span className="text-[13px] text-[var(--sa-text-secondary)]">{label}</span>
@@ -263,7 +264,7 @@ const HealthPage = () => {
             ))}
           </div>
 
-          <p className="mt-3 text-[11px] text-[var(--sa-text-muted)]">One head request per table.</p>
+          <p className="mt-3 text-xs text-[var(--sa-text-muted)]">One head request per table.</p>
         </section>
 
         {/* ── Data & Export ─────────────────────────────────────────────── */}
@@ -275,20 +276,21 @@ const HealthPage = () => {
             </div>
           </div>
 
-          <div className="sa-list mt-1">
+          <div className="mt-1 space-y-3">
             {COUNT_TABLES.map(({ table, label }) => (
               <div key={table} className="flex min-h-11 items-center justify-between gap-3">
                 <span className="flex min-w-0 items-baseline gap-2">
                   <span className="text-[13px] text-[var(--sa-text-primary)]">{label}</span>
-                  <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                  <span className="text-xs tabular-nums text-[var(--sa-text-muted)]">
                     {countLabel(counts?.[table])}
                   </span>
                 </span>
                 <button
+                  type="button"
                   onClick={() => exportTable(table, label)}
                   disabled={exporting === table}
                   aria-label={`Download CSV — ${label}`}
-                  className="sa-link -mr-2 min-h-11 px-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="sa-link -mr-2 min-h-9 px-2 disabled:cursor-not-allowed"
                 >
                   <Download size={14} strokeWidth={1.5} />
                   <span>{exporting === table ? 'Exporting…' : 'Download CSV'}</span>
@@ -297,10 +299,10 @@ const HealthPage = () => {
             ))}
           </div>
 
-          <p className="mt-3 text-[11px] text-[var(--sa-text-muted)]">
+          <p className="mt-3 text-xs text-[var(--sa-text-muted)]">
             Rows snapshot — no files, auth internals, or settings.
           </p>
-          <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">
+          <p className="mt-1 text-xs text-[var(--sa-text-muted)]">
             Streams all rows in pages; stops at 20,000 with a warning.
           </p>
         </section>

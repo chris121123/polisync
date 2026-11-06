@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarRange, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { HOURS, formatHour } from '../ScheduleCalendar/calendarMath.js';
@@ -8,12 +8,18 @@ import { formatDateISO } from '../../lib/dates.js';
 import { findAllConflicts } from '../../lib/scheduling/conflicts.js';
 import { timeToHour } from '../../lib/scheduling/time.js';
 import { buildWeek, buildYear, layoutDaySessions, monthSpan, normalizeYearWindow, sessionsOnDate, weekdayIndex } from '../../lib/visualSchedule.js';
+import { programTone } from '../../lib/itxProgramPalette.js';
+import AiSchedulingPanel from '../../components/AiSchedulingPanel.jsx';
+import ItxSelect from '../../components/ItxSelect';
+
+// SheetJS is ~400 kB: it ships in its own chunk, loaded when the planner writes or reads a file.
+const ScheduleImportWizard = React.lazy(() => import('../../components/ScheduleImportWizard.jsx'));
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const ROW_HEIGHT = 64;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const fieldClass = 'min-h-11 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2 text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
+const fieldClass = 'border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2 tabular-nums';
 
 const parseDay = (iso) => {
   const [year, month, day] = iso.split('-').map(Number);
@@ -28,11 +34,8 @@ const shiftDay = (iso, days) => {
 const dayWords = (iso) => `${WEEKDAYS[weekdayIndex(iso)]} ${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
 
 const programColor = (programById, session) => (
-  programById.get(String(session.programId))?.color || 'var(--sa-text-muted)'
+  programTone(programById.get(String(session.programId))?.color)
 );
-
-// Data-provided hex tint; anything unparseable falls back to the neutral surface.
-const tint = (color) => (/^#[0-9a-f]{6}$/i.test(color) ? `${color}24` : 'var(--sa-surface-2)');
 
 const SessionRow = ({ session, programById, staffById, studentById }) => {
   const program = programById.get(String(session.programId));
@@ -42,12 +45,12 @@ const SessionRow = ({ session, programById, staffById, studentById }) => {
     .filter(Boolean);
   return (
     <div className="sa-row flex-col gap-1 sm:flex-row sm:gap-3">
-      <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-[var(--sa-text-muted)] sm:w-32">
+      <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-[var(--sa-text-muted)] sm:w-32">
         {formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}
       </span>
       <div className="min-w-0 flex-1 w-full">
         <p className="sa-row-title truncate">{session.title}</p>
-        <p className="mt-0.5 truncate text-[11px] text-[var(--sa-text-muted)]">
+        <p className="sa-row-meta mt-0.5 truncate">
           {[program?.name, students.join(', '), staff?.name, session.room].filter(Boolean).join(' · ')}
         </p>
       </div>
@@ -63,7 +66,7 @@ const MonthGrid = ({ month, programById, selectedDateISO, todayISO, onSelect }) 
       <p className="mb-2 text-xs text-[var(--sa-text-secondary)]">{month.label}</p>
       <div className="grid grid-cols-5 gap-0.5">
         {WEEKDAYS.map((day) => (
-          <span key={day} className="pb-1 text-center text-[11px] text-[var(--sa-text-muted)]">{day}</span>
+          <span key={day} className="sa-micro pb-1 text-center">{day}</span>
         ))}
         {Array.from({ length: leading }, (_, i) => <span key={`blank-${i}`} aria-hidden="true" />)}
         {month.days.map((day) => {
@@ -76,30 +79,38 @@ const MonthGrid = ({ month, programById, selectedDateISO, todayISO, onSelect }) 
               type="button"
               onClick={() => onSelect(day.iso)}
               aria-pressed={selected}
+              aria-current={today ? 'date' : undefined}
               aria-label={`${dayWords(day.iso)} — ${day.sessions.length} ${day.sessions.length === 1 ? 'session' : 'sessions'}`}
               className={clsx(
-                'flex min-h-11 flex-col items-center gap-1 py-1 text-[11px] tabular-nums md:min-h-8',
-                selected
-                  ? 'bg-[var(--sa-surface-warm)] text-[var(--sa-text-primary)]'
-                  : 'text-[var(--sa-text-secondary)] hover:bg-[var(--sa-surface-2)]',
-                today && 'outline-1 -outline-offset-1 outline-[var(--sa-gold)]'
+                'relative flex min-h-11 flex-col items-center gap-1 py-1 text-xs tabular-nums md:min-h-9',
+                selected && 'bg-[var(--surface-sunken)]',
+                !selected && 'hover:bg-[var(--surface-hover)]',
+                selected || today ? 'text-[var(--ink-primary)]' : 'text-[var(--sa-text-secondary)]'
               )}
             >
-              <span className={clsx(today && 'text-[var(--sa-gold)]')}>{day.day}</span>
-              <span className="flex h-2 items-center gap-1" aria-hidden="true">
+              <span>{day.day}</span>
+              <span className="flex h-1.5 items-center gap-1" aria-hidden="true">
                 {shown.map((session) => (
                   <span
                     key={session.id}
-                    className="h-1.5 w-1.5"
-                    style={session.isConfirmed === false
-                      ? { border: `1px solid ${programColor(programById, session)}` }
-                      : { backgroundColor: programColor(programById, session) }}
+                    className="itx-planner-dot h-1.5 w-1.5 shrink-0"
+                    style={{
+                      backgroundColor: programColor(programById, session),
+                      opacity: session.isConfirmed === false ? 0.45 : 1,
+                      borderRadius: 'var(--x-radius-sm)',
+                    }}
                   />
                 ))}
                 {day.sessions.length > 3 && (
                   <span className="text-[11px] leading-none text-[var(--sa-text-muted)]">+{day.sessions.length - 3}</span>
                 )}
               </span>
+              {today && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-2 bottom-0 h-0.5 bg-[var(--accent)]"
+                />
+              )}
             </button>
           );
         })}
@@ -109,9 +120,10 @@ const MonthGrid = ({ month, programById, selectedDateISO, todayISO, onSelect }) 
 };
 
 const PlannerPage = () => {
-  const { sessions, staff, students, programs, rooms, schedulingSettings, appRole } = useGlobalState();
+  const { sessions, staff, students, programs, rooms, schedulingSettings, appRole, notify } = useGlobalState();
   const [searchParams, setSearchParams] = useSearchParams();
   const daySheetRef = useRef(null);
+  const [importOpen, setImportOpen] = React.useState(false);
 
   const view = searchParams.get('view') === 'week' ? 'week' : 'year';
   const dateParam = searchParams.get('date');
@@ -183,14 +195,26 @@ const PlannerPage = () => {
     daySheetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Client-side export: the workbook is written here, nothing is uploaded.
+  const exportSchedule = async () => {
+    try {
+      const { buildScheduleWorkbook, downloadWorkbook, scheduleFileName } = await import('../../lib/scheduleXlsx.js');
+      downloadWorkbook(buildScheduleWorkbook({ sessions, students, staff, programs }), scheduleFileName());
+      notify(`Exported ${sessions.length} ${sessions.length === 1 ? 'session' : 'sessions'} to Excel`, 'success');
+    } catch {
+      // A failed chunk load (offline deploy, stale hash) must not reject unhandled.
+      notify('Could not build the export file. Try again.', 'error');
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
+      <div className="pb-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="sa-title">Year Planner</h1>
             <p className="sa-sub">The whole school year at a glance, and any week in detail.</p>
-            <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">Shows scheduled sessions only — holidays and closures are not modelled.</p>
+            <p className="mt-1 text-xs text-[var(--sa-text-muted)]">Shows scheduled sessions only — holidays and closures are not modelled.</p>
           </div>
           <div className="text-right">
             <p className="sa-micro">School year window</p>
@@ -200,25 +224,31 @@ const PlannerPage = () => {
                 <CalendarRange size={12} strokeWidth={1.5} /> Change in System Config
               </Link>
             )}
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => setImportOpen(true)} className="sa-btn">
+                <Upload size={14} strokeWidth={1.5} /> Import schedule
+              </button>
+              <button type="button" onClick={exportSchedule} className="sa-btn">
+                <Download size={14} strokeWidth={1.5} /> Export Excel
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* ── AI scheduling: preview, then confirm ────────────────────────── */}
+      <AiSchedulingPanel />
+
       {/* ── View, filters, week nav ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]" role="group" aria-label="Planner view">
+        <div className="flex items-center" role="group" aria-label="Planner view">
           {[['year', 'Year'], ['week', 'Week']].map(([key, label]) => (
             <button
               key={key}
               type="button"
               onClick={() => openView(key)}
               aria-pressed={view === key}
-              className={clsx(
-                'min-h-11 px-3 text-xs',
-                view === key
-                  ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
-                  : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-              )}
+              className={clsx('itx-tab', view === key && 'is-active')}
             >
               {label}
             </button>
@@ -226,22 +256,38 @@ const PlannerPage = () => {
         </div>
 
         <div className="flex min-w-0 flex-1 gap-2 max-w-md">
-          <select value={staffId} onChange={(e) => setStaffId(e.target.value)} aria-label="Staff" className={`${fieldClass} min-w-0 flex-1`}>
-            <option value="all">All staff</option>
-            {[...staff]
-              .filter((person) => person.app_role !== 'parent')
-              .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-              .map((person) => <option key={person.id} value={String(person.id)}>{person.name}</option>)}
-          </select>
-          <select value={roomName} onChange={(e) => setRoomName(e.target.value)} aria-label="Room" className={`${fieldClass} min-w-0 flex-1`}>
-            <option value="all">All rooms</option>
-            {rooms.map((room) => <option key={room.id} value={room.name}>{room.name}</option>)}
-          </select>
+          {/* Hidden label, not aria-label: the shared icon-button rule flattens
+              aria-labelled buttons, so the combobox would lose its field shape. */}
+          <label htmlFor="planner-staff" className="sr-only">Staff</label>
+          <ItxSelect
+            id="planner-staff"
+            value={staffId}
+            onChange={setStaffId}
+            className={`${fieldClass} min-w-0 flex-1`}
+            options={[
+              { value: 'all', label: 'All staff' },
+              ...[...staff]
+                .filter((person) => person.app_role !== 'parent')
+                .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                .map((person) => ({ value: String(person.id), label: person.name })),
+            ]}
+          />
+          <label htmlFor="planner-room" className="sr-only">Room</label>
+          <ItxSelect
+            id="planner-room"
+            value={roomName}
+            onChange={setRoomName}
+            className={`${fieldClass} min-w-0 flex-1`}
+            options={[
+              { value: 'all', label: 'All rooms' },
+              ...rooms.map((room) => ({ value: room.name, label: room.name })),
+            ]}
+          />
         </div>
 
         {view === 'week' && (
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => openView('week', shiftDay(selectedDateISO, -7))} aria-label="Previous week" className="sa-btn min-h-11 min-w-11 justify-center">
+            <button type="button" onClick={() => openView('week', shiftDay(selectedDateISO, -7))} aria-label="Previous week" className="sa-btn justify-center">
               <ChevronLeft size={16} strokeWidth={1.5} />
             </button>
             <input
@@ -251,10 +297,10 @@ const PlannerPage = () => {
               aria-label="Week of"
               className={fieldClass}
             />
-            <button type="button" onClick={() => openView('week', shiftDay(selectedDateISO, 7))} aria-label="Next week" className="sa-btn min-h-11 min-w-11 justify-center">
+            <button type="button" onClick={() => openView('week', shiftDay(selectedDateISO, 7))} aria-label="Next week" className="sa-btn justify-center">
               <ChevronRight size={16} strokeWidth={1.5} />
             </button>
-            <button type="button" onClick={() => openView('week', todayISO)} className="sa-btn min-h-11">Today</button>
+            <button type="button" onClick={() => openView('week', todayISO)} className="sa-btn">Today</button>
           </div>
         )}
       </div>
@@ -289,7 +335,7 @@ const PlannerPage = () => {
                 <p className="sa-panel-sub">{selectedDaySessions.length} {selectedDaySessions.length === 1 ? 'session' : 'sessions'}</p>
               </div>
               {appRole === 'admin' && (
-                <Link to="/schedule" className="sa-btn min-h-11">Open in calendar</Link>
+                <Link to="/schedule" className="sa-btn">Open in calendar</Link>
               )}
             </div>
             {selectedDaySessions.length === 0 ? (
@@ -298,7 +344,7 @@ const PlannerPage = () => {
                 <p className="sa-empty-sub">No sessions are placed on this day.</p>
               </div>
             ) : (
-              <div className="sa-list mt-2">
+              <div className="mt-2">
                 {[...selectedDaySessions]
                   .sort((a, b) => a.startHour - b.startHour)
                   .map((session) => (
@@ -329,21 +375,20 @@ const PlannerPage = () => {
 
           {/* Desktop and tablet: Mon–Fri × operating hours */}
           <div
-            className="mt-4 hidden md:grid"
-            style={{ gridTemplateColumns: '72px repeat(5, minmax(0, 1fr))' }}
+            className="mt-4 hidden md:grid grid-cols-[72px_repeat(5,minmax(0,1fr))]"
           >
             <div className="sticky top-0 z-20 border-b border-[var(--sa-line-default)] bg-[var(--sa-surface-1)] px-2 py-2">
-              <p className="text-[11px] text-[var(--sa-text-muted)]">Time</p>
+              <p className="sa-micro">Time</p>
             </div>
             {week.map((day) => (
               <div key={`head-${day.iso}`} className="sticky top-0 z-20 border-b border-l border-[var(--sa-line-default)] bg-[var(--sa-surface-1)] px-2 py-2">
-                <p className="text-[11px] text-[var(--sa-text-secondary)]">
+                <p className="sa-micro">
                   {WEEKDAYS[day.index]}{' '}
-                  <span className={clsx('tabular-nums', day.iso === todayISO ? 'text-[var(--sa-gold)]' : 'text-[var(--sa-text-muted)]')}>
+                  <span className={clsx('tabular-nums', day.iso === todayISO ? 'border-b-2 border-[var(--accent)] text-[var(--ink-primary)]' : 'text-[var(--sa-text-muted)]')}>
                     {Number(day.iso.slice(8, 10))}
                   </span>
                 </p>
-                <p className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">{day.sessions.length}</p>
+                <p className="text-xs tabular-nums text-[var(--sa-text-muted)]">{day.sessions.length}</p>
               </div>
             ))}
 
@@ -351,13 +396,13 @@ const PlannerPage = () => {
               {hours.map((hour, i) => (
                 <div
                   key={hour}
-                  className={clsx('absolute right-2 text-[11px] tabular-nums text-[var(--sa-text-muted)]', i === 0 ? 'pt-0.5' : '-translate-y-1/2')}
+                  className={clsx('absolute right-2 sa-micro tabular-nums', i === 0 ? 'pt-0.5' : '-translate-y-1/2')}
                   style={{ top: i === 0 ? 1 : i * ROW_HEIGHT }}
                 >
                   {formatHour(hour).replace(':00', '')}
                 </div>
               ))}
-              <div className="absolute right-2 -translate-y-1/2 text-[11px] tabular-nums text-[var(--sa-text-muted)]" style={{ top: bodyHeight }}>
+              <div className="absolute right-2 -translate-y-1/2 sa-micro tabular-nums" style={{ top: bodyHeight }}>
                 {formatHour(hours[hours.length - 1] + 1).replace(':00', '')}
               </div>
             </div>
@@ -401,19 +446,20 @@ const PlannerPage = () => {
                         key={session.id}
                         role="listitem"
                         title={`${session.title} · ${formatHour(session.startHour)} – ${formatHour(session.startHour + session.span)} · ${session.room}`}
-                        className="absolute overflow-hidden border-l-2 py-1 pl-1.5 pr-1"
+                        className={clsx(
+                          'absolute overflow-hidden border-l-2 bg-[var(--surface-sunken)] py-1 pl-1.5 pr-1',
+                          session.isConfirmed === false && 'opacity-45'
+                        )}
                         style={{
                           top,
                           height,
                           left: `calc(${lane * width}% + 4px)`,
                           width: `calc(${width}% - 6px)`,
                           borderLeftColor: color,
-                          backgroundColor: tint(color),
-                          opacity: session.isConfirmed === false ? 0.75 : 1,
                         }}
                       >
-                        <p className="truncate text-[11px] leading-tight text-[var(--sa-text-primary)]">{session.title}</p>
-                        <p className="truncate text-[11px] leading-tight text-[var(--sa-text-muted)]">
+                        <p className="truncate text-xs leading-tight text-[var(--sa-text-primary)]">{session.title}</p>
+                        <p className="truncate text-xs leading-tight text-[var(--sa-text-muted)]">
                           {[students, session.room].filter(Boolean).join(' · ')}
                         </p>
                         {conflictIds.has(session.id) && (
@@ -433,19 +479,19 @@ const PlannerPage = () => {
           {/* Phone: one collapsible section per day, no horizontal scroll */}
           <div className="mt-4 space-y-2 md:hidden">
             {week.map((day) => (
-              <details key={`fold-${day.iso}`} open={day.iso === selectedDateISO} className="border border-[var(--sa-line-default)]">
+              <details key={`fold-${day.iso}`} open={day.iso === selectedDateISO} className="overflow-hidden">
                 <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3 py-2 text-xs text-[var(--sa-text-primary)]">
                   <span>
                     {WEEKDAYS[day.index]} {Number(day.iso.slice(8, 10))} {MONTHS[Number(day.iso.slice(5, 7)) - 1]}
                   </span>
-                  <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                  <span className="text-xs tabular-nums text-[var(--sa-text-muted)]">
                     {day.sessions.length} {day.sessions.length === 1 ? 'session' : 'sessions'}
                   </span>
                 </summary>
                 {day.sessions.length === 0 ? (
-                  <p className="border-t border-[var(--sa-line-hairline)] px-3 py-3 text-[11px] text-[var(--sa-text-muted)]">Nothing scheduled</p>
+                  <p className="px-3 py-3 text-xs text-[var(--sa-text-muted)]">Nothing scheduled</p>
                 ) : (
-                  <div className="sa-list border-t border-[var(--sa-line-hairline)] px-3">
+                  <div className="px-3">
                     {[...day.sessions]
                       .sort((a, b) => a.startHour - b.startHour)
                       .map((session) => (
@@ -463,6 +509,12 @@ const PlannerPage = () => {
             ))}
           </div>
         </section>
+      )}
+
+      {importOpen && (
+        <React.Suspense fallback={null}>
+          <ScheduleImportWizard onClose={() => setImportOpen(false)} />
+        </React.Suspense>
       )}
     </div>
   );

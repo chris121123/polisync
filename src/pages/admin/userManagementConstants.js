@@ -15,6 +15,7 @@ export const AUDIT_CATEGORIES = {
   account: (log) => ['user_created', 'user_deleted'].some(a => log.action?.includes(a.replace('user_', ''))),
   role: (log) => log.action?.includes('role'),
   status: (log) => log.action?.includes('activated') || log.action?.includes('deactivated'),
+  ai: (log) => log.action?.startsWith('ai_'),
 };
 
 export const getAuditBadge = (action) => {
@@ -28,10 +29,13 @@ export const getAuditBadge = (action) => {
 };
 
 // Derived, never stored: audit_logs has no severity column.
-// delete / deactivate / data_cleared (the wipe) are critical; role changes warn;
-// user_created, user_activated and anything unrecognised read as info.
+// delete / deactivate / data_cleared (the wipe) are critical; role changes and AI
+// commits warn; user_created, user_activated, AI info events and anything
+// unrecognised read as info.
 export const getAuditSeverity = (action = '') => {
   if (/(delete|deactivate|clear)/.test(action)) return 'critical';
+  if (/^ai_(plan_committed|repair_applied|config_updated)$/.test(action)) return 'warn';
+  if (/^ai_(report_generated|import_applied)$/.test(action)) return 'info';
   if (action.includes('role')) return 'warn';
   return 'info';
 };
@@ -42,17 +46,3 @@ export const AUDIT_SEVERITIES = {
   warn: 'Warning',
   critical: 'Critical',
 };
-
-// ADR-R5 / D2: role identity is carried by the label, so every role shares the
-// one hairline active-cell treatment (gold 1px outline, primary ink).
-const ACTIVE_CELL = 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1';
-
-export const ROLE_PILL_COLORS = {
-  all: ACTIVE_CELL,
-  superadmin: ACTIVE_CELL,
-  admin: ACTIVE_CELL,
-  teacher: ACTIVE_CELL,
-  therapist: ACTIVE_CELL,
-  parent: ACTIVE_CELL,
-};
-export const ROLE_PILL_INACTIVE = 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]';

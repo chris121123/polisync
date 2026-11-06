@@ -49,26 +49,23 @@ const ParentDashboard = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="pb-4 sa-rule-b">
+      <div className="pb-4">
         <h1 className="sa-title">Hello, {user?.name?.split(' ')[0]}</h1>
         <p className="sa-sub">Tracking your child's developmental progress and schedule.</p>
       </div>
 
-      {/* Child selector: square hairline segmented control */}
+      {/* Child selector */}
       {parentChildren.length > 1 && (
-        <div className="flex w-fit max-w-full py-1 divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar">
+        <div className="flex w-fit max-w-full items-center overflow-x-auto hide-scrollbar" role="group" aria-label="Select child">
           {parentChildren.map(child => {
             const isActive = activeChild && String(activeChild.id) === String(child.id);
             return (
               <button
                 key={child.id}
+                type="button"
                 onClick={() => setSelectedChild(child.id)}
-                className={clsx(
-                  "px-3 sm:px-3.5 py-2 text-xs shrink-0",
-                  isActive
-                    ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
-                    : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
-                )}
+                aria-pressed={isActive}
+                className={clsx('itx-tab shrink-0', isActive && 'is-active')}
               >
                 {child.name}
               </button>
@@ -82,12 +79,12 @@ const ParentDashboard = () => {
           {/* Child identity */}
           <div className="sa-panel">
             <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 border border-[var(--sa-line-default)] bg-[var(--sa-surface-warm)] flex items-center justify-center text-2xl text-[var(--sa-text-primary)] shrink-0">
+              <div className="itx-card flex h-16 w-16 shrink-0 items-center justify-center text-[17px] sm:h-24 sm:w-24">
                 {activeChild.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-baseline gap-3">
-                  <h2 className="text-base text-[var(--sa-text-primary)]">{activeChild.name}</h2>
+                  <h2 className="sa-panel-title">{activeChild.name}</h2>
                   <span className="sa-badge">
                     Enrolled
                   </span>
@@ -100,9 +97,9 @@ const ParentDashboard = () => {
                 </div>
               </div>
 
-              <div className="flex items-center divide-x divide-[var(--sa-line-default)] shrink-0">
-                <span className="sa-badge pr-3">{childPrograms.length} Programs Enrolled</span>
-                <span className="sa-badge pl-3">{upcomingSessions.length} Sessions this week</span>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <span className="sa-badge">{childPrograms.length} Programs Enrolled</span>
+                <span className="sa-badge">{upcomingSessions.length} Sessions this week</span>
               </div>
             </div>
           </div>
@@ -126,27 +123,21 @@ const ParentDashboard = () => {
                       <span className="text-[11px] sa-t-muted">{day.slice(0, 3)}</span>
                       {daySessions.length > 0 && <span className="sa-marker" />}
                     </div>
-                    <div className={clsx(
-                      "p-3 flex-1 flex flex-col gap-3 border border-[var(--sa-line-default)]",
-                      daySessions.length > 0
-                        ? "bg-[var(--sa-bg-base)]"
-                        : "border-dashed items-center justify-center"
-                    )}>
+                    <div className="sa-panel flex flex-1 flex-col gap-3">
                       {daySessions.length > 0 ? daySessions.map((session, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="border-l-2 border-l-[var(--sa-gold)] pl-2.5 py-0.5"
                         >
-                          <p className="text-[12px] text-[var(--sa-text-primary)] leading-tight truncate">{session.title}</p>
+                          <p className="sa-row-title truncate">{session.title}</p>
                           <div className="text-[11px] sa-t-muted mt-1">
                             <span className="block">{formatTime(session.startHour)}</span>
                             {session.room && <span className="block">{session.room}</span>}
                           </div>
                         </motion.div>
                       )) : (
-                        <Sparkles size={16} strokeWidth={1.5} className="sa-t-muted" />
+                        <Sparkles size={16} strokeWidth={1.5} className="sa-t-muted m-auto" />
                       )}
                     </div>
                   </div>
@@ -164,7 +155,7 @@ const ParentDashboard = () => {
                 </div>
 
                 {upcomingSessions.length > 0 ? (
-                  <div className="sa-list">
+                  <div className="mt-1 space-y-1">
                     {upcomingSessions.slice(0, 4).map((s, i) => (
                       <div key={i} className="sa-row">
                         <span className="sa-marker" />
@@ -189,9 +180,9 @@ const ParentDashboard = () => {
                 </div>
 
                 {childPrograms.length > 0 ? (
-                  <div className="sa-list">
+                  <div className="mt-1 space-y-1">
                     {childPrograms.map(p => (
-                      <div key={p.id} className="sa-row">
+                      <div key={p.id} className="sa-row h-11">
                         <span className="sa-marker" />
                         <p className="sa-row-title flex-1 min-w-0 truncate">{p.name}</p>
                         <span className="text-[11px] sa-t-muted shrink-0">
@@ -212,12 +203,12 @@ const ParentDashboard = () => {
       ) : (
         /* No children state */
         <div className="sa-empty">
-          <div className="relative w-16 h-16 mx-auto border border-[var(--sa-line-default)] flex items-center justify-center text-[var(--sa-text-muted)]">
+          <div className="itx-card relative mx-auto flex h-16 w-16 items-center justify-center text-[var(--sa-text-muted)]">
             <User size={24} strokeWidth={1.5} />
             <PlusCircle size={16} strokeWidth={1.5} className="absolute bottom-1 right-1 sa-t-warm" />
           </div>
           <div className="max-w-md mx-auto mt-5 space-y-2">
-            <h2 className="text-base text-[var(--sa-text-primary)]">Waiting to connect</h2>
+            <h2 className="sa-panel-title">Waiting to connect</h2>
             <p className="text-[13px] sa-t-muted">
               Your account isn't linked to any students yet. This usually happens while our administration processes your registration.
             </p>

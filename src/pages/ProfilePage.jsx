@@ -5,6 +5,13 @@ import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
 
+// Department identity is a muted series tone, never a semantic state.
+const DEPT_TONE = {
+  Rehab: 'var(--chart-2)',
+  SPED: 'var(--chart-1)',
+  Playschool: 'var(--chart-3)',
+};
+
 const ProfilePage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -45,7 +52,7 @@ const ProfilePage = () => {
   if (appRole === 'parent' && !linksReady) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]" role="status" aria-label="Loading profile">
-        <Loader2 className="animate-spin text-[var(--sa-gold)]" aria-hidden="true" />
+        <Loader2 className="animate-spin text-[var(--accent)]" aria-hidden="true" />
       </div>
     );
   }
@@ -96,15 +103,16 @@ const ProfilePage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left Column: Profile Card ────────────────────────────── */}
         <motion.div 
-          className="lg:col-span-1 border border-[var(--sa-line-default)] bg-[var(--sa-surface-1)] overflow-hidden"
+          className="lg:col-span-1 itx-card self-start overflow-hidden"
         >
           {/* Flat header — department identity lives in the badge below */}
           <div className="h-20 bg-[var(--sa-surface-warm)]" />
 
           <div className="px-6 pb-6">
             <div className="flex flex-col items-center -mt-10 mb-4">
-              <div className="w-20 h-20 bg-[var(--sa-surface-warm)] flex items-center justify-center text-3xl border border-[var(--sa-line-default)]"
-                style={{ color: profile.department === 'Rehab' ? 'var(--color-rehab)' : profile.department === 'SPED' ? 'var(--color-sped)' : profile.department === 'Playschool' ? 'var(--color-playschool)' : 'var(--ps-ink-2)' }}
+              <div
+                className="itx-card flex h-20 w-20 items-center justify-center text-[17px]"
+                style={{ color: DEPT_TONE[profile.department] || 'var(--ink-body)' }}
               >
                 {profile.name.charAt(0)}
               </div>
@@ -122,7 +130,7 @@ const ProfilePage = () => {
 
             {/* Diagnosis Section — Students Only */}
             {type === 'student' && profile.diagnosis && (
-              <div className="mb-4 p-4 border border-[var(--sa-line-default)]">
+              <div className="mb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Stethoscope size={14} strokeWidth={1.5} className="sa-t-warm" />
                   <span className="sa-micro">Diagnosis</span>
@@ -132,7 +140,7 @@ const ProfilePage = () => {
             )}
 
             {/* Contact Info */}
-            <div className="space-y-3 border-t border-[var(--sa-line-hairline)] pt-4">
+            <div className="space-y-3 pt-2">
               <div className="flex items-center gap-3 text-sm text-[var(--sa-text-muted)]">
                 <Mail size={14} strokeWidth={1.5} className="shrink-0 sa-t-muted" />
                 <span className="truncate">{profile.email}</span>
@@ -149,19 +157,19 @@ const ProfilePage = () => {
 
             {/* Assigned Therapists — Students Only */}
             {type === 'student' && assignedTherapists.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[var(--sa-line-hairline)]">
-                <h3 className="sa-micro mb-3 flex items-center gap-1.5">
+              <div className="mt-6">
+                <h3 className="sa-micro mb-2 flex items-center gap-1.5">
                   <Activity size={12} strokeWidth={1.5} />
                   Assigned Therapists
                 </h3>
-                <div className="sa-list">
+                <div className="space-y-1">
                   {assignedTherapists.map(t => (
                     <Link 
                       key={t.id} 
                       to={`/profile/${t.id}?type=staff`}
-                      className="flex items-center gap-2.5 py-2"
+                      className="sa-row"
                     >
-                      <div className="w-8 h-8 border border-[var(--sa-line-default)] flex items-center justify-center text-[11px] tabular-nums shrink-0 sa-t-warm">
+                      <div className="itx-avatar flex items-center justify-center shrink-0">
                         {t.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
@@ -191,13 +199,13 @@ const ProfilePage = () => {
               </span>
             </div>
 
-            <div className="sa-list">
+            <div className="mt-1 space-y-1">
               {personalSessions.length > 0 ? personalSessions.map(session => (
                 <motion.div 
                   key={session.id} 
                   className="sa-row"
                 >
-                  <div className="w-16 text-center border-r border-[var(--sa-line-hairline)] pr-3 shrink-0 tabular-nums">
+                  <div className="w-16 shrink-0 pr-3 tabular-nums">
                     <p className="text-sm text-[var(--sa-text-primary)]">{session.startHour}:00</p>
                     <p className="text-[11px] text-[var(--sa-text-muted)]">{session.startHour >= 12 ? 'PM' : 'AM'}</p>
                   </div>
@@ -239,9 +247,9 @@ const ProfilePage = () => {
                 </h2>
               </div>
               {docsLoading ? (
-                <div className="flex justify-center py-6"><Loader2 className="animate-spin text-[var(--sa-gold)]" /></div>
+                <div className="flex justify-center py-6"><Loader2 className="animate-spin text-[var(--accent)]" /></div>
               ) : studentDocs.length > 0 ? (
-                <div className="sa-list">
+                <div className="mt-1 space-y-1">
                   {studentDocs.map(doc => (
                     <a
                       key={doc.id}

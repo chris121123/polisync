@@ -94,8 +94,8 @@ const RequirementsUpload = ({ studentId }) => {
 
       <div className="space-y-4">
         {/* Drop Zone */}
-        <label className="block w-full border border-dashed border-[var(--sa-line-default)] p-10 text-center cursor-pointer hover:border-[var(--sa-line-strong)] transition-colors">
-          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={handleFileChange} />
+        <label className="itx-dropzone block w-full p-10 text-center cursor-pointer transition-colors">
+          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" className="sr-only" onChange={handleFileChange} />
           <div className="space-y-3">
             <Upload size={24} strokeWidth={1.5} className="mx-auto sa-t-muted" />
             <div className="space-y-1">
@@ -119,14 +119,16 @@ const RequirementsUpload = ({ studentId }) => {
                 <button onClick={() => setFiles([])} className="sa-link">Clear all</button>
               </div>
 
-              <div className="sa-list">
+              <div className="space-y-1">
                 {files.map((file, i) => (
                   <div key={i} className="sa-row">
                     <FileText size={16} strokeWidth={1.5} className="sa-t-muted shrink-0 self-center" />
                     <span className="sa-row-title flex-1 min-w-0 truncate self-center">{file.name}</span>
                     <button
+                      type="button"
                       onClick={() => setFiles(files.filter((_, idx) => idx !== i))}
-                      className="p-1 sa-t-muted hover:text-[var(--sa-danger)] self-center"
+                      aria-label={`Remove ${file.name}`}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center self-center sa-t-muted hover:text-[var(--sa-danger)]"
                     >
                       <X size={14} strokeWidth={1.5} />
                     </button>
@@ -137,7 +139,7 @@ const RequirementsUpload = ({ studentId }) => {
               <button
                 onClick={handleUpload}
                 disabled={uploading}
-                className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40"
+                className="sa-btn sa-btn--primary w-full justify-center"
               >
                 {uploading ? <Loader2 size={16} strokeWidth={1.5} className="animate-spin" /> : <Upload size={16} strokeWidth={1.5} />}
                 {uploading ? 'Processing Secure Upload...' : 'Submit Documents'}
@@ -148,14 +150,14 @@ const RequirementsUpload = ({ studentId }) => {
       </div>
 
       {/* Submitted History */}
-      <div className="pt-6 border-t border-[var(--sa-line-hairline)] space-y-4">
+      <div className="space-y-4">
         <h4 className="sa-micro">Submission History</h4>
         {loading ? (
-          <div className="flex flex-col gap-2">
-            {[1, 2].map(i => <div key={i} className="h-14 w-full bg-[var(--sa-bg-base)] animate-pulse" />)}
+          <div className="flex flex-col gap-2" role="status" aria-label="Loading documents">
+            {[1, 2].map(i => <div key={i} className="sa-alert h-14 w-full" aria-hidden="true" />)}
           </div>
         ) : documents.length > 0 ? (
-          <div className="sa-list">
+          <div className="space-y-1">
             {documents.map((doc) => {
               // Legacy rows hold a dead public URL; anything else is a storage path needing a signed URL.
               const href = /^https?:/i.test(doc.file_url || '') ? null : signedUrls[doc.file_url];
@@ -166,7 +168,7 @@ const RequirementsUpload = ({ studentId }) => {
                 target="_blank"
                 rel="noreferrer"
                 aria-disabled={href ? undefined : true}
-                className="sa-row"
+                className={`sa-row ${href ? '' : 'opacity-[0.45] pointer-events-none'}`}
               >
                 <Check size={16} strokeWidth={1.5} className="sa-t-muted shrink-0 self-center" />
                 <div className="flex-1 min-w-0 self-center">

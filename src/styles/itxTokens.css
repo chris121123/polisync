@@ -1,0 +1,202 @@
+/* ITX tokens — light (canonical) + derived dark (plan 18 §B1, Amendment 1).
+   Declared on the scope root so the values win by proximity for the whole
+   subtree, in both modes, without touching the global Atelier theme.
+   This file is the ONLY legal home for ITX hex values alongside
+   `superadminTheme.css`; components and pages consume tokens only. */
+
+html.sa-theme .itx-scope {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg-canvas: #F6F5F2;
+  --surface: #FFFFFF;
+  --surface-sunken: #EFEDE9;
+  --surface-hover: #F3F1EE;
+
+  /* Lines */
+  --line-subtle: #E8E7E3;
+  --line-default: #D9D8D3;
+  --line-strong: #BDBCB6;
+
+  /* Ink */
+  --ink-primary: #1A1916;
+  --ink-strong: #3D3C37;
+  --ink-body: #43423D;
+  --ink-muted: #6B6A63;
+  --ink-subtle: #6F6E67;
+  --ink-avatar: #57534A;
+
+  /* Accent — state only: active-nav bar, checked, selected, focus ring */
+  --accent: #856730;
+  --accent-soft: #A28C62;
+
+  /* Actions */
+  --action-bg: #3E3D38;
+  --action-text: #F6F5F2;
+  --action-hover: #2B2A27;
+  --action-pressed: #141310;
+
+  /* Semantic */
+  --danger: #A23B2A;
+  --danger-hover: #8E3324;
+  --danger-pressed: #7A2B1E;
+  --success: #4E6B50;
+  --warning: #856730;
+  --info: #475658;
+
+  /* Data series */
+  --chart-1: #3E3D38;
+  --chart-2: #856730;
+  --chart-3: #A9A79F;
+  --chart-grid: #E8E7E3;
+  --chart-axis: #6B6A63;
+
+  /* Shape — mode-independent */
+  --x-radius-card: 16px;
+  --x-radius-control: 12px;
+  --x-radius-row: 10px;
+  --x-radius-menu: 8px;   /* compact surface: profile block, attempt marks */
+  --x-radius-chip: 999px;
+  --x-radius-sm: 4px;
+
+  /* Elevation — one resting treatment, one floating treatment */
+  --x-shadow-card: 0 1px 2px rgba(26, 25, 22, 0.04);
+  --x-ring-card: 0 0 0 1px var(--line-subtle);
+  --x-shadow-float: 0 8px 24px rgba(26, 25, 22, 0.08);
+
+  /* Overlays and computed tints (single source; the rules below only consume) */
+  --x-scrim: rgba(26, 25, 22, 0.4);
+  --x-select-bg: color-mix(in srgb, var(--accent) 22%, transparent);
+  --x-notice-ink: color-mix(in srgb, var(--danger) 90%, var(--ink-primary));
+}
+
+/* Derived dark set (Amendment 1): the shipped dark system re-homed as tokens.
+   It keys off the global app toggle but lives only under the scope; every name
+   is re-pinned here so no Atelier value can surface mid-scope. Elevation is
+   tone steps (shadows none), which is the shipped dark model.
+   `html.dark.sa-theme` is the same-element form: Layout's root carries both
+   `sa-theme` and `itx-scope`, so a descendant combinator alone cannot match it. */
+html.dark .sa-theme .itx-scope,
+html.dark.sa-theme .itx-scope {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-canvas: #0B0B0B;
+  --surface: #1B1C1E;
+  --surface-sunken: #2F2E29;
+  --surface-hover: #232427;
+
+  /* Lines */
+  --line-subtle: #222325;
+  --line-default: #3D3E40;
+  --line-strong: #4A4A4C;
+
+  /* Ink */
+  --ink-primary: #FFFFFF;
+  --ink-strong: #E1E1E1;
+  --ink-body: #CFCFCF;
+  --ink-muted: #A5A5A7;
+  --ink-subtle: #939393;
+  --ink-avatar: #BCB8AF;
+
+  /* Accent */
+  --accent: #C3B090;
+  --accent-soft: #CEBEA4;
+
+  /* Actions (inverse: light fill, canvas ink) */
+  --action-bg: #D9DADE;
+  --action-text: #0B0B0B;
+  --action-hover: #C4C5C9;
+  --action-pressed: #AFAFB3;
+
+  /* Semantic */
+  --danger: #C47A6E;
+  --danger-hover: #D08C80;
+  --danger-pressed: #DB9E93;
+  --success: #8FA58B;
+  --warning: #C3B090;
+  --info: #5C6B6D;
+
+  /* Data series */
+  --chart-1: #E1E1E1;
+  --chart-2: #C3B090;
+  --chart-3: #A9A79F;
+  --chart-grid: #222325;
+  --chart-axis: #A5A5A7;
+
+  /* Shape (mode-independent, re-pinned) */
+  --x-radius-card: 16px;
+  --x-radius-control: 12px;
+  --x-radius-row: 10px;
+  --x-radius-menu: 8px;
+  --x-radius-chip: 999px;
+  --x-radius-sm: 4px;
+
+  /* A comma shadow needs a valid component in both modes: transparent, not `none`. */
+  --x-shadow-card: 0 0 transparent;
+  --x-ring-card: 0 0 0 1px var(--line-subtle);
+  --x-shadow-float: none;
+
+  --x-scrim: rgba(26, 25, 22, 0.4);
+  --x-select-bg: color-mix(in srgb, var(--accent) 22%, transparent);
+  --x-notice-ink: color-mix(in srgb, var(--danger) 90%, var(--ink-primary));
+}
+
+/* Role-based alias map: the only place legacy `--sa-*` names are re-pointed.
+   Every name consumed in scope is pinned (F27: `--sa-line-row` is consumed by
+   the table rules but was missing from the §B1 map). Mode-independent because
+   each alias resolves against the block above on the same element.
+   `html.sa-theme` matches the theme's own light block specificity; this file
+   is imported after it, so the tie resolves to these values. */
+html.sa-theme .itx-scope {
+  --sa-bg-base: var(--bg-canvas);
+  --sa-surface-1: var(--surface);
+  --sa-surface-2: var(--surface-hover);
+  --sa-surface-warm: var(--surface-sunken);
+  --sa-line-hairline: var(--line-subtle);
+  --sa-line-row: var(--line-subtle);
+  --sa-line-default: var(--line-default);
+  --sa-line-strong: var(--line-strong);
+  --sa-text-primary: var(--ink-primary);
+  --sa-text-secondary: var(--ink-strong);
+  --sa-text-warm: var(--ink-body);
+  --sa-text-warm-dim: var(--ink-body);
+  --sa-text-muted: var(--ink-muted);
+  --sa-text-subtle: var(--ink-subtle);
+  --sa-gold: var(--accent);
+  --sa-gold-light: var(--accent);
+  --sa-gold-line: var(--line-subtle);
+  --sa-danger: var(--danger);
+  --sa-success: var(--success);
+  --sa-bar-primary: var(--action-bg);
+  --sa-bar-accent: var(--chart-2);
+  --sa-bar-track: var(--line-subtle);
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+
+  /* App-level names (`--ps-*`, `--color-ps-*`) are computed on <html> before
+     this scope exists, so a portalled toast/modal would inherit the Atelier
+     value. Re-point them on the scope root: `bg-ps-*`/text utilities then
+     resolve to the ITX set wherever the scope class travels. */
+  --ps-bg: var(--bg-canvas);
+  --ps-surface: var(--surface);
+  --ps-border: var(--line-default);
+  --ps-ink-1: var(--ink-primary);
+  --ps-ink-2: var(--ink-body);
+  --ps-accent: var(--accent);
+  --ps-primary: var(--action-bg);
+  --ps-accent-soft: var(--surface-sunken);
+  --ps-danger: var(--danger);
+  --ps-success: var(--success);
+  --ps-warn: var(--warning);
+  --color-ps-bg: var(--bg-canvas);
+  --color-ps-surface: var(--surface);
+  --color-ps-border: var(--line-default);
+  --color-ps-ink-1: var(--ink-primary);
+  --color-ps-ink-2: var(--ink-body);
+  --color-ps-accent: var(--accent);
+  --color-ps-primary: var(--action-bg);
+  --color-ps-accent-soft: var(--surface-sunken);
+  --color-ps-danger: var(--danger);
+  --color-ps-success: var(--success);
+  --color-ps-warn: var(--warning);
+}

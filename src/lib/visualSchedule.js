@@ -51,7 +51,7 @@ export const weekdayIndex = (iso) => {
 };
 
 // Exact mirror of the day calendar's groupSessionsByDay: a dated session belongs to its
-// own date, an undated one to id % 5 (plan §9; 13b reconciles that rule, not this file).
+// own date, an undated one to its stored day_of_week (falling back to id % 5).
 export const sessionsOnDate = (sessions, iso) => {
   const index = weekdayIndex(iso);
   if (index === null) return [];

@@ -1,0 +1,318 @@
+/* Plan 18 Phase 1 — ITX base: one family, the type tiers, native controls and
+   interaction states. Unlayered (beats the Atelier flatten reset and Tailwind
+   layers) and rooted at the scope class, which is app-wide since plan 21. */
+
+.sa-theme .itx-scope {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-primary);
+}
+
+/* Native controls and tables join the one family (F3). */
+.sa-theme .itx-scope :is(input, select, textarea, button, table) {
+  font: inherit;
+}
+
+/* Uppercase belongs to the micro and button tiers only: strip the transform
+   from every other text element, then the tier rules below re-assert it. */
+html.sa-theme .itx-scope :is(h1, h2, h3, h4, h5, h6, p, span, a, li, label, td, th, dt, dd, small, strong, em, figcaption) {
+  text-transform: none;
+}
+
+/* Emphasis is weight 500, never the UA 700 (legal/Privacy copy). */
+.sa-theme .itx-scope strong {
+  font-weight: 500;
+}
+
+/* ── Type tiers ────────────────────────────────────────────────────── */
+.sa-theme .itx-scope :is(h1, .sa-page-title) {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ink-primary);
+}
+
+.sa-theme .itx-scope :is(.sa-sub, h1 + p) {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-subtle);
+}
+
+.sa-theme .itx-scope :is(.sa-panel-title, h2.sa-title) {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-strong);
+}
+
+.sa-theme .itx-scope :is(.sa-panel-sub, .sa-kpi-sub, .sa-empty-sub, .sa-row-meta) {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-subtle);
+}
+
+.sa-theme .itx-scope .sa-row-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-theme .itx-scope .sa-badge {
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink-body);
+}
+
+/* Micro-label tier: 11 caps, 0.08em, muted. `.sa-label` joins it here, and the
+   header subline sheds the Atelier 10px/0.18em for the same tier. */
+.sa-theme .itx-scope :is(.sa-micro, .sa-label, kbd),
+.sa-theme .itx-scope nav p,
+.sa-theme .itx-scope table thead th,
+.sa-theme .itx-scope table thead th span,
+.sa-theme .itx-scope .itx-table thead tr th,
+.sa-theme .itx-scope > header > div:last-child > div:last-child,
+.sa-theme .itx-scope > header button > div,
+.sa-theme .itx-scope > header p:not(.sa-wordmark) {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.sa-theme .itx-scope kbd,
+.sa-theme .itx-scope > header button > div {
+  font-weight: 500;
+}
+
+.sa-theme .itx-scope nav a {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.sa-theme .itx-scope nav a[aria-current="page"] {
+  font-weight: 500;
+  color: var(--ink-primary);
+}
+
+/* ── Buttons and text links (button tier) ──────────────────────────── */
+.sa-theme .itx-scope :is(button, a).sa-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: var(--x-radius-control);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Button labels are one tier: the span reset above must not strip caps/tracking
+   from a label or icon wrapper inside the button. */
+.sa-theme .itx-scope .sa-btn :where(span, div) {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.sa-theme .itx-scope .sa-btn:not(.sa-btn--primary):not(.itx-danger) {
+  border: 1px solid var(--line-default);
+  background: var(--surface);
+  color: var(--ink-strong);
+}
+
+.sa-theme .itx-scope .sa-btn:not(.sa-btn--primary):not(.itx-danger):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--line-strong);
+  background: var(--surface-hover);
+  color: var(--ink-primary);
+}
+
+.sa-theme .itx-scope .sa-btn:not(.sa-btn--primary):not(.itx-danger):active:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--line-strong);
+  background: var(--surface-sunken);
+  color: var(--ink-primary);
+}
+
+.sa-theme .itx-scope .sa-btn.sa-btn--primary {
+  border: 1px solid var(--action-bg);
+  background: var(--action-bg);
+  color: var(--action-text);
+}
+
+.sa-theme .itx-scope .sa-btn.sa-btn--primary:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--action-hover);
+  background: var(--action-hover);
+  color: var(--action-text);
+}
+
+.sa-theme .itx-scope .sa-btn.sa-btn--primary:active:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--action-pressed);
+  background: var(--action-pressed);
+  color: var(--action-text);
+}
+
+.sa-theme .itx-scope .sa-link {
+  border: 0;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.sa-theme .itx-scope .sa-link:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--ink-primary);
+}
+
+/* Pressed is one step past hover: the ink is already primary, so the step is a
+   dim (opacity only — no transform). 0.72 stays well clear of the 0.45
+   disabled floor, so the two states never read alike. */
+.sa-theme .itx-scope .sa-link:active:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--ink-primary);
+  opacity: 0.72;
+}
+
+/* Danger is ink + hairline: the state pair deepens the ink and adds the same
+   two fills the secondary tier uses, so a destructive action reads as one
+   family. Portalled panels carry `.itx-scope` themselves (AppModal). */
+.sa-theme .itx-scope .itx-danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--danger-hover);
+  background: var(--surface-hover);
+  color: var(--danger-hover);
+}
+
+.sa-theme .itx-scope .itx-danger:active:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--danger-pressed);
+  background: var(--surface-sunken);
+  color: var(--danger-pressed);
+}
+
+/* ── Native fields: 44px, radius control, theme-following scheme ───── */
+.sa-theme .itx-scope :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  min-height: 44px;
+  border-radius: var(--x-radius-control);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink-primary);
+  color-scheme: inherit;
+}
+
+.sa-theme .itx-scope :is(input, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  height: 44px;
+}
+
+.sa-theme .itx-scope :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--line-strong);
+}
+
+.sa-theme .itx-scope :is(input, textarea)::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+.sa-theme .itx-scope :is(input[type="checkbox"], input[type="radio"]) {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border-radius: var(--x-radius-sm);
+  accent-color: var(--accent);
+}
+
+/* Native-safe hover edge: `appearance:auto` checkboxes ignore authored borders,
+   so the edge is the outline. `:not(:focus-visible)` keeps the 2px focus ring
+   on top and `:not(:disabled)` keeps a disabled box inert. The checked accent
+   fill is never repainted. */
+.sa-theme .itx-scope :is(input[type="checkbox"], input[type="radio"]):not(:disabled):not([aria-disabled="true"]):not(:focus-visible):hover {
+  outline: 1px solid var(--line-strong);
+  outline-offset: 1px;
+}
+
+/* ── Focus, scrollbars, selection, states, motion ──────────────────── */
+.sa-theme .itx-scope :is(a, button, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The theme removes the field ring (`.sa-theme .sa-input:focus-visible`
+   paints `outline: none`) and leaves the gold border as the only mark. This
+   re-asserts the one 2px accent ring at a higher specificity, so a focused
+   field always matches every other control. The border stays `--line-default`
+   until `:focus` repaints it. */
+.sa-theme .itx-scope .sa-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Disclosure summaries: Chromium's UA focus outline keeps winning on this node,
+   so the ring is painted. It is an INSET shadow, not an outside outline or an
+   `inset:-2px` pseudo-element: planner folds live in `details.overflow-hidden`,
+   which clips anything drawn outside the summary box (the old ::after ring lost
+   its top/left hairline there). An inset ring cannot clip, needs no extra node,
+   and keeps the same 2px accent language. Forced colors drops box-shadow, so
+   that mode gets an inset outline instead. */
+.sa-theme .itx-scope summary:focus-visible,
+.sa-theme .itx-scope details:focus-visible > summary,
+.sa-theme .itx-scope details:focus-within > summary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+@media (forced-colors: active) {
+  .sa-theme .itx-scope :is(a, button, input, select, textarea, [role="button"]):focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+
+  .sa-theme .itx-scope summary:focus-visible,
+  .sa-theme .itx-scope details:focus-visible > summary,
+  .sa-theme .itx-scope details:focus-within > summary:focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: -2px;
+    box-shadow: none;
+  }
+}
+
+.sa-theme .itx-scope,
+.sa-theme .itx-scope * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-default) transparent;
+}
+
+.sa-theme .itx-scope ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sa-theme .itx-scope ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sa-theme .itx-scope ::-webkit-scrollbar-thumb {
+  border-radius: var(--x-radius-chip);
+  background: var(--line-default);
+}
+
+.sa-theme .itx-scope ::selection {
+  background: var(--x-select-bg);
+  color: var(--ink-primary);
+}
+
+.sa-theme .itx-scope :is(button, input, select, textarea, [role="button"]):disabled,
+.sa-theme .itx-scope :is(button, input, select, textarea, [role="button"])[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sa-theme .itx-scope :is(a, button, input, select, textarea, [role="button"], .sa-row, .sa-btn) {
+  transition: color 140ms ease-out, background-color 140ms ease-out,
+    border-color 140ms ease-out, opacity 140ms ease-out;
+}

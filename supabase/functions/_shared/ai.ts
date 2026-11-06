@@ -115,6 +115,8 @@ export type AiConfig = {
   enabled: boolean
   /** Console preset chosen on /admin/ai; 'custom' = hand-entered connection. */
   providerPreset: ProviderPreset
+  /** Provider the saved key was entered under; null = no key association. */
+  keyProvider: ProviderPreset | null
   assistantOn: boolean
   plannerOn: boolean
   repairOn: boolean
@@ -129,6 +131,8 @@ export type AiConfig = {
   apiKey: string | null
   hasKey: boolean
   monthlyTokenCap: number
+  /** Calls one user may make in any rolling 60 minutes (all AI edges). */
+  rateLimitPerHour: number
   timeoutSeconds: number
   maxOutputTokens: number | null
   lastTestOk: boolean | null
@@ -157,12 +161,16 @@ export async function loadAiConfig(service: SupabaseClient): Promise<AiConfig> {
   const apiKey = envApiKey || (typeof row.api_key === 'string' ? row.api_key : null)
   const str = (value: unknown) => (typeof value === 'string' && value ? value : null)
   const num = (value: unknown, fallback: number) => (typeof value === 'number' ? value : fallback)
+  const keyProvider: ProviderPreset | null = row.key_provider === 'commandcode' || row.key_provider === 'opencode'
+    ? row.key_provider
+    : str(row.key_provider) ? 'custom' : null
 
   return {
     enabled: row.enabled === true,
     providerPreset: row.provider_preset === 'commandcode' || row.provider_preset === 'opencode'
       ? row.provider_preset
       : 'custom',
+    keyProvider,
     assistantOn: row.assistant_on !== false,
     plannerOn: row.planner_on === true,
     repairOn: row.repair_on === true,
@@ -175,6 +183,7 @@ export async function loadAiConfig(service: SupabaseClient): Promise<AiConfig> {
     apiKey: apiKey || null,
     hasKey: Boolean(apiKey),
     monthlyTokenCap: num(row.monthly_token_cap, 1_000_000),
+    rateLimitPerHour: num(row.rate_limit_per_hour, 60),
     timeoutSeconds: num(row.timeout_seconds, 60),
     maxOutputTokens: typeof row.max_output_tokens === 'number' ? row.max_output_tokens : null,
     lastTestOk: typeof row.last_test_ok === 'boolean' ? row.last_test_ok : null,
@@ -214,17 +223,64 @@ export function assertCap(config: AiConfig, used: number, estimated: number): vo
   }
 }
 
+export const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000
+
+/**
+ * Per-user throttle: counts this caller's ledger rows in the last rolling 60
+ * minutes. Fails closed (500) if the ledger cannot be read — an unreadable
+ * usage table must not silently lift the limit.
+ */
+export async function assertRateLimit(
+  service: SupabaseClient,
+  userId: string,
+  cap: number,
+): Promise<void> {
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString()
+  const { count, error } = await service
+    .from('ai_usage_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', since)
+  if (error) fail(500, 'INTERNAL', 'Could not read AI usage')
+
+  if ((count ?? 0) >= cap) {
+    fail(429, 'RATE_LIMITED', `Hourly AI limit reached (${count}/${cap} calls in the last 60 minutes). Try again later.`)
+  }
+}
+
 // ─── Provider call ───────────────────────────────────────────────────────────
 
-export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+/** One content part of a vision message; text-only calls keep a plain string. */
+export type ChatPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string | ChatPart[] }
 export type ProviderUsage = { prompt_tokens: number; completion_tokens: number; total_tokens: number }
-export type ProviderResult = { text: string; usage: ProviderUsage; latencyMs: number; model: string }
+export type ProviderResult = {
+  text: string
+  usage: ProviderUsage
+  latencyMs: number
+  model: string
+  /** choices[0].finish_reason: 'length' means the budget ran out before prose. */
+  finishReason: string | null
+  /** A reasoning model may return its thinking separately (`reasoning_content`). */
+  reasoning: string
+}
 export type ProviderOptions = {
   messages: ChatMessage[]
   maxTokens?: number | null
   temperature?: number
   timeoutMs?: number
+  /** Overrides `config.model` for this call (vision uses `visionModel`). */
+  model?: string
 }
+
+// Token estimation sees text only: an image part carries no countable text.
+const messageText = (content: string | ChatPart[]): string =>
+  typeof content === 'string'
+    ? content
+    : content.filter((part) => part.type === 'text').map((part) => part.text).join('\n')
 
 /**
  * One OpenAI-compatible chat-completions call. The key travels only in the
@@ -232,7 +288,8 @@ export type ProviderOptions = {
  */
 export async function callProvider(config: AiConfig, options: ProviderOptions): Promise<ProviderResult> {
   const baseUrl = (config.baseUrl ?? '').replace(/\/+$/, '')
-  if (!baseUrl || !config.model || !config.apiKey) {
+  const model = options.model ?? config.model ?? ''
+  if (!baseUrl || !model || !config.apiKey) {
     fail(409, 'CONFIG_MISSING', 'Save a base URL, model and API key first')
   }
 
@@ -240,7 +297,7 @@ export async function callProvider(config: AiConfig, options: ProviderOptions): 
   const timeoutMs = options.timeoutMs ?? (config.timeoutSeconds > 0 ? config.timeoutSeconds : 60) * 1000
 
   const payload: Record<string, unknown> = {
-    model: config.model,
+    model,
     messages: options.messages,
     temperature: options.temperature ?? 0.2,
   }
@@ -287,12 +344,17 @@ export async function callProvider(config: AiConfig, options: ProviderOptions): 
   if (!data) fail(502, 'PROVIDER_ERROR', 'Provider returned a non-JSON response')
 
   // Content is a string in the plain protocol, an array of parts for vision.
-  const content = data?.choices?.[0]?.message?.content
+  const message = data?.choices?.[0]?.message
+  const content = message?.content
   const text = typeof content === 'string'
     ? content
     : Array.isArray(content)
       ? content.map((part: any) => typeof part === 'string' ? part : (typeof part?.text === 'string' ? part.text : '')).join('')
       : ''
+  const reasoningRaw = message?.reasoning_content ?? message?.reasoning
+  const reasoning = typeof reasoningRaw === 'string' ? reasoningRaw : ''
+  const finishRaw = data?.choices?.[0]?.finish_reason
+  const finishReason = typeof finishRaw === 'string' ? finishRaw : null
 
   // Provider omitted usage: approximate from the text so the cap still moves
   // (callProvider is the only place that has both the prompt and the reply).
@@ -301,22 +363,32 @@ export async function callProvider(config: AiConfig, options: ProviderOptions): 
   const usage: ProviderUsage = {
     prompt_tokens: Number.isFinite(promptTokens)
       ? promptTokens
-      : estimateTokens(options.messages.map((message) => message.content).join('\n')),
+      : estimateTokens(options.messages.map((message) => messageText(message.content)).join('\n')),
     completion_tokens: Number.isFinite(completionTokens) ? completionTokens : estimateTokens(text),
     total_tokens: 0,
   }
   const totalTokens = Number(data?.usage?.total_tokens)
   usage.total_tokens = Number.isFinite(totalTokens) ? totalTokens : usage.prompt_tokens + usage.completion_tokens
 
-  return { text, usage, latencyMs, model: String(data?.model ?? config.model) }
+  return { text, usage, latencyMs, model: String(data?.model ?? model), finishReason, reasoning }
 }
 
 export async function recordUsage(
   service: SupabaseClient,
-  event: { jobId?: string | null; kind: string; model?: string | null; usage?: ProviderUsage; ms?: number; status?: string },
+  event: {
+    jobId?: string | null
+    /** Caller the call is billed to; the hourly limit counts these rows. */
+    userId?: string | null
+    kind: string
+    model?: string | null
+    usage?: ProviderUsage
+    ms?: number
+    status?: string
+  },
 ): Promise<void> {
   const { error } = await service.from('ai_usage_events').insert([{
     job_id: event.jobId ?? null,
+    user_id: event.userId ?? null,
     kind: event.kind,
     model: event.model ?? null,
     tokens_in: event.usage?.prompt_tokens ?? 0,
@@ -373,3 +445,15 @@ export async function buildAliasSource(
 
 export const pseudonymize = (text: string, map: AliasMap): string => map.forward(text)
 export const restore = (text: string, map: AliasMap): string => map.reverse(text)
+
+// ─── Deferred hardening (phase 13e — documented, not implemented) ────────────
+// Kept here so the next reader does not mistake the list for shipped work.
+//   1. pgcrypto encryption at rest for `ai_config.api_key`: needs a server-held
+//      key (an Edge Secret) and a migration that re-encrypts the stored value.
+//      The column is already write-only to clients, so this is belt-and-braces.
+//   2. Live red-team against the deployed edges (prompt injection through a real
+//      provider, expired/replayed confirm tokens over HTTP): needs a deploy.
+//      The pure-module half is covered by tests/golden/aiSecurity.test.mjs.
+//   3. Offline fallback drill end-to-end (provider off → `localSmartSchedule` in
+//      src/lib/scheduling/engine.js produces a schedule): the engine path exists
+//      and is unchanged; it is not exercised by the golden suite.

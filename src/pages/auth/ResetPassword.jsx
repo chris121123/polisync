@@ -37,19 +37,21 @@ const ResetPassword = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-[420px] bg-ps-surface border border-ps-border p-6 sm:p-8 space-y-6"
+        className="itx-card w-full max-w-[420px]"
       >
-        <div className="space-y-1">
-          <h1 className="text-2xl text-ps-ink-1">Set a new password</h1>
-          <p className="text-sm text-ps-ink-2">Choose a password you have not used here before.</p>
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="space-y-1">
+            <h1>Set a new password</h1>
+            <p>Choose a password you have not used here before.</p>
+          </div>
+          {children}
         </div>
-        {children}
       </motion.div>
     </AuthShell>
   );
 
   if (loading) {
-    return card(<p className="text-sm text-ps-ink-2">Verifying your reset link…</p>);
+    return card(<p className="text-sm text-[var(--ink-body)]">Verifying your reset link…</p>);
   }
 
   // checked before !user: completing the reset signs the recovery session out
@@ -90,13 +92,13 @@ const ResetPassword = () => {
   return card(
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="sa-alert sa-alert--danger items-center">
+        <div id="reset-error" role="alert" className="sa-alert sa-alert--danger items-center">
           <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <ul className="text-xs text-ps-ink-2 space-y-1 leading-tight list-disc pl-4">
+      <ul id="reset-rules" className="text-xs text-[var(--ink-body)] space-y-1 leading-tight list-disc pl-4">
         {PASSWORD_RULES.map((rule) => (
           <li key={rule.id}>{rule.label}</li>
         ))}
@@ -117,7 +119,9 @@ const ResetPassword = () => {
             disabled={saving}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="sa-input disabled:opacity-40"
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={error ? 'reset-rules reset-error' : 'reset-rules'}
+            className="sa-input"
           />
         </div>
       </div>
@@ -137,7 +141,9 @@ const ResetPassword = () => {
             disabled={saving}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="••••••••"
-            className="sa-input disabled:opacity-40"
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={error ? 'reset-error' : undefined}
+            className="sa-input"
           />
         </div>
       </div>
@@ -145,10 +151,10 @@ const ResetPassword = () => {
       <button
         type="submit"
         disabled={saving}
-        className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        className="sa-btn sa-btn--primary sa-btn--block"
       >
         {saving ? (
-          <div className="w-4 h-4 border-2 border-[var(--sa-gold)] border-t-transparent animate-spin" />
+          <div className="w-4 h-4 border-2 border-[var(--action-text)] border-t-transparent animate-spin" />
         ) : (
           <>
             <span>Update password</span>

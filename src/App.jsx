@@ -19,6 +19,7 @@ import UserManagement from './pages/admin/UserManagement';
 import AuditPage from './pages/admin/AuditPage';
 import ConfigPage from './pages/admin/ConfigPage';
 import HealthPage from './pages/admin/HealthPage';
+import ReportsPage from './pages/admin/ReportsPage';
 import AiProviderPage from './pages/admin/AiProviderPage';
 import PlannerPage from './pages/admin/PlannerPage';
 import AssistantPage from './pages/assistant/AssistantPage';
@@ -27,11 +28,46 @@ import { ProtectedRoute, SuperAdminRoute, RoleRoute, ParentRoute, TeacherRoute, 
 import { useGlobalState } from './context/GlobalStateContext';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
-import clsx from 'clsx';
 
+
+// One toast chrome for every role and page: portaled on <body>, so it carries
+// its own scope class. Status is carried by `data-tone` (itWorkspace.css).
+function ToastViewport() {
+  const { toast, notify } = useGlobalState();
+
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.18 } }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          data-tone={toast.type}
+          role={toast.type === 'error' ? 'alert' : 'status'}
+          aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+          className="fixed bottom-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 itx-scope itx-toast"
+        >
+          {toast.type === 'error' && <AlertCircle size={20} />}
+          {toast.type === 'success' && <CheckCircle2 size={20} />}
+          {toast.type === 'info' && <Info size={20} />}
+          <p className="text-sm font-medium">{toast.message}</p>
+          <button
+            type="button"
+            onClick={() => notify(null)}
+            aria-label="Dismiss notification"
+            className="ml-2 inline-flex h-9 w-9 shrink-0 items-center justify-center text-[var(--ink-muted)] transition-colors hover:text-[var(--ink-primary)]"
+          >
+            <X size={16} />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function App() {
-  const { darkMode, loading, toast, notify } = useGlobalState();
+  const { darkMode, loading } = useGlobalState();
 
   React.useEffect(() => {
     if (darkMode) {
@@ -51,17 +87,20 @@ function App() {
 
   if (loading && !skipLoading) {
     return (
-      <div className="fixed inset-0 bg-ps-bg flex flex-col items-center justify-center z-[9999] p-4 text-center">
-        <div className="w-16 h-16 border-4 border-ps-accent border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-ps-ink-2 font-medium">Initializing PoliSync...</p>
+      <div className="itx-scope fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-ps-bg p-4 text-center">
+        <div className="mb-4 h-16 w-16 animate-spin rounded-full border-4 border-ps-accent border-t-transparent" />
+        <p className="text-ps-ink-2">Initializing PoliSync...</p>
         {showSkipButton && (
-          <button
-            type="button"
-            onClick={() => setSkipLoading(true)}
-            className="mt-6 text-xs font-semibold text-ps-primary hover:underline px-3.5 py-2 rounded-lg border border-ps-border bg-ps-surface shadow-xs transition-colors"
-          >
-            Taking longer than expected? Tap to continue
-          </button>
+          <>
+            <p className="mt-6 text-[12px] text-ps-ink-2">Taking longer than expected?</p>
+            <button
+              type="button"
+              onClick={() => setSkipLoading(true)}
+              className="sa-btn mt-3"
+            >
+              Continue
+            </button>
+          </>
         )}
       </div>
     );
@@ -86,6 +125,7 @@ function App() {
           <Route path="admin/audit" element={<SuperAdminRoute><AuditPage /></SuperAdminRoute>} />
           <Route path="admin/config" element={<SuperAdminRoute><ConfigPage /></SuperAdminRoute>} />
           <Route path="admin/health" element={<SuperAdminRoute><HealthPage /></SuperAdminRoute>} />
+          <Route path="admin/reports" element={<RoleRoute allowedRoles={['admin', 'superadmin']}><ReportsPage /></RoleRoute>} />
           <Route path="admin/ai" element={<SuperAdminRoute><AiProviderPage /></SuperAdminRoute>} />
           <Route path="assistant" element={<RoleRoute allowedRoles={['admin', 'superadmin']}><AssistantPage /></RoleRoute>} />
           <Route path="therapist/notes" element={<TherapistRoute><SessionNotes /></TherapistRoute>} />
@@ -100,32 +140,7 @@ function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
 
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-            className={clsx(
-              "fixed bottom-6 right-6 z-[10000] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-sm border",
-              toast.type === 'error' && "bg-ps-danger/10 border-ps-danger/20 text-ps-danger",
-              toast.type === 'success' && "bg-ps-success/10 border-ps-success/20 text-ps-success",
-              toast.type === 'info' && "bg-ps-accent-soft border-ps-accent/20 text-ps-accent"
-            )}
-          >
-            {toast.type === 'error' && <AlertCircle size={20} />}
-            {toast.type === 'success' && <CheckCircle2 size={20} />}
-            {toast.type === 'info' && <Info size={20} />}
-            <p className="text-sm font-medium">{toast.message}</p>
-            <button
-              onClick={() => notify(null)}
-              className="ml-2 p-1 hover:bg-ps-bg rounded-lg transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ToastViewport />
       </Router>
     </MotionConfig>
   );

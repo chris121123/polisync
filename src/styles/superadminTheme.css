@@ -1,13 +1,18 @@
 /* ─────────────────────────────────────────────────────────────────────
-   Atelier theme — app-wide (every role, every public page).
+   Industrial theme — app-wide (every role, every public page).
+   Plan 21 Phase 1: the global token VALUES are the industrial deck from
+   `src/styles/itxTokens.css` (light canonical + derived dark). Phase 5
+   pruned the Atelier component rules that `itxBase.css`/`itWorkspace.css`
+   already own; only shell geometry, primitives and token values remain.
 
    `sa-theme` is on <html>, added in src/main.jsx before the first paint,
    so the canvas, body and portaled modals are themed. Layout also keeps
    the class on its root because the direct-child shell rules
-   (`.sa-theme > header`, `.sa-theme > header h1`, `.sa-theme aside`)
-   need a wrapper that is not <html>. The name is historical (ADR-R2).
+   (`.sa-theme > header`, `.sa-theme aside`) need a wrapper that is not
+   <html>. The name is historical (ADR-R2).
    Contract: docs/plans/superadmin-atelier-plan.md §2–§3,
-   docs/plans/atelier-rollout-plan.md §2–§3.
+   docs/plans/atelier-rollout-plan.md §2–§3,
+   docs/plans/itx-global-rollout-plan.md Phase 1.
    ───────────────────────────────────────────────────────────────────── */
 
 .sa-theme {
@@ -15,32 +20,54 @@
   --sa-bg-base: #0B0B0B;      /* app canvas, top bar */
   --sa-surface-1: #1B1C1E;    /* cards, sidebar, panels */
   --sa-surface-2: #232427;    /* hover/raised */
-  --sa-surface-warm: #2F2E29; /* tags/badges (warm dark) */
+  --sa-surface-warm: #2F2E29; /* sunken tags/badges */
   /* Lines */
   --sa-line-hairline: #222325;
   --sa-line-default: #3D3E40;
   --sa-line-strong: #4A4A4C;
-  --sa-line-row: #37383C;
+  --sa-line-row: #222325;
   /* Text */
   --sa-text-primary: #FFFFFF;
   --sa-text-secondary: #E1E1E1;
   --sa-text-muted: #A5A5A7;
   --sa-text-subtle: #939393;
-  --sa-text-warm: #CBC8C3;
-  --sa-text-warm-dim: #BCB8AF;
-  /* Gold accent (champagne) — accents only, never a fill or button bg */
+  --sa-text-warm: #CFCFCF;
+  --sa-text-warm-dim: #CFCFCF; /* = the scope alias `--ink-body` */
+  /* Accent — state only: active-nav bar, checked, selected, focus ring */
   --sa-gold: #C3B090;
-  --sa-gold-light: #CEBEA4;
-  --sa-gold-line: #C6BFAF;
-  --sa-gold-fill-top: #413D34;
-  --sa-gold-fill-end: #1B1C1E;
+  --sa-gold-light: #C3B090;
+  --sa-gold-line: #222325;
   /* Bars */
   --sa-bar-primary: #D9DADE;
-  --sa-bar-accent: #C7B7A0;
-  --sa-bar-track: #3C3D3F;
-  /* Semantic (muted) */
+  --sa-bar-accent: #C3B090;
+  --sa-bar-track: #222325;
+  /* Semantic */
   --sa-danger: #C47A6E;
+  --sa-danger-hover: #D08C80;
+  --sa-danger-pressed: #DB9E93;
   --sa-success: #8FA58B;
+  --sa-warning: #C3B090;
+  --sa-info: #5C6B6D;
+  /* Actions (inverse: light fill, canvas ink) */
+  --sa-action-text: #0B0B0B;
+  --sa-action-pressed: #AFAFB3;
+  /* Data series */
+  --sa-chart-1: #E1E1E1;
+  --sa-chart-2: #C3B090;
+  --sa-chart-3: #A9A79F;
+  --sa-chart-grid: #222325;
+  --sa-chart-axis: #A5A5A7;
+
+  /* Unprefixed state names: ITX primitives consume these; the scope block
+     re-pins the same values, so both spellings resolve to one deck. */
+  --action-pressed: var(--sa-action-pressed);
+  --danger-hover: var(--sa-danger-hover);
+  --danger-pressed: var(--sa-danger-pressed);
+  --chart-1: var(--sa-chart-1);
+  --chart-2: var(--sa-chart-2);
+  --chart-3: var(--sa-chart-3);
+  --chart-grid: var(--sa-chart-grid);
+  --chart-axis: var(--sa-chart-axis);
 
   /* App tokens remapped for the themed subtree, so shared components from
      other pages land on the atelier palette instead of the light app one. */
@@ -48,41 +75,32 @@
   --ps-bg: var(--sa-bg-base);
   --ps-border: var(--sa-line-default);
   --ps-ink-1: var(--sa-text-primary);
-  --ps-ink-2: var(--sa-text-muted);
+  --ps-ink-2: var(--sa-text-warm); /* = the scope alias `--ink-body` */
   --ps-accent: var(--sa-gold);
-  --ps-primary: var(--sa-surface-2);
+  --ps-primary: var(--sa-bar-primary);      /* inverse control fill: the scope alias is `--action-bg` */
   --ps-accent-soft: var(--sa-surface-warm);
+  --ps-danger: var(--sa-danger);
+  --ps-success: var(--sa-success);
+  --ps-warn: var(--sa-warning);
   --color-ps-surface: var(--sa-surface-1);
   --color-ps-bg: var(--sa-bg-base);
   --color-ps-border: var(--sa-line-default);
   --color-ps-ink-1: var(--sa-text-primary);
-  --color-ps-ink-2: var(--sa-text-muted);
+  --color-ps-ink-2: var(--sa-text-warm);
   --color-ps-accent: var(--sa-gold);
-  --color-ps-primary: var(--sa-surface-2);
+  --color-ps-primary: var(--sa-bar-primary);
   --color-ps-accent-soft: var(--sa-surface-warm);
-  --color-ps-success: var(--sa-success);
-  --color-ps-warn: var(--sa-gold);
   --color-ps-danger: var(--sa-danger);
+  --color-ps-success: var(--sa-success);
+  --color-ps-warn: var(--sa-warning);
 
-  /* Legacy + role colors neutralized at token level (ADR-R5/D2) so
-     rolePalette.js and the color utilities keep working untouched.
-     These reference block-varying tokens, so they resolve per mode. */
+  /* Role colors neutralized at token level (ADR-R5/D2) so rolePalette.js
+     and the color utilities keep working untouched. */
   --color-role-superadmin: var(--sa-gold);
   --color-role-admin: var(--sa-text-primary);
   --color-role-teacher: var(--sa-text-secondary);
   --color-role-therapist: var(--sa-text-muted);
   --color-role-parent: var(--sa-text-warm-dim);
-
-  /* On-media ink, not on a surface: the only consumer is the auth hero tagline
-     over a photograph, so it must stay light in both modes. */
-  --color-ps-sky: var(--sa-gold-light);
-  --color-ps-wood: var(--sa-gold-line);
-  --color-ps-wood-deep: var(--sa-surface-2);   /* solid band carrying white text */
-  --ps-wood-deep: var(--sa-surface-2);
-  --color-rehab: var(--sa-text-muted);
-  --color-sped: var(--sa-text-warm-dim);
-  --color-playschool: var(--sa-gold);
-  --color-staff: var(--sa-text-secondary);
 
   background: var(--sa-bg-base);
   color: var(--sa-text-primary);
@@ -90,7 +108,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Light Atelier — same language on "Gallery White" (plan v3.1 §3, D3).
+/* Industrial light — same language on the light deck (plan 21 Phase 1).
    Wins over .sa-theme only while the app toggle is light; the block above
    stays the dark fallback (L1/L4). Tokens only, no component rules. */
 html.sa-theme:not(.dark),
@@ -98,33 +116,44 @@ html:not(.dark) .sa-theme {
   /* Surfaces */
   --sa-bg-base: #F6F5F2;
   --sa-surface-1: #FFFFFF;
-  --sa-surface-2: #EFEDE9;
-  --sa-surface-warm: #F0EDE4;
+  --sa-surface-2: #F3F1EE;
+  --sa-surface-warm: #EFEDE9;
   /* Lines */
   --sa-line-hairline: #E8E7E3;
   --sa-line-default: #D9D8D3;
-  --sa-line-strong: #C2C0B9;
-  --sa-line-row: #E1E0DB;
-  /* Text (subtle, gold and gold-light are the shipped AA values, L-A1) */
+  --sa-line-strong: #BDBCB6;
+  --sa-line-row: #E8E7E3;
+  /* Text */
   --sa-text-primary: #1A1916;
   --sa-text-secondary: #3D3C37;
   --sa-text-muted: #6B6A63;
-  --sa-text-subtle: #6B6A60;
-  --sa-text-warm: #57534A;
-  --sa-text-warm-dim: #6C685C;
-  /* Gold accent — deepened champagne, AA on the canvas */
+  --sa-text-subtle: #6F6E67;
+  --sa-text-warm: #43423D;
+  --sa-text-warm-dim: #43423D; /* = the scope alias `--ink-body` */
+  /* Accent — deepened bronze, AA on the canvas */
   --sa-gold: #856730;
-  --sa-gold-light: #6E5628;
-  --sa-gold-line: #C4AE7C;
-  --sa-gold-fill-top: #F3EBD9;
-  --sa-gold-fill-end: #FFFFFF;
+  --sa-gold-light: #856730;
+  --sa-gold-line: #E8E7E3;
   /* Bars */
   --sa-bar-primary: #3E3D38;
-  --sa-bar-accent: #8F7038;
-  --sa-bar-track: #E4E3DE;
-  /* Semantic (muted) */
-  --sa-danger: #A34A3D;
-  --sa-success: #5F7355;
+  --sa-bar-accent: #856730;
+  --sa-bar-track: #E8E7E3;
+  /* Semantic */
+  --sa-danger: #A23B2A;
+  --sa-danger-hover: #8E3324;
+  --sa-danger-pressed: #7A2B1E;
+  --sa-success: #4E6B50;
+  --sa-warning: #856730;
+  --sa-info: #475658;
+  /* Actions */
+  --sa-action-text: #F6F5F2;
+  --sa-action-pressed: #141310;
+  /* Data series */
+  --sa-chart-1: #3E3D38;
+  --sa-chart-2: #856730;
+  --sa-chart-3: #A9A79F;
+  --sa-chart-grid: #E8E7E3;
+  --sa-chart-axis: #6B6A63;
 
   /* App tokens resolve to the Atelier palette (ADR-R9). While the theme
      was role-scoped these handed back the native blue light palette so
@@ -133,30 +162,24 @@ html:not(.dark) .sa-theme {
   --ps-bg: var(--sa-bg-base);
   --ps-border: var(--sa-line-default);
   --ps-ink-1: var(--sa-text-primary);
-  --ps-ink-2: var(--sa-text-muted);
+  --ps-ink-2: var(--sa-text-warm); /* = the scope alias `--ink-body` */
   --ps-accent: var(--sa-gold);
-  --ps-primary: var(--sa-bar-primary);      /* dark control surface: white text on it */
+  --ps-primary: var(--sa-bar-primary);      /* inverse control fill: the scope alias is `--action-bg` */
   --ps-accent-soft: var(--sa-surface-warm);
+  --ps-danger: var(--sa-danger);
+  --ps-success: var(--sa-success);
+  --ps-warn: var(--sa-warning);
   --color-ps-surface: var(--sa-surface-1);
   --color-ps-bg: var(--sa-bg-base);
   --color-ps-border: var(--sa-line-default);
   --color-ps-ink-1: var(--sa-text-primary);
-  --color-ps-ink-2: var(--sa-text-muted);
+  --color-ps-ink-2: var(--sa-text-warm);
   --color-ps-accent: var(--sa-gold);
   --color-ps-primary: var(--sa-bar-primary);
   --color-ps-accent-soft: var(--sa-surface-warm);
   --color-ps-success: var(--sa-success);
-  --color-ps-warn: var(--sa-gold);
+  --color-ps-warn: var(--sa-warning);
   --color-ps-danger: var(--sa-danger);
-
-  /* The solid band carries white text, so it stays dark in light mode too. */
-  --color-ps-wood-deep: var(--sa-bar-primary);
-  --ps-wood-deep: var(--sa-bar-primary);
-
-  /* Same on-media ink as the dark block: light gold-light is deep, so pin an
-     explicit light hex that reads over the hero photograph. Phase 2 shipped
-     without replacing it — this hex is the shipped AA value (5.1:1 worst case). */
-  --color-ps-sky: #D8D3C6;
 }
 
 /* ── Shape, motion, focus ───────────────────────────────────────────── */
@@ -174,14 +197,19 @@ html:not(.dark) .sa-theme {
   border-radius: 9999px;
 }
 
-/* The avatar is the only circle in the theme. */
-.sa-theme aside .rounded-full {
-  border-radius: 9999px;
-  background: var(--sa-surface-warm);
-  border: 1px solid var(--sa-line-default);
-  color: var(--sa-text-warm);
-  font-weight: 400;
-}
+/* Tailwind's `rounded-*` and `ring-*` live in a cascade layer, so the unlayered
+   reset above wins over every utility shape (unread badge, logo plate, chat
+   bubbles) and every utility ring (badge halo). Re-grant the scale inside the
+   app scope at a weight above the reset; authored component rules out-rank it. */
+.itx-scope :is(.rounded-full) { border-radius: var(--x-radius-chip); }
+.itx-scope :is(.rounded-2xl) { border-radius: var(--x-radius-card); }
+.itx-scope :is(.rounded-xl) { border-radius: var(--x-radius-control); }
+.itx-scope :is(.rounded-lg) { border-radius: var(--x-radius-row); }
+.itx-scope :is(.rounded-md) { border-radius: var(--x-radius-menu); }
+.itx-scope :is(.rounded-sm) { border-radius: var(--x-radius-sm); }
+/* The one arbitrary-value shape in the app (Add requirement disclosure). */
+.itx-scope :is(.rounded-\[var\(--x-radius-card\)\]) { border-radius: var(--x-radius-card); }
+.itx-scope :is(.ring-2) { box-shadow: var(--tw-ring-shadow); }
 
 .sa-theme h1,
 .sa-theme h2,
@@ -207,11 +235,6 @@ html:not(.dark) .sa-theme {
   transform: none;
 }
 
-.sa-theme :is(button, a, [role="button"], input, select, textarea):focus-visible {
-  outline: 1px solid var(--sa-gold);
-  outline-offset: 2px;
-}
-
 .sa-theme .animate-pulse {
   animation: none;
 }
@@ -232,43 +255,24 @@ html:not(.dark) .sa-theme {
   border-bottom: 1px solid var(--sa-line-hairline);
 }
 
-/* Wordmark: uppercase, hairline tracked, weight 300, outlined gold mark.
+/* Wordmark: uppercase, hairline tracked, outlined accent mark.
    `.sa-wordmark` reuses it on the public auth plate. */
-.sa-theme > header h1,
 .sa-wordmark {
   font-size: 16px;
-  font-weight: 300;
   line-height: 1.2;
   letter-spacing: 0.35em;
   text-transform: uppercase;
   color: var(--sa-text-primary);
 }
 
-.sa-theme > header h1::after,
 .sa-wordmark::after {
   content: '';
   display: inline-block;
   width: 6px;
   height: 6px;
   margin-left: 12px;
-  border: 1px solid var(--sa-gold);
+  border: 1px solid var(--accent);
   transform: translateY(-2px) rotate(45deg);
-}
-
-/* The subline only: `.sa-wordmark` is a <p> too and carries the h1 rules above. */
-.sa-theme > header p:not(.sa-wordmark) {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--sa-text-subtle);
-}
-
-/* Date label in the top bar's right cluster. */
-.sa-theme > header > div:last-child > div:last-child {
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
 }
 
 .sa-theme aside {
@@ -284,34 +288,9 @@ html:not(.dark) .sa-theme {
   --sa-navpad: 8px;
 }
 
-.sa-theme nav p {
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
-}
-
+/* Position only: type is owned by itxBase, the row box by itWorkspace. */
 .sa-theme nav a {
   position: relative;
-  padding-block: 8px;
-  background: transparent;
-  border-radius: 0;
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--sa-text-muted);
-}
-
-.sa-theme nav a:hover {
-  background: transparent;
-  color: var(--sa-text-primary);
-}
-
-/* Active: white text plus a 2px gold bar flush with the sidebar edge. */
-.sa-theme nav a[aria-current="page"] {
-  background: transparent;
-  color: var(--sa-text-primary);
-  font-weight: 500;
 }
 
 .sa-theme nav a[aria-current="page"]::before {
@@ -321,47 +300,15 @@ html:not(.dark) .sa-theme {
   bottom: 0;
   left: calc(-1 * var(--sa-navpad));
   width: 2px;
-  background: var(--sa-gold);
-}
-
-/* Bottom-left role tag. */
-/* Layout's user row is semibold; the theme caps weight at 500. */
-.sa-theme aside .font-semibold {
-  font-weight: 400;
-}
-
-.sa-theme aside .capitalize {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 2px 6px;
-  border-radius: 2px;
-  background: var(--sa-surface-warm);
-  color: var(--sa-text-warm-dim);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
 /* ── Page: headings, panels, rules ──────────────────────────────────── */
-.sa-title {
-  font-size: 16px;
-  font-weight: 400;
-  color: var(--sa-text-primary);
-}
-
 .sa-sub {
   margin-top: 2px;
-  font-size: 11px;
-  color: var(--sa-text-muted);
 }
 
-.sa-rule-b {
-  border-bottom: 1px solid var(--sa-line-hairline);
-}
-
+/* Card padding: border, radius, surface and shadow are owned by itWorkspace. */
 .sa-panel {
-  background: var(--sa-surface-1);
-  border: 1px solid var(--sa-line-default);
   padding: 20px;
 }
 
@@ -371,42 +318,9 @@ html:not(.dark) .sa-theme {
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--sa-line-hairline);
-}
-
-.sa-panel-title {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--sa-text-secondary);
-}
-
-.sa-panel-sub {
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--sa-text-muted);
-}
-
-/* 11px uppercase, widely tracked, muted. */
-.sa-micro {
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
 }
 
 /* ── KPI cards ──────────────────────────────────────────────────────── */
-.sa-kpi {
-  padding: 16px;
-}
-
-.sa-kpi-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--sa-line-hairline);
-}
-
 .sa-kpi-icon {
   flex: none;
   color: var(--sa-text-muted);
@@ -432,27 +346,6 @@ html:not(.dark) .sa-theme {
   margin-top: 8px;
 }
 
-.sa-kpi-sub {
-  font-size: 11px;
-  color: var(--sa-text-muted);
-}
-
-.sa-badge {
-  flex: none;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
-}
-
-.sa-badge--positive {
-  color: var(--sa-text-warm);
-}
-
-.sa-badge--warn {
-  color: var(--sa-danger);
-}
-
 /* ── Progress bars ──────────────────────────────────────────────────── */
 .sa-bar-row {
   display: flex;
@@ -476,7 +369,7 @@ html:not(.dark) .sa-theme {
 
 .sa-bar-fill {
   height: 100%;
-  background: var(--sa-bar-primary);
+  background: var(--chart-1); /* the data-series token, not the control fill */
 }
 
 .sa-bar-fill--accent {
@@ -492,20 +385,12 @@ html:not(.dark) .sa-theme {
 }
 
 /* ── Activity rows ──────────────────────────────────────────────────── */
-.sa-list > * + * {
-  border-top: 1px solid var(--sa-line-row);
-}
-
 .sa-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   min-height: 40px;
   padding-block: 10px;
-}
-
-.sa-row:hover {
-  background: var(--sa-surface-2);
 }
 
 .sa-marker {
@@ -524,41 +409,11 @@ html:not(.dark) .sa-theme {
   background: var(--sa-success);
 }
 
-.sa-row-title {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--sa-text-primary);
-}
-
 .sa-row-target {
   color: var(--sa-text-muted);
 }
 
-.sa-row-meta {
-  margin-top: 2px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
-}
-
 /* ── System status ──────────────────────────────────────────────────── */
-.sa-sections > * {
-  padding-block: 16px;
-}
-
-.sa-sections > *:first-child {
-  padding-top: 0;
-}
-
-.sa-sections > *:last-child {
-  padding-bottom: 0;
-}
-
-.sa-sections > * + * {
-  border-top: 1px solid var(--sa-line-hairline);
-}
-
 .sa-dot {
   flex: none;
   width: 6px;
@@ -577,7 +432,6 @@ html:not(.dark) .sa-theme {
 .sa-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
-  color: var(--sa-text-muted);
 }
 
 .sa-t-muted {
@@ -595,7 +449,6 @@ html:not(.dark) .sa-theme {
 /* ── Empty states ───────────────────────────────────────────────────── */
 .sa-empty {
   padding: 28px 16px;
-  border: 1px solid var(--sa-line-hairline);
   text-align: center;
 }
 
@@ -604,41 +457,18 @@ html:not(.dark) .sa-theme {
   color: var(--sa-text-secondary);
 }
 
-.sa-empty-sub {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--sa-text-muted);
-}
-
 /* ── Buttons and links ──────────────────────────────────────────────── */
+/* Box model only: size, type and every state pair live in itxBase/itWorkspace. */
 .sa-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--sa-line-default);
-  background: transparent;
-  color: var(--sa-text-secondary);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   cursor: pointer;
 }
 
-.sa-btn:hover {
-  border-color: var(--sa-line-strong);
-  color: var(--sa-text-primary);
-}
-
-.sa-btn--primary {
-  border-color: var(--sa-gold);
-  color: var(--sa-gold);
-}
-
-.sa-btn--primary:hover {
-  border-color: var(--sa-gold-light);
-  color: var(--sa-gold-light);
-  background: rgba(195, 176, 144, 0.08);
+.sa-btn--block {
+  width: 100%;
+  justify-content: center;
 }
 
 .sa-link {
@@ -648,35 +478,21 @@ html:not(.dark) .sa-theme {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--sa-text-muted);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   cursor: pointer;
-}
-
-.sa-link:hover {
-  color: var(--sa-text-primary);
 }
 
 /* ── Auth primitives (public login / recovery pages) ────────────────── */
 .sa-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--sa-text-muted);
 }
 
 .sa-input {
   width: 100%;
-  min-height: 44px;
   padding: 11px 12px 11px 40px;
   border: 1px solid var(--sa-line-default);
   background: var(--sa-bg-base);
   color: var(--sa-text-primary);
-  font-size: 14px;
   font-weight: 400;
   outline: none;
 }
@@ -686,23 +502,14 @@ html:not(.dark) .sa-theme {
   padding-right: 48px;
 }
 
-.sa-input::placeholder {
-  color: var(--sa-text-subtle);
-}
-
-/* Declared before :focus so an invalid field still turns gold while focused;
-   otherwise the danger border would be its only focus mark and the outline is off. */
+/* Declared before :focus so an invalid field still turns accent while focused;
+   otherwise the danger border would be its only focus mark. */
 .sa-input[aria-invalid="true"] {
   border-color: var(--sa-danger);
 }
 
 .sa-input:focus {
-  border-color: var(--sa-gold);
-}
-
-/* The gold border is the field's focus mark; the app-wide outline would draw a second ring. */
-.sa-theme .sa-input:focus-visible {
-  outline: none;
+  border-color: var(--accent);
 }
 
 /* Native date/time pickers need a dark scheme for their glyphs and popup.
@@ -722,29 +529,20 @@ html.dark.sa-theme input[type="datetime-local"] {
   pointer-events: none;
 }
 
-.sa-btn--block {
-  width: 100%;
-  min-height: 44px;
-  justify-content: center;
-}
-
 /* State panels: hairline + ink, never a tinted fill. */
 .sa-alert {
   display: flex;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--sa-line-default);
   font-size: 13px;
   color: var(--sa-text-secondary);
 }
 
 .sa-alert--danger {
-  border-color: var(--sa-danger);
   color: var(--sa-danger);
 }
 
 .sa-alert--success {
-  border-color: var(--sa-success);
   color: var(--sa-success);
 }
 

@@ -1,95 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
 
 @import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
+/* Tailwind utility names. The theme deck (`superadminTheme.css` +
+   `itxTokens.css`) owns every value; these only register the names so the
+   `bg-ps-*` / `text-ps-*` utilities exist. No page reads these literals. */
 @theme {
-  /* Color Palette Tokens */
-  --color-ps-surface: #FFFFFF;
-  --color-ps-bg: #F7F5F1;
-  --color-ps-border: #E4E2DA;
-  --color-ps-ink-1: #1E2A5E;
-  --color-ps-ink-2: #5E6E96;
-  --color-ps-accent: #2563EB;
-  /* Fill token for solid brand surfaces under white text (accent is for text/icons/borders). */
-  --color-ps-primary: #2563EB;
-  --color-ps-accent-soft: #EAF1FE;
-  --color-ps-sky: #7DD3FC;
-  --color-ps-wood: #C98A4B;
-  --color-ps-wood-deep: #8F5F27;
-  --ps-wood-deep: #8F5F27;
-  --color-ps-success: #35682C;
-  --color-ps-warn: #92400e;
-  --color-ps-danger: #b91c1c;
+  --color-ps-surface: var(--ps-surface);
+  --color-ps-bg: var(--ps-bg);
+  --color-ps-border: var(--ps-border);
+  --color-ps-ink-1: var(--ps-ink-1);
+  --color-ps-ink-2: var(--ps-ink-2);
+  --color-ps-accent: var(--ps-accent);
+  --color-ps-primary: var(--ps-primary);
+  --color-ps-accent-soft: var(--ps-accent-soft);
+  --color-ps-success: var(--ps-success);
+  --color-ps-warn: var(--ps-warn);
+  --color-ps-danger: var(--ps-danger);
 
-  /* Role inks — measured AA on their own 10% tint (ADR-017: source is src/lib/rolePalette.js) */
-  --color-role-superadmin: #1D4ED8;
-  --color-role-admin: #7A4C1F;
-  --color-role-teacher: #2F5F27;
-  --color-role-therapist: #025C8C;
-  --color-role-parent: #8A2457;
+  /* Role inks (ADR-017: source is src/lib/rolePalette.js). */
+  --color-role-superadmin: var(--sa-gold);
+  --color-role-admin: var(--sa-text-primary);
+  --color-role-teacher: var(--sa-text-secondary);
+  --color-role-therapist: var(--sa-text-muted);
+  --color-role-parent: var(--sa-text-warm-dim);
 
-  /* Preserve legacy colors for compatibility but update to match feel */
-  --color-rehab: #0ea5e9;
-  --color-sped: #a855f7;
-  --color-playschool: #eab308;
-  --color-staff: #22c55e;
-  
   /* Fonts */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'DM Sans', sans-serif;
-
-  /* Radius */
-  --radius-2xl: 16px;
-  --radius-xl: 12px;
-
-  /* Transitions */
-  --transition-timing-standard: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Breakpoints */
   --breakpoint-xs: 400px;
-}
-
-:root {
-  --ps-surface: #FFFFFF;
-  --ps-bg: #F7F5F1;
-  --ps-border: #E4E2DA;
-  --ps-ink-1: #1E2A5E;
-  --ps-ink-2: #5E6E96;
-  --ps-accent: #2563EB;
-  --ps-primary: #2563EB;
-  --ps-accent-soft: #EAF1FE;
-}
-
-.dark {
-  --ps-surface: #161C2E;
-  --ps-bg: #0E1322;
-  --ps-border: #252D46;
-  --ps-ink-1: #EAEDF7;
-  --ps-ink-2: #8E9BC0;
-  --ps-accent: #6E93F5;
-  --ps-primary: #2F5FD0;
-  --ps-accent-soft: #172447;
-  --color-ps-surface: #161C2E;
-  --color-ps-bg: #0E1322;
-  --color-ps-border: #252D46;
-  --color-ps-ink-1: #EAEDF7;
-  --color-ps-ink-2: #8E9BC0;
-  --color-ps-accent: #6E93F5;
-  --color-ps-primary: #2F5FD0;
-  --color-ps-accent-soft: #172447;
-  --color-ps-sky: #7DD3FC;
-  --color-ps-wood: #A9763D;
-  --color-ps-wood-deep: #6E4A20;
-  --ps-wood-deep: #6E4A20;
-  --color-ps-success: #10b981;
-  --color-ps-warn: #f59e0b;
-  --color-ps-danger: #ef4444;
-  --color-role-superadmin: #6E93F5;
-  --color-role-admin: #C98A4B;
-  --color-role-teacher: #4ADE80;
-  --color-role-therapist: #7DD3FC;
-  --color-role-parent: #F472B6;
 }
 
 /* Base styles */
@@ -118,39 +59,6 @@ input:-webkit-autofill:focus {
   display: none;
 }
 
-/* Typography Utilities */
-h1, h2, h3, h4, .font-display {
-  font-family: var(--font-display);
-  letter-spacing: -0.01em;
-}
-
-/* Interactive Micro-Animations */
-button, a, [role="button"] {
-  transition: var(--transition-timing-standard);
-}
-
-button:active:not(:disabled), a:active, [role="button"]:active {
-  transform: scale(0.97);
-}
-
-/* Global Page Entry Animation */
-.animate-page-entry {
-  animation: pageFadeIn 300ms ease-out forwards;
-}
-
-@keyframes pageFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Focus visible for interactive elements */
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible {
-  outline: 2px solid var(--color-ps-accent);
-  outline-offset: 2px;
-}
-
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -159,17 +67,4 @@ a:focus-visible,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* Utility for dynamic accent tints */
-.bg-ps-accent-soft {
-  background-color: var(--ps-accent-soft);
-}
-
-.border-ps-border {
-  border-color: var(--ps-border);
-}
-
-.bg-ps-surface {
-  background-color: var(--ps-surface);
 }

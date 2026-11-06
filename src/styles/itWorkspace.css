@@ -1,0 +1,751 @@
+/* Plan 17 - IT workspace language. Plan 21 Phase 2 made the scope app-wide:
+   `itx-scope` sits on the shell root, the portalled overlays and the auth/public
+   roots, so every surface reads these rules.
+   Unlayered on purpose: these rules beat the Atelier flatten reset
+   (.sa-theme * { border-radius: 0; box-shadow: none }) and the Tailwind layers.
+   `itx-shell` sits on Layout's root. */
+
+/* ── Cards ─────────────────────────────────────────────────────────── */
+.sa-theme .itx-scope :is(.sa-panel, .sa-kpi, .itx-card) {
+  border: 0;
+  border-radius: var(--x-radius-card);
+  background: var(--surface);
+  box-shadow: var(--x-shadow-card), var(--x-ring-card);
+}
+/* Padding-less elevated container for tables/toolbars (Phases 2-3). */
+.sa-theme .itx-scope .itx-card {
+  padding: 0;
+}
+.sa-theme .itx-scope .sa-panel-head {
+  border: 0;
+}
+/* Filler hairlines are not part of the language: grouping is spacing. */
+.sa-theme .itx-scope :is(.sa-kpi-head, .sa-sections > * + *) {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/* ── Pills, dots, attempt marks ────────────────────────────────────── */
+.sa-theme .itx-scope .sa-badge {
+  padding: 3px 10px;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--x-radius-chip);
+  background: var(--surface);
+  line-height: 1.1;
+}
+/* Status tags read as tags, never as coloured text. */
+.sa-theme .itx-scope :is(.sa-badge--positive, .sa-badge--warn) {
+  border-color: transparent;
+  background: var(--surface-sunken);
+  color: var(--ink-body);
+}
+/* Default ink only: --danger / --creative keep their own fills. */
+.sa-theme .itx-scope .sa-marker:not(.sa-marker--danger):not(.sa-marker--creative) {
+  background: var(--sa-text-muted);
+}
+.sa-theme .itx-scope .sa-marker,
+.sa-theme .itx-scope .sa-dot {
+  border-radius: var(--x-radius-chip);
+}
+.sa-theme .itx-scope .sa-attempt {
+  border-radius: var(--x-radius-menu);
+}
+/* --spent keeps its danger fill. */
+.sa-theme .itx-scope .sa-attempt:not(.sa-attempt--spent) {
+  background: var(--sa-surface-2);
+}
+
+/* ── Controls ──────────────────────────────────────────────────────── */
+/* Inverse fill, both modes: light = dark fill/light ink, dark = light fill/dark ink.
+   Hover and pressed are owned by itxBase.css (one source: --action-hover /
+   --action-pressed); this rule pins the resting pair only. */
+.sa-theme .itx-scope .sa-btn--primary {
+  background: var(--action-bg);
+  color: var(--action-text);
+}
+/* Danger ink must also reach portals: AppModal mounts on document.body, outside
+   `.itx-scope`, while html.sa-theme is still its ancestor. The hover/pressed
+   pair is scoped in itxBase (--danger-hover/pressed over the surface pair) and
+   out-specifies this resting rule, so a portal confirm gets the same states. */
+.sa-theme .itx-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.sa-theme .itx-scope .itx-gold {
+  color: var(--accent);
+}
+.sa-theme .itx-scope .itx-selected {
+  background: var(--surface-hover);
+}
+/* Upload dropzone: card radius with a dashed hairline; hover and keyboard focus
+   use the same edge + 2px accent ring as every other field. */
+.sa-theme .itx-scope .itx-dropzone {
+  border: 1px dashed var(--line-default);
+  border-radius: var(--x-radius-card);
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-scope .itx-dropzone:hover {
+  border-color: var(--line-strong);
+}
+.sa-theme .itx-scope .itx-dropzone:focus-within {
+  border-color: var(--line-strong);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Native field size/shape lives in itxBase.css only (one source of truth). */
+
+/* ── Alerts and empty states ───────────────────────────────────────── */
+.sa-theme .itx-scope .sa-alert {
+  border: 0;
+  border-radius: var(--x-radius-control);
+  background: var(--surface-sunken);
+  font-size: 13px;
+}
+/* Danger ink is 4.12:1 on the dark sunken tone; 10% ink restores AA in both
+   modes (light 5.62:1, dark 4.71:1) without leaving the token family.
+   The mix is a token (--x-notice-ink), not a literal. */
+.sa-theme .itx-scope .sa-alert--danger {
+  color: var(--x-notice-ink);
+}
+.sa-theme .itx-scope .sa-empty {
+  border: 0;
+}
+
+/* ── Text tabs (Phases 2-4) ────────────────────────────────────────── */
+.sa-theme .itx-scope .itx-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-right: 20px;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--sa-text-muted);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.sa-theme .itx-scope :is(.itx-tab.is-active, .itx-tab[aria-selected="true"], .itx-tab[aria-pressed="true"]) {
+  color: var(--ink-primary);
+  border-bottom-color: var(--accent);
+}
+/* Rest is muted ink; hover only lifts the ink (no decoration), pressed adds the
+   sunken-step surface. The active underline is never touched. */
+.sa-theme .itx-scope .itx-tab:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--ink-primary);
+}
+.sa-theme .itx-scope .itx-tab:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+  color: var(--ink-primary);
+}
+
+/* ── Toggles and segments: one attribute-driven state language ─────── */
+/* Selected = 2px accent inset ring + primary ink, on every strip that uses
+   aria-pressed (role track, import source, theme tiles, month cells, threads).
+   `.itx-tab` keeps its underline instead, and `[data-reveal]` marks a pressed
+   *action* (password eye) rather than a selection, so it keeps the icon
+   hover/pressed fills without the selected ring. `:not(:focus-visible)` leaves
+   the 2px focus ring (offset 2) in charge while a selected control has keyboard
+   focus, so the two accent cues never stack. */
+.sa-theme .itx-scope button[aria-pressed="true"]:not(.itx-tab):not([data-reveal]):not(:focus-visible):not(.itx-select-trigger) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--ink-primary);
+}
+/* Pressed applies to both pressed states: a selected cell keeps its ring and
+   ink and sinks, an unselected one sinks from its resting surface. Declared
+   after the hover pair so a held press always wins over :hover. */
+.sa-theme .itx-scope button[aria-pressed="false"]:not(.itx-tab):hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope button[aria-pressed]:not(.itx-tab):active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+/* A reveal toggle is a pressed *action*, not a selection: `data-reveal` keeps
+   the ring off it, and this pair keeps the icon surface in both pressed states
+   (the selected branch above has no hover of its own). Declared at a weight
+   below the pressed rule so a held press still reads as sunken. */
+.sa-theme .itx-scope button[data-reveal]:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+
+/* ── Icon buttons: row-shaped hit area with a visible hover surface ── */
+/* `aria-label` is the only marker an icon-only control carries. Exemptions are
+   controls that own their shape or their ink: `.itx-search-trigger` (44px
+   labelled control), `.itx-modal-close` (44px control radius + own hover/press),
+   `.sa-link` (text action, no surface), the composer Send (a 44px circle,
+   marked `data-send` by the page so the hook survives the Sending... label),
+   and `.itx-select-trigger` (a 44px field: border, radius and ink are set by
+   the select rules, so an `aria-label` must never flatten it into a row).
+   Borders are dropped and the surface pair is shared; glyph ink stays authored
+   because the shell re-inks through `.itx-bell:hover svg` and page-level
+   controls (kebab) already lift to ink-primary. */
+.sa-theme .itx-scope :is(button[aria-label]:not(.sa-link):not(.itx-modal-close):not([data-send]), .itx-bell):not(.sa-btn):not(.itx-tab):not(.itx-search-trigger):not([aria-pressed]):not(.itx-select-trigger) {
+  border: 0;
+  border-radius: var(--x-radius-row);
+}
+.sa-theme .itx-scope :is(button[aria-label]:not(.sa-link):not(.itx-modal-close):not([data-send]), .itx-bell):not(.sa-btn):not(.itx-tab):not(.itx-search-trigger):not([aria-pressed]):not(.itx-select-trigger):hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope :is(button[aria-label]:not(.sa-link):not(.itx-modal-close):not([data-send]), .itx-bell):not(.sa-btn):not(.itx-tab):not(.itx-search-trigger):not([aria-pressed]):not(.itx-select-trigger):active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+
+/* ── Menu items: row radius and the same two fills ─────────────────── */
+/* Item padding stays authored at the call site (panel p-1 + item px-3 py-2),
+   so the fill sits inside the panel's 16px corner. Danger items keep their own
+   ink: this rule never sets colour. */
+.sa-theme .itx-scope :is([role="menuitem"], .itx-menu button):not(.sa-btn):not(.sa-link):not([aria-label]):not([aria-pressed]) {
+  border-radius: var(--x-radius-row);
+  cursor: pointer;
+}
+/* The shared inert rule is lighter than the chain above, so the inert cursor is
+   re-stated at the same weight (both inert forms). */
+.sa-theme .itx-scope :is([role="menuitem"], .itx-menu button):not(.sa-btn):not(.sa-link):not([aria-label]):not([aria-pressed]):is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+.sa-theme .itx-scope :is([role="menuitem"], .itx-menu button):not(.sa-btn):not(.sa-link):not([aria-label]):not([aria-pressed]):hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope :is([role="menuitem"], .itx-menu button):not(.sa-btn):not(.sa-link):not([aria-label]):not([aria-pressed]):active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+
+/* ── Tables: one row hairline, no box (Phase 2) ───────────────────── */
+.sa-theme .itx-scope .itx-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sa-theme .itx-scope .itx-table :is(th, td) {
+  padding: 10px 24px;
+  border: 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+/* Header tier is the base micro label (11 caps 0.08em); nothing overrides it. */
+/* No outer frame: the last row keeps no closing hairline. */
+.sa-theme .itx-scope .itx-table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+.sa-theme .itx-scope .itx-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+/* ── Lists and inline code ─────────────────────────────────────────── */
+.sa-theme .itx-scope .sa-row {
+  border-radius: var(--x-radius-row);
+}
+.sa-theme .itx-scope .sa-row:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+/* A row that is itself a control (search results, notification rows) presses
+   one step down. Inert rows are divs and never match, so the fill is untouched. */
+.sa-theme .itx-scope :is(button.sa-row, [role="button"].sa-row):active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-scope .sa-mono {
+  padding: 1px 5px;
+  border-radius: var(--x-radius-sm);
+  background: var(--surface-sunken);
+  color: var(--ink-body);
+}
+
+/* Empty/placeholder card (Reports): the 24px pad lives in CSS, not inline. */
+.sa-theme .itx-scope .itx-empty-card {
+  padding: 24px;
+}
+
+/* Planner month marks: a 6px mark at 45% fill needs an edge to stay legible on
+   the canvas. The hairline is drawn inside the mark so the grid pitch holds. */
+.sa-theme .itx-scope .itx-planner-dot {
+  outline: 1px solid var(--line-strong);
+  outline-offset: -1px;
+}
+
+/* Below sm: compact two-line rows. Page contract:
+   td[data-mobile="title|role|meta|action"]; no printed field labels. */
+@media (max-width: 639px) {
+  .sa-theme .itx-scope .itx-table thead {
+    display: none;
+  }
+  .sa-theme .itx-scope .itx-table,
+  .sa-theme .itx-scope .itx-table tbody,
+  .sa-theme .itx-scope .itx-table :is(th, td) {
+    display: block;
+    width: auto;
+  }
+  .sa-theme .itx-scope .itx-table td[data-label]::before {
+    content: none;
+  }
+  .sa-theme .itx-scope .itx-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-subtle);
+  }
+  /* Zero-height full-width item = line break after title+role. */
+  .sa-theme .itx-scope .itx-table tr::before {
+    content: "";
+    flex-basis: 100%;
+    height: 0;
+    order: 2;
+  }
+  .sa-theme .itx-scope .itx-table :is(th, td) {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="title"] {
+    order: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--sa-text-primary);
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="role"] {
+    order: 1;
+    flex: 0 0 auto;
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="meta"] {
+    order: 3;
+    /* Equal-basis sharing keeps every meta on the single meta line (wrap happens
+       before shrink with `auto` bases, which pushed long emails to a third line).
+       The first meta gets the extra share because it carries the widest pill. */
+    flex: 1.25 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--sa-text-muted);
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="meta"] ~ td[data-mobile="meta"] {
+    flex: 1 1 0;
+  }
+  /* Phone rows may never grow past two lines: ellipsize the nested name/action blocks. */
+  .sa-theme .itx-scope .itx-table td[data-mobile="title"] p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="meta"] > div {
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  /* Fieldless cells (IP address) leave the phone layout entirely. */
+  .sa-theme .itx-scope .itx-table td[data-mobile="hidden"] {
+    display: none;
+  }
+  .sa-theme .itx-scope .itx-table td[data-mobile="action"] {
+    /* Live 390 DOM: order 4 wrapped 2px over the meta line and made a 3rd line.
+       Pinning the action to the title line keeps every row at two lines. */
+    order: 1;
+    margin-left: auto;
+  }
+  .sa-theme .itx-scope .itx-table td:not([data-mobile]) {
+    order: 5;
+    flex: 0 0 100%;
+  }
+}
+
+/* ── Shell: 60px bar, canvas ground, token accent marker ───────────── */
+.sa-theme .itx-shell > header {
+  height: 60px;
+  background: var(--bg-canvas);
+  border-bottom: 0;
+}
+.sa-theme .itx-shell > div > aside {
+  background: var(--bg-canvas);
+  border-right: 0;
+}
+.sa-theme .itx-shell > div > aside > div:first-child {
+  border-bottom: 0;
+}
+.sa-theme .itx-shell > div > aside > div:last-child {
+  border-top: 0;
+}
+
+/* Search trigger: 44px, quiet ground, one label + the kbd chip. */
+.sa-theme .itx-scope .itx-search-trigger {
+  height: 44px;
+  padding-block: 0;
+  border: 1px solid transparent;
+  border-radius: var(--x-radius-control);
+}
+.sa-theme .itx-scope .itx-search-trigger:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope .itx-search-trigger:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-scope .itx-kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--x-radius-sm);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+
+/* The wordmark, unread count and initials keep the 500 tier in scope. */
+.sa-theme .itx-scope .sa-wordmark,
+.sa-theme .itx-scope .itx-badge-count {
+  font-weight: 500;
+}
+
+/* The wordmark asset is untouched; only the diamond ornament takes accent-soft. */
+.sa-theme .itx-scope > header .sa-wordmark::after {
+  border-color: var(--accent-soft);
+}
+/* Icons: 20px, 1.5 stroke, muted until active. One stroke weight in scope:
+   icons that rely on the lucide default would otherwise render at 2px.
+   Size stays at the call site (small icons paired with 11-12px text). */
+.sa-theme .itx-scope .itx-bell svg {
+  color: var(--ink-muted);
+  stroke-width: 1.5;
+}
+.sa-theme .itx-scope .itx-bell:not(:disabled):not([aria-disabled="true"]):hover svg {
+  color: var(--ink-primary);
+}
+.sa-theme .itx-scope svg.lucide {
+  stroke-width: 1.5;
+}
+
+/* Nav rows: 40px, 20/1.5 icons, accent bar flush-left, ink-primary 500 when active. */
+.sa-theme .itx-shell nav a {
+  min-height: 40px;
+  padding-block: 10px;
+  /* Intentional square edge: the row sits flush under the 2px accent bar. */
+  border-radius: 0;
+}
+/* Hover is a real surface: the shell sits on --bg-canvas, so the shared
+   `hover:bg-ps-bg` utility painted canvas on canvas and read as nothing.
+   Pressed sinks one more step; the current row keeps the accent bar and never
+   repaints (it is the anchor of the rail). */
+.sa-theme .itx-shell nav a:hover:not([aria-current="page"]):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-shell nav a:active:not([aria-current="page"]):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-shell nav a svg {
+  stroke-width: 1.5;
+}
+.sa-theme .itx-shell nav a[aria-current="page"] {
+  background: transparent;
+  color: var(--ink-primary);
+  font-weight: 500;
+}
+.sa-theme .itx-shell nav a[aria-current="page"]::before {
+  background: var(--accent);
+}
+@media (max-width: 1023px) {
+  /* The drawer rows stay 44px touch targets on phones/tablets. */
+  .sa-theme .itx-shell nav a {
+    min-height: 44px;
+  }
+}
+
+/* Profile block: sunken ground, radius 8, pinned to the bottom by the aside. */
+.sa-theme .itx-scope .itx-profile {
+  background: var(--surface-sunken);
+  border-radius: var(--x-radius-menu);
+}
+/* Avatar coin: a 36px sunken disc, bare initials. The accent and the 2px
+   surface border belong to the Atelier avatar only. */
+.sa-theme .itx-scope .itx-avatar {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--x-radius-chip);
+  background: var(--surface-sunken);
+  color: var(--ink-avatar);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+}
+.sa-theme .itx-scope .itx-profile-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-primary);
+}
+.sa-theme .itx-scope .itx-profile-role {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+/* ── Floating surfaces (menus, modal, search) ──────────────────────── */
+.sa-theme .itx-scope .itx-menu,
+.sa-theme .itx-scope .itx-search-panel {
+  border: 0;
+  border-radius: var(--x-radius-card);
+  background: var(--surface);
+  box-shadow: var(--x-shadow-float);
+}
+.sa-theme .itx-modal {
+  border: 0;
+  border-radius: var(--x-radius-card);
+  background: var(--surface);
+  box-shadow: var(--x-shadow-float);
+}
+.sa-theme .itx-modal-backdrop,
+.sa-theme .itx-scope .itx-search-backdrop,
+.sa-theme .itx-scope .itx-backdrop {
+  background: var(--x-scrim);
+}
+.sa-theme .itx-scope .itx-modal-title {
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-primary);
+}
+.sa-theme .itx-scope .itx-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.sa-theme .itx-scope .itx-modal-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-subtle);
+}
+/* Borderless 44×44 close control (WCAG 2.5.8 target size). */
+.sa-theme .itx-scope .itx-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--x-radius-control);
+  color: var(--ink-muted);
+}
+.sa-theme .itx-scope .itx-modal-close:hover:not(:disabled):not([aria-disabled="true"]) {
+  color: var(--ink-primary);
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope .itx-modal-close:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}
+
+/* Notification popover: shared component without its own hook. The bell wrapper
+   is the header's only `.relative`; its last child is the panel (the mobile
+   backdrop precedes it), so the overlay keeps its dark scrim. */
+.sa-theme .itx-scope > header div.relative > div:last-child {
+  border: 0;
+  border-radius: var(--x-radius-card);
+  background: var(--surface);
+  box-shadow: var(--x-shadow-float);
+}
+
+/* Dark elevation is tone steps and `--x-shadow-float` is `none`, so a floating
+   surface over an equal-tone ground has no edge. One hairline ring restores it
+   for every float; the select menu pins its own at --line-default. */
+html.dark.sa-theme .itx-scope .itx-menu,
+html.dark.sa-theme .itx-scope .itx-search-panel,
+html.dark.sa-theme .itx-modal,
+html.dark.sa-theme .itx-toast,
+html.dark.sa-theme .itx-scope > header div.relative > div:last-child {
+  box-shadow: 0 0 0 1px var(--line-subtle);
+}
+
+/* ── Toast (portaled outside the shell) ────────────────────────────── */
+.sa-theme .itx-toast {
+  border: 0;
+  border-radius: var(--x-radius-control);
+  background: var(--surface);
+  color: var(--ink-body);
+  box-shadow: var(--x-shadow-float);
+}
+/* Status is carried by ink, never by a flat grey shell: the status icon and
+   the title take the semantic tone, the close control stays muted.
+   Info has no colour of its own: the text keeps body ink, the icon carries
+   the accent (gold text on surface read as a second warning tone). */
+.sa-theme .itx-toast[data-tone="error"] { --itx-toast-ink: var(--danger); }
+.sa-theme .itx-toast[data-tone="success"] { --itx-toast-ink: var(--success); }
+.sa-theme .itx-toast[data-tone="info"] { --itx-toast-ink: var(--ink-strong); }
+.sa-theme .itx-toast > svg,
+.sa-theme .itx-toast > p {
+  color: var(--itx-toast-ink, var(--ink-strong));
+}
+.sa-theme .itx-toast[data-tone="info"] > svg {
+  color: var(--accent);
+}
+.sa-theme .itx-toast button svg {
+  color: var(--ink-muted);
+}
+
+/* ── Segmented control (shared: import source, notification filters) ─ */
+.sa-theme .itx-scope .itx-segment {
+  overflow: hidden;
+  border-radius: var(--x-radius-control);
+}
+.sa-theme .itx-scope .itx-segment > * + * {
+  border-left: 1px solid var(--line-default);
+}
+
+/* Notification filters: a sunken track with a raised selected pill. The generic
+   `aria-pressed` ring is replaced here (no outline, no gold); the 2px focus ring
+   still owns keyboard focus. */
+.sa-theme .itx-scope .itx-filter-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--x-radius-control);
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-scope .itx-filter-cell {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--x-radius-row);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sa-theme .itx-scope .itx-filter-cell:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+  color: var(--ink-primary);
+}
+.sa-theme .itx-scope .itx-filter-cell:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+  color: var(--ink-primary);
+}
+/* Same weight as the generic selected rule and declared after it. The surface
+   stays on while focused; only the ring is suppressed outside focus-visible. */
+.sa-theme .itx-scope button.itx-filter-cell[aria-pressed="true"]:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface);
+  color: var(--ink-primary);
+  font-weight: 500;
+}
+.sa-theme .itx-scope .itx-filter-track button.itx-filter-cell[aria-pressed="true"]:not(:focus-visible):not(:disabled) {
+  outline: none;
+}
+.sa-theme .itx-scope button.itx-filter-cell[aria-pressed="true"]:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+
+/* ── Select (shared ITX dropdown) ──────────────────────────────────── */
+/* Shape and type only: the page passes its field class for width/background so
+   the closed control matches the native fields around it. */
+.sa-theme .itx-scope .itx-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-default);
+  border-radius: var(--x-radius-control);
+  color: var(--ink-primary);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.sa-theme .itx-scope .itx-select-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-theme .itx-scope .itx-select-trigger:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--line-strong);
+}
+.sa-theme .itx-scope .itx-select-trigger .itx-select-placeholder {
+  color: var(--ink-muted);
+}
+.sa-theme .itx-scope .itx-select-chevron {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+}
+.sa-theme .itx-scope .itx-select-trigger:hover .itx-select-chevron {
+  color: var(--ink-primary);
+}
+
+/* Portaled to <body> with the scope class, so tokens resolve outside the shell.
+   z 110 sits above the z-100 modal overlay and notification popover. */
+.sa-theme .itx-scope .itx-select-menu,
+.sa-theme .itx-scope.itx-select-menu {
+  position: fixed;
+  z-index: 110;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--x-radius-control);
+  background: var(--surface);
+  color: var(--ink-body);
+  box-shadow: var(--x-shadow-float);
+}
+/* Dark elevation is tone steps and the float token is `none`: a hairline ring
+   keeps the menu readable when it floats over an equal-tone surface. */
+html.dark .sa-theme .itx-scope .itx-select-menu,
+html.dark .sa-theme .itx-scope.itx-select-menu,
+html.dark.sa-theme .itx-scope.itx-select-menu {
+  box-shadow: 0 0 0 1px var(--line-default);
+}
+.sa-theme .itx-scope .itx-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: var(--x-radius-row);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.sa-theme .itx-scope .itx-select-option > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sa-theme .itx-scope .itx-select-option:hover,
+.sa-theme .itx-scope .itx-select-option[data-active="true"] {
+  background: var(--surface-hover);
+}
+.sa-theme .itx-scope .itx-select-option[aria-selected="true"] {
+  background: var(--surface-hover);
+  color: var(--ink-primary);
+  font-weight: 500;
+}
+.sa-theme .itx-scope .itx-select-option:active {
+  background: var(--surface-sunken);
+}
+.sa-theme .itx-scope .itx-select-option[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sa-theme .itx-scope .itx-select-option[aria-disabled="true"]:hover,
+.sa-theme .itx-scope .itx-select-option[aria-disabled="true"]:active {
+  background: transparent;
+}
+.sa-theme .itx-scope .itx-select-check {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--accent);
+}
+
+/* Forced colors: the theme's gold outline is remapped, tabs get an explicit one. */
+@media (forced-colors: active) {
+  .sa-theme .itx-scope :is(.itx-tab, .itx-card):focus-visible {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}

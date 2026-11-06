@@ -15,6 +15,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
 import {
   asFailure,
+  assertRateLimit,
   callProvider,
   corsHeaders,
   json,
@@ -67,6 +68,7 @@ async function buildState(service: Service, config: AiConfig) {
     visionModel: config.visionModel,
     zdr: config.zdr,
     hasKey: config.hasKey,
+    keyProvider: config.keyProvider,
     monthlyTokenCap: config.monthlyTokenCap,
     timeoutSeconds: config.timeoutSeconds,
     maxOutputTokens: config.maxOutputTokens,
@@ -166,11 +168,13 @@ Deno.serve(async (req: Request) => {
       if (enabledKey) updates.enabled = toBool(patch[enabledKey])
 
       const presetKey = first('providerPreset', 'provider_preset')
+      let providerPreset: string | null = null
       if (presetKey) {
         const value = typeof patch[presetKey] === 'string' ? patch[presetKey].trim() : ''
         if (!PRESETS.includes(value)) {
           return invalid('Provider preset must be commandcode, opencode or custom')
         }
+        providerPreset = value
         updates.provider_preset = value
       }
 
@@ -231,14 +235,21 @@ Deno.serve(async (req: Request) => {
       }
 
       // undefined/absent = keep, '' = keep, '__CLEAR__' = remove, else replace.
+      // The key is provider-scoped: a replaced key binds to this patch's preset,
+      // clearing it drops the binding, keeping it leaves both untouched.
       const keyName = first('apiKey', 'api_key')
       if (keyName) {
         const raw = patch[keyName]
         if (raw !== undefined && raw !== '') {
           if (typeof raw !== 'string') return invalid('API key must be a string')
           const value = raw.trim()
-          if (value === '__CLEAR__') updates.api_key = null
-          else if (value) updates.api_key = value
+          if (value === '__CLEAR__') {
+            updates.api_key = null
+            updates.key_provider = null
+          } else if (value) {
+            updates.api_key = value
+            updates.key_provider = providerPreset ?? 'custom'
+          }
         }
       }
 
@@ -298,18 +309,28 @@ Deno.serve(async (req: Request) => {
       if (!config.baseUrl || !config.model || !config.apiKey) {
         return jsonError('CONFIG_MISSING', 'Save a base URL, model and API key first', 409, req)
       }
+      // The probe costs a provider call: it counts toward the same hourly limit.
+      await assertRateLimit(service, caller.user.id, config.rateLimitPerHour)
 
       const testedAt = new Date().toISOString()
       try {
-        const result = await callProvider(config, {
-          messages: [{ role: 'user', content: 'Reply with the single word: ok' }],
-          maxTokens: 5,
-          temperature: 0,
-        })
+        let result
+        try {
+          result = await callProvider(config, {
+            messages: [{ role: 'user', content: 'Reply with the single word: ok' }],
+            maxTokens: 5,
+            temperature: 0,
+          })
+        } catch (error) {
+          // A failed probe still costs the caller its hourly slot.
+          await recordUsage(service, { kind: 'test', userId: caller.user.id, model: config.model, status: 'error' })
+          throw error
+        }
 
         await service.from('ai_config').update({ last_test_ok: true, last_test_at: testedAt }).eq('id', 1)
         await recordUsage(service, {
           kind: 'test',
+          userId: caller.user.id,
           model: result.model,
           usage: result.usage,
           ms: result.latencyMs,

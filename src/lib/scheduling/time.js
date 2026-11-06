@@ -11,8 +11,13 @@ export function getCurrentDayOfWeek() {
   return dayOfWeekFor();
 }
 
-// Day derived from the DB id by design; pinned by tests, do not change to day_of_week.
-export const getSessionDay = (session) => session.id % 5;
+// Undated sessions: the stored day_of_week wins (numeric strings tolerated), and only a
+// missing or weekend value falls back to the legacy id % 5 bucket.
+export const getSessionDay = (session) => {
+  const day = session.dayOfWeek;
+  const n = day === null || day === undefined || day === '' ? NaN : Number(day);
+  return Number.isInteger(n) && n >= 0 && n <= 4 ? n : session.id % 5;
+};
 
 export function timeToHour(time) {
   if (typeof time !== 'string') return 8;

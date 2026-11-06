@@ -67,37 +67,34 @@ const TeacherDashboard = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
         <div className="flex items-center gap-2">
-          <button onClick={() => changeDay(-1)} className="sa-btn">
+          <button onClick={() => changeDay(-1)} className="sa-btn" aria-label="Previous day">
             <ChevronLeft size={16} strokeWidth={1.5} />
           </button>
           <div className="text-center min-w-[130px] sm:min-w-[140px]">
             <h1 className="sa-title">{dayNames[selectedDay - 1]}</h1>
             <p className="sa-sub">Daily Schedule</p>
           </div>
-          <button onClick={() => changeDay(1)} className="sa-btn">
+          <button onClick={() => changeDay(1)} className="sa-btn" aria-label="Next day">
             <ChevronRight size={16} strokeWidth={1.5} />
           </button>
         </div>
 
-        <div className="flex w-fit max-w-full py-1 divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar">
+        <div className="flex w-fit max-w-full items-center overflow-x-auto hide-scrollbar">
           {dayNames.map((day, idx) => {
             const active = selectedDay === idx + 1;
             const current = isToday(idx);
             return (
               <button
                 key={day}
+                type="button"
                 onClick={() => setSelectedDay(idx + 1)}
-                className={clsx(
-                  "px-3 sm:px-3.5 py-2 text-xs shrink-0",
-                  active
-                    ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
-                    : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]",
-                  current && !active && "underline underline-offset-4"
-                )}
+                aria-pressed={active}
+                className={clsx('itx-tab shrink-0', active && 'is-active')}
               >
                 {day.slice(0, 1)}
+                {current && <span className="sa-dot" aria-hidden="true" />}
               </button>
             );
           })}
@@ -141,7 +138,7 @@ const TeacherDashboard = () => {
             <h2 className="sa-panel-title">Classroom Sessions</h2>
           </div>
 
-          <div className="sa-list">
+          <div className="mt-1 space-y-1">
             {todaySessions.length > 0 ? todaySessions.map((session, i) => (
               <motion.div 
                 key={session.id}
@@ -184,7 +181,7 @@ const TeacherDashboard = () => {
                             <span 
                               key={idx} 
                               title={student.name}
-                              className="w-6 h-6 border border-[var(--sa-line-default)] flex items-center justify-center text-[11px] sa-t-muted"
+                              className="sa-badge"
                             >
                               {student.name.charAt(0)}
                             </span>
@@ -220,9 +217,9 @@ const TeacherDashboard = () => {
               <h2 className="sa-panel-title">Academic Programs</h2>
             </div>
             
-            <div className="sa-list">
+            <div className="mt-1 space-y-1">
               {myAssignments.length > 0 ? myAssignments.map(a => (
-                <div key={a.id} className="sa-row">
+                <div key={a.id} className="sa-row h-11">
                   <span className="sa-marker" />
                   <p className="sa-row-title flex-1 min-w-0 truncate">{a.programs?.name}</p>
                 </div>
@@ -248,7 +245,6 @@ const TeacherDashboard = () => {
           title="Attendance Record"
           description="Session Overview & Student Status"
           onClose={() => setShowAttendanceModal(null)}
-          className="bg-[var(--sa-surface-warm)]"
         />
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 md:px-6">
@@ -260,11 +256,11 @@ const TeacherDashboard = () => {
               value={attendanceNotes}
               onChange={(e) => setAttendanceNotes(e.target.value)}
               placeholder="e.g. Traffic delay, family emergency..."
-              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+              className="w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--accent)]"
             />
           </div>
 
-          <div className="max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar sa-list">
+          <div className="max-h-[40vh] space-y-4 overflow-y-auto pr-2 custom-scrollbar">
             {(() => {
               const session = sessions.find(s => s.id === showAttendanceModal);
               return session?.studentIds?.map(sid => {
@@ -273,9 +269,9 @@ const TeacherDashboard = () => {
                 const marked = attendanceMarks[sid];
 
                 return (
-                  <div key={sid} className="flex flex-col gap-3 py-3">
+                  <div key={sid} className="flex flex-col gap-3 py-1">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 border border-[var(--sa-line-default)] flex items-center justify-center text-sm sa-t-warm">
+                      <div className="itx-avatar flex items-center justify-center">
                         {student.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -288,22 +284,22 @@ const TeacherDashboard = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="itx-filter-track" role="group" aria-label={`Attendance for ${student.name}`}>
                       {[
-                        { id: 'present', icon: Check, label: 'P' },
-                        { id: 'absent', icon: X, label: 'A' },
-                        { id: 'late', icon: Clock, label: 'L' },
-                        { id: 'excused', icon: FileText, label: 'E' }
+                        { id: 'present', name: 'Present', icon: Check },
+                        { id: 'absent', name: 'Absent', icon: X },
+                        { id: 'late', name: 'Late', icon: Clock },
+                        { id: 'excused', name: 'Excused', icon: FileText }
                       ].map(status => (
                         <button
                           key={status.id}
+                          type="button"
                           onClick={() => handleMarkAttendance(showAttendanceModal, sid, status.id)}
-                          className={clsx(
-                            "sa-btn justify-center",
-                            marked === status.id && "sa-btn--primary"
-                          )}
+                          aria-pressed={marked === status.id}
+                          aria-label={status.name}
+                          className="itx-filter-cell flex-1 gap-1.5 px-2"
                         >
-                          <status.icon size={14} strokeWidth={1.5} />
+                          <status.icon size={14} strokeWidth={1.5} aria-hidden="true" />
                           <span>{status.id.slice(0, 1).toUpperCase()}</span>
                         </button>
                       ))}
@@ -316,7 +312,7 @@ const TeacherDashboard = () => {
 
           <button
             onClick={() => setShowAttendanceModal(null)}
-            className="sa-btn sa-btn--primary sa-btn--block"
+            className="sa-btn sa-btn--primary w-full justify-center"
           >
             Done
           </button>

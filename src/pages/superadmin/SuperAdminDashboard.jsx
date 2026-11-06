@@ -27,13 +27,26 @@ const shortDate = (value) => value
   ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   : '—';
 
+// The activity card matches the governance table's height at ≥sm: five rows fill it.
+const useMinWidth = (query) => {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [query]);
+  return matches;
+};
+
 const count = (value) => Number(value ?? 0).toLocaleString('en-US');
 
 // ── Local KPI card ─────────────────────────────────────────────────────
 // Mirrors the shared StatCard; separate only for the 32px lead value.
 const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lead = false }) => (
-  <div className="sa-panel sa-kpi">
-    <div className="sa-kpi-head">
+  <div className="sa-panel">
+    {/* Head rule comes from .sa-kpi-head in the base theme; this page is ITX, so the layout is inlined without the line. */}
+    <div className="flex items-center gap-2 pb-2.5">
       <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
       <p className="sa-micro">{title}</p>
     </div>
@@ -49,6 +62,7 @@ const KpiCard = ({ title, value, subtext, badge, badgeTone = '', icon: Icon, lea
 const SuperAdminDashboard = () => {
   const { staff, fetchRecentAudit } = useGlobalState();
   const navigate = useNavigate();
+  const wide = useMinWidth('(min-width: 640px)');
 
   const [audit, setAudit] = useState({ rows: [], loading: true });
   const [db, setDb] = useState({ status: 'checking', latency: null });
@@ -164,9 +178,9 @@ const SuperAdminDashboard = () => {
     const total = dayTotal(d);
     if (!total) return [];
     const segments = [
-      ['critical', d.critical, 'var(--sa-danger)'],
-      ['warn', d.warn, 'var(--sa-gold)'],
-      ['info', d.info, 'var(--sa-text-muted)'],
+      ['critical', d.critical, 'var(--chart-1)'],
+      ['warn', d.warn, 'var(--chart-2)'],
+      ['info', d.info, 'var(--chart-3)'],
     ].filter(([, n]) => n > 0);
     const barHeight = Math.max((total / dayPeak) * 98 - (segments.length - 1), 1);
     let y = 100;
@@ -197,27 +211,69 @@ const SuperAdminDashboard = () => {
         `${count(ai.config.usage?.tokensThisMonth)} / ${count(ai.config.monthlyTokenCap)} tokens`,
       ].join(' · ');
 
+  const kpis = [
+    {
+      title: 'Database Engine',
+      value: dbLabel,
+      icon: Database,
+      subtext: dbSub,
+      badge: 'PostgREST',
+    },
+    {
+      title: 'Identity & Access',
+      value: totalAccounts,
+      icon: Users,
+      subtext: (
+        <>
+          <span className="whitespace-nowrap">{activeAccounts} active</span>
+          {' '}
+          <span className="whitespace-nowrap">· {suspendedAccounts} suspended</span>
+        </>
+      ),
+      badge: `${tempAccounts} temp password`,
+      badgeTone: tempAccounts > 0 ? 'warn' : 'positive',
+      lead: true,
+    },
+    {
+      title: 'Edge Functions',
+      value: EDGE_FUNCTIONS.length,
+      icon: Zap,
+      subtext: <>Configured in <span className="whitespace-nowrap">this project</span></>,
+      badge: 'Static manifest',
+    },
+    {
+      title: 'Security State',
+      value: criticalCount,
+      icon: ShieldAlert,
+      subtext: 'Critical events in recent audit',
+      badge: criticalCount > 0 ? 'Review' : 'Clear',
+      badgeTone: criticalCount > 0 ? 'warn' : 'positive',
+    },
+  ];
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
 
       {/* ── Page Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-2">
         <div>
           <h1 className="sa-title">Platform Overview</h1>
           <p className="sa-sub">Infrastructure health, identity, and privilege telemetry.</p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
+            type="button"
             onClick={refresh}
-            className="sa-btn min-h-11 sm:min-h-0"
+            className="sa-btn"
             aria-label="Refresh telemetry"
           >
             <RefreshCw size={14} strokeWidth={1.5} />
             <span>Refresh</span>
           </button>
           <button
+            type="button"
             onClick={() => navigate('/admin/users', { state: { openCreate: true } })}
-            className="sa-btn sa-btn--primary min-h-11 sm:min-h-0"
+            className="sa-btn sa-btn--primary"
           >
             <UserPlus size={16} strokeWidth={1.5} />
             <span>Create User</span>
@@ -226,44 +282,27 @@ const SuperAdminDashboard = () => {
       </div>
 
       {/* ── Zone A: telemetry ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          title="Database Engine"
-          value={dbLabel}
-          icon={Database}
-          subtext={dbSub}
-          badge="PostgREST"
-        />
-        <KpiCard
-          title="Identity & Access"
-          value={totalAccounts}
-          icon={Users}
-          subtext={(
-            <>
-              <span className="whitespace-nowrap">{activeAccounts} active</span>
-              {' '}
-              <span className="whitespace-nowrap">· {suspendedAccounts} suspended</span>
-            </>
-          )}
-          badge={`${tempAccounts} temp password`}
-          badgeTone={tempAccounts > 0 ? 'warn' : 'positive'}
-          lead
-        />
-        <KpiCard
-          title="Edge Functions"
-          value={EDGE_FUNCTIONS.length}
-          icon={Zap}
-          subtext={<>Configured in <span className="whitespace-nowrap">this project</span></>}
-          badge="Static manifest"
-        />
-        <KpiCard
-          title="Security State"
-          value={criticalCount}
-          icon={ShieldAlert}
-          subtext="Critical events in recent audit"
-          badge={criticalCount > 0 ? 'Review' : 'Clear'}
-          badgeTone={criticalCount > 0 ? 'warn' : 'positive'}
-        />
+      {/* Phone: divided label/value rows keep the first data section near the
+          fold; the card grid starts at sm. Same four readings, same copy. */}
+      <div className="sm:hidden sa-panel">
+        {kpis.map(item => (
+          <div key={item.title} className="flex items-center justify-between gap-4 py-3">
+            <div className="min-w-0">
+              <p className="sa-micro">{item.title}</p>
+              <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{item.subtext}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[17px] leading-tight tabular-nums text-[var(--ink-primary)]">{item.value}</p>
+              {item.badge && (
+                <span className={`${item.badgeTone ? `sa-badge sa-badge--${item.badgeTone}` : 'sa-badge'} mt-0.5`}>{item.badge}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden sm:grid sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+        {kpis.map(item => <KpiCard key={item.title} {...item} />)}
       </div>
 
       {/* ── Zone B + C: governance and recent activity ───────────────── */}
@@ -279,49 +318,50 @@ const SuperAdminDashboard = () => {
               <p className="sa-panel-sub">Accounts by access level</p>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/admin/audit')}
-              className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
+              className="sa-link"
             >
               Inspect audit <ChevronRight size={13} strokeWidth={1.5} />
             </button>
           </div>
 
           {/* Phone: two-line rows, all five fields kept (§12). */}
-          <div className="sm:hidden flex-1">
+          <div className="sm:hidden flex-1 space-y-1">
             {roleRows.map(row => (
-              <div key={row.role} className="border-b border-[var(--sa-line-row)] py-2.5 last:border-0">
+              <div key={row.role} className="py-2.5">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="text-[13px] text-[var(--sa-text-primary)]">{row.label}</p>
-                  <p className="text-[11px] text-[var(--sa-text-muted)]">
+                  <p className="text-xs text-[var(--sa-text-muted)]">
                     Last provisioned <span className="tabular-nums text-[var(--sa-text-secondary)]">{row.last}</span>
                   </p>
                 </div>
-                <p className="mt-0.5 text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                <p className="mt-0.5 text-xs tabular-nums text-[var(--sa-text-muted)]">
                   {row.active} active · {row.suspended} suspended · {row.temp} temp
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="hidden sm:block flex-1 overflow-x-auto">
+          <div className="hidden sm:flex sm:flex-1 sm:flex-col overflow-x-auto">
             <table className="w-full h-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-[var(--sa-line-hairline)]">
-                  <th scope="col" className="py-2.5 pr-3 text-[11px] font-normal text-[var(--sa-text-muted)]">Role</th>
-                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Active</th>
-                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Suspended</th>
-                  <th scope="col" className="py-2.5 px-3 text-right text-[11px] font-normal text-[var(--sa-text-muted)]">Temp password</th>
-                  <th scope="col" className="py-2.5 pl-3 text-[11px] font-normal text-[var(--sa-text-muted)]">Last provisioned</th>
+                <tr className="border-b border-[var(--sa-line-row)]">
+                  <th scope="col" className="py-2.5 pr-3">Role</th>
+                  <th scope="col" className="py-2.5 px-3 text-right">Active</th>
+                  <th scope="col" className="py-2.5 px-3 text-right">Suspended</th>
+                  <th scope="col" className="py-2.5 px-3 text-right">Temp password</th>
+                  <th scope="col" className="py-2.5 pl-3">Last provisioned</th>
                 </tr>
               </thead>
               <tbody>
                 {roleRows.map(row => (
                   <tr key={row.role} className="border-b border-[var(--sa-line-row)] last:border-0">
-                    <td className="py-3 pr-3 text-[13px] text-[var(--sa-text-primary)]">{row.label}</td>
-                    <td className="px-3 py-3 text-right text-[13px] tabular-nums text-[var(--sa-text-secondary)]">{row.active}</td>
-                    <td className="px-3 py-3 text-right text-[13px] tabular-nums text-[var(--sa-text-secondary)]">{row.suspended}</td>
-                    <td className={`px-3 py-3 text-right text-[13px] tabular-nums ${row.temp > 0 ? 'sa-t-warm' : 'text-[var(--sa-text-secondary)]'}`}>{row.temp}</td>
-                    <td className="pl-3 py-3 text-[13px] tabular-nums whitespace-nowrap text-[var(--sa-text-secondary)]">{row.last}</td>
+                    <td className="py-3 pr-3 text-[var(--sa-text-primary)]">{row.label}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-[var(--sa-text-secondary)]">{row.active}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-[var(--sa-text-secondary)]">{row.suspended}</td>
+                    <td className={`px-3 py-3 text-right tabular-nums ${row.temp > 0 ? 'sa-t-warm' : 'text-[var(--sa-text-secondary)]'}`}>{row.temp}</td>
+                    <td className="pl-3 py-3 tabular-nums whitespace-nowrap text-[var(--sa-text-secondary)]">{row.last}</td>
                   </tr>
                 ))}
               </tbody>
@@ -337,8 +377,9 @@ const SuperAdminDashboard = () => {
               <p className="sa-panel-sub">Privileged actions</p>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/admin/audit')}
-              className="sa-link min-h-11 sm:min-h-0 sm:py-1.5 sm:-my-1.5"
+              className="sa-link"
             >
               Full trail <ChevronRight size={13} strokeWidth={1.5} />
             </button>
@@ -355,8 +396,8 @@ const SuperAdminDashboard = () => {
               <p className="sa-empty-sub">Actions like user creation and role changes will appear here.</p>
             </div>
           ) : (
-            <div className="sa-list flex-1 flex flex-col">
-              {audit.rows.slice(0, 6).map(log => {
+            <div className="space-y-1 flex-1 flex flex-col">
+              {audit.rows.slice(0, wide ? 5 : 6).map(log => {
                 const { action, actor, target } = auditLine(log, staff);
                 const critical = getAuditSeverity(log.action) === 'critical';
                 return (
@@ -371,7 +412,7 @@ const SuperAdminDashboard = () => {
                         {target && <span className="sa-row-target"> → {target}</span>}
                       </p>
                       <p className="sa-row-meta">
-                        {actor} · <span className="sa-mono tabular-nums">{formatAuditStamp(log.created_at)}</span>
+                        {actor} · <span className="tabular-nums text-[var(--ink-muted)]">{formatAuditStamp(log.created_at)}</span>
                       </p>
                     </div>
                   </div>
@@ -408,7 +449,7 @@ const SuperAdminDashboard = () => {
               <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1">
                 {auditDays.map((d, i) => (
                   <div key={d.date.toDateString()} className="flex flex-col items-center gap-1">
-                    <span className="h-4 text-[11px] tabular-nums text-[var(--sa-text-secondary)]">
+                    <span className="h-4 sa-micro tabular-nums">
                       {dayTotal(d)}
                     </span>
                     <svg
@@ -420,7 +461,7 @@ const SuperAdminDashboard = () => {
                     >
                       {dayStack(d)}
                     </svg>
-                    <span className={`h-4 text-[11px] tabular-nums whitespace-nowrap text-[var(--sa-text-muted)]${i % 4 === 3 ? ' hidden sm:block' : ''}`}>
+                    <span className={`h-4 sa-micro tabular-nums whitespace-nowrap${i % 4 === 3 ? ' hidden sm:block' : ''}`}>
                       {i % 2 === 1 ? dayShort(d) : ''}
                     </span>
                   </div>
@@ -428,12 +469,12 @@ const SuperAdminDashboard = () => {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
                 {[
-                  ['Critical', 'var(--sa-danger)'],
-                  ['Warning', 'var(--sa-gold)'],
-                  ['Information', 'var(--sa-text-muted)'],
-                ].map(([label, fill]) => (
-                  <span key={label} className="flex items-center gap-1.5 text-[11px] text-[var(--sa-text-muted)]">
-                    <span className="h-2 w-2 shrink-0" style={{ background: fill }} aria-hidden="true" />
+                  ['Critical', 'bg-[var(--chart-1)]'],
+                  ['Warning', 'bg-[var(--chart-2)]'],
+                  ['Information', 'bg-[var(--chart-3)]'],
+                ].map(([label, tone]) => (
+                  <span key={label} className="sa-micro flex items-center gap-1.5">
+                    <span className={`h-2 w-2 shrink-0 ${tone}`} aria-hidden="true" />
                     {label}
                   </span>
                 ))}
@@ -461,7 +502,7 @@ const SuperAdminDashboard = () => {
               <p className="sa-empty-title">No privileged actions recorded</p>
             </div>
           ) : (
-            <div className="sa-list flex-1 flex flex-col">
+            <div className="space-y-1 flex-1 flex flex-col">
               {topActors.map(([actor, count]) => (
                 <div key={actor} className="sa-row flex-1 items-center">
                   <p className="sa-row-title flex-1 min-w-0 truncate">{actor}</p>
@@ -486,9 +527,9 @@ const SuperAdminDashboard = () => {
           {monthRows.map(m => (
             <div key={m.key} className="sa-bar-row">
               <span className="sa-bar-label">{m.label}</span>
-              <div className="sa-bar">
+              <div className="h-[5px] flex-1 bg-[var(--chart-grid)]">
                 <div
-                  className="sa-bar-fill"
+                  className="h-full bg-[var(--chart-1)]"
                   style={{ width: `${(m.count / monthPeak) * 100}%` }}
                 />
               </div>
@@ -500,8 +541,9 @@ const SuperAdminDashboard = () => {
 
       {/* Zone D moved to /admin/health; this row is the way in. */}
       <button
+        type="button"
         onClick={() => navigate('/admin/health')}
-        className="sa-row group w-full border-t border-[var(--sa-line-hairline)] px-4 text-left"
+        className="sa-row group w-full px-4 text-left"
       >
         <Activity size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 sa-t-muted" />
         <div className="flex-1 min-w-0">
@@ -517,8 +559,9 @@ const SuperAdminDashboard = () => {
       </button>
 
       <button
+        type="button"
         onClick={() => navigate('/admin/ai')}
-        className="sa-row group w-full border-t border-[var(--sa-line-hairline)] px-4 text-left"
+        className="sa-row group w-full px-4 text-left"
       >
         <Cpu size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 sa-t-muted" />
         <div className="flex-1 min-w-0">

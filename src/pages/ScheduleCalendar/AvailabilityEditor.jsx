@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
+import ItxSelect from '../../components/ItxSelect.jsx';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const fieldCls = 'w-full px-3 py-2.5 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]';
+const fieldCls = 'w-full px-3 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm tabular-nums text-[var(--sa-text-primary)]';
 const labelCls = 'sa-label';
 const hhmm = (t) => String(t).slice(0, 5);
 
@@ -47,9 +48,9 @@ export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
         {windows.length === 0 ? (
           <p className="sa-empty-sub">No availability windows yet — the scheduler cannot place this student until one exists.</p>
         ) : (
-          <ul className="sa-list">
+          <ul className="space-y-1">
             {windows.map(w => (
-              <li key={w.id} className="sa-row justify-between">
+              <li key={w.id} className="sa-row justify-between items-center">
                 <span className="text-sm tabular-nums text-[var(--sa-text-primary)]">
                   {DAYS[w.day_of_week] ?? w.day_of_week} · {hhmm(w.start_time)}–{hhmm(w.end_time)}
                 </span>
@@ -66,14 +67,17 @@ export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
           </ul>
         )}
 
-        <form onSubmit={add} className="space-y-3 border-t border-[var(--sa-line-hairline)] pt-4">
+        <form onSubmit={add} className="space-y-3 pt-4">
           <h3 className="sa-micro">Add window</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label htmlFor="avail-day" className={labelCls}>Day</label>
-              <select id="avail-day" value={dayOfWeek} onChange={e => setDayOfWeek(Number(e.target.value))} className={fieldCls}>
-                {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
-              </select>
+              <ItxSelect
+                id="avail-day"
+                value={dayOfWeek}
+                onChange={setDayOfWeek}
+                options={DAYS.map((d, i) => ({ value: i, label: d }))}
+              />
             </div>
             <div>
               <label htmlFor="avail-start" className={labelCls}>Start</label>
@@ -81,14 +85,23 @@ export const AvailabilityEditor = ({ studentId, studentName, onClose }) => {
             </div>
             <div>
               <label htmlFor="avail-end" className={labelCls}>End</label>
-              <input id="avail-end" type="time" required value={endTime} onChange={e => setEndTime(e.target.value)} className={fieldCls} />
+              <input
+                id="avail-end"
+                type="time"
+                required
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+                aria-invalid={invalid || undefined}
+                aria-describedby={invalid ? 'avail-error' : undefined}
+                className={`${fieldCls} aria-invalid:border-[var(--danger)]`}
+              />
             </div>
           </div>
-          {invalid && <p className="text-[11px] sa-t-danger">End time must be after start time.</p>}
+          {invalid && <p id="avail-error" role="alert" className="text-[11px] sa-t-danger">End time must be after start time.</p>}
           <button
             type="submit"
             disabled={saving || invalid}
-            className="sa-btn sa-btn--primary justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
+            className="sa-btn sa-btn--primary justify-center"
           >
             <Plus size={16} strokeWidth={1.5} /> {saving ? 'Adding…' : 'Add window'}
           </button>

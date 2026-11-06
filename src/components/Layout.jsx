@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarDays, CalendarRange, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, CalendarRange, Users, Search, Command, DoorOpen, LogOut, Menu, Settings as SettingsIcon, FileText, Bell, X, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles, FileBarChart } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlobalSearch from './GlobalSearch';
@@ -23,10 +23,14 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, appRole, logout, notifications } = useGlobalState();
   const navigate = useNavigate();
   const bellRef = useRef(null);
+  const profileTriggerRef = useRef(null);
+  const sidebarToggleRef = useRef(null);
+  const searchTriggerRef = useRef(null);
 
   // Auto-collapse sidebar on smaller screens and track isMobile
   useEffect(() => {
@@ -49,6 +53,18 @@ const Layout = () => {
     if (!isMobile || !isSidebarOpen) return undefined;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
+  }, [isMobile, isSidebarOpen]);
+
+  // Mobile drawer: Escape closes it and returns focus to the toggle.
+  useEffect(() => {
+    if (!isMobile || !isSidebarOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      setIsSidebarOpen(false);
+      sidebarToggleRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [isMobile, isSidebarOpen]);
 
   // Global Ctrl+K shortcut — must live in Layout so it always fires,
@@ -86,10 +102,13 @@ const Layout = () => {
   };
 
   const unreadCount = notifications?.filter(n => !n.is_read).length || 0;
+  const avatarClass = "itx-avatar w-9 h-9 flex items-center justify-center shrink-0";
+  const collapsedProfile = !isSidebarOpen;
 
-  const getNavStyle = (link, isActive) => {
-    if (!isActive) return 'text-ps-ink-2 hover:bg-ps-bg hover:text-ps-ink-1';
-    return 'bg-ps-primary text-white font-medium';
+  const getNavStyle = (isActive) => {
+    // ITX active = ink + weight only; the token accent bar is drawn in CSS.
+    if (isActive) return 'font-medium';
+    return 'text-ps-ink-2 hover:text-ps-ink-1';
   };
 
   const navLinks = [
@@ -103,6 +122,7 @@ const Layout = () => {
     ...(appRole === 'admin' || appRole === 'superadmin' ? [{ to: '/planner', icon: CalendarRange, label: 'Year Planner', section: appRole === 'superadmin' ? 'System' : 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/directory', icon: Users, label: 'Directory', section: 'Operations' }] : []),
     ...(appRole === 'admin' ? [{ to: '/rooms', icon: DoorOpen, label: 'Rooms', section: 'Operations' }] : []),
+    ...(appRole === 'admin' || appRole === 'superadmin' ? [{ to: '/admin/reports', icon: FileBarChart, label: 'Reports', section: appRole === 'superadmin' ? 'System' : 'Operations' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/users', icon: Users, label: 'Identity & Access', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/audit', icon: FileClock, label: 'Audit Trail', section: 'System' }] : []),
     ...(appRole === 'superadmin' ? [{ to: '/admin/config', icon: SlidersHorizontal, label: 'System Config', section: 'System' }] : []),
@@ -113,17 +133,19 @@ const Layout = () => {
   ];
 
   return (
-    <div className="sa-theme flex flex-col h-screen w-full bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors duration-300">
+    <div className="sa-theme flex flex-col h-screen w-full bg-ps-bg font-sans text-ps-ink-1 overflow-hidden transition-colors itx-scope itx-shell">
       
       {/* ── Top Header ────────────────────────────────────────────────── */}
-      <header className="h-16 flex-shrink-0 bg-ps-surface border-b border-ps-border flex items-center justify-between px-4 lg:px-6 z-40 shadow-sm transition-colors">
+      <header className="h-16 flex-shrink-0 bg-ps-surface border-b border-ps-border flex items-center justify-between px-4 lg:px-6 z-40 transition-colors">
         <div className="flex gap-2 sm:gap-6 items-center flex-1 min-w-0">
           {/* Toggle & Logo Group */}
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
+              ref={sidebarToggleRef}
+              type="button"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle sidebar"
-              className="p-2 rounded-lg hover:bg-ps-bg text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="p-2 text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               <Menu size={20} />
             </button>
@@ -142,13 +164,15 @@ const Layout = () => {
 
           {/* AI Search Bar */}
           <button
+            ref={searchTriggerRef}
+            type="button"
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 text-ps-ink-2 bg-ps-bg hover:bg-ps-border/40 px-3 sm:px-4 py-2 rounded-xl transition-all w-auto sm:w-full max-w-[150px] xs:max-w-[200px] sm:max-w-sm border border-ps-border touch-manipulation min-w-0 focus-visible:outline-2 focus-visible:outline-ps-accent"
+            aria-label="Search"
+            className="itx-search-trigger flex items-center gap-2 text-ps-ink-2 bg-ps-bg hover:bg-ps-border/40 px-3 sm:px-4 py-2 w-auto sm:w-full max-w-[150px] xs:max-w-[200px] sm:max-w-sm border border-ps-border touch-manipulation min-w-0 transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
           >
             <Search size={16} className="shrink-0" />
-            <span className="text-sm font-medium truncate hidden xs:block">Search...</span>
-            <span className="text-sm font-medium truncate hidden sm:block">Search schedules, students...</span>
-            <div className="ml-auto hidden sm:flex items-center gap-1 text-xs font-medium text-ps-ink-2 bg-ps-surface border border-ps-border px-1.5 py-0.5 rounded shadow-sm shrink-0">
+            <span className="text-sm font-medium truncate">Search</span>
+            <div className="itx-kbd ml-auto hidden sm:flex items-center gap-1 text-xs font-medium text-ps-ink-2 bg-ps-surface border border-ps-border px-1.5 py-0.5 shrink-0">
               <Command size={10} />K
             </div>
           </button>
@@ -157,13 +181,16 @@ const Layout = () => {
         <div className="flex items-center gap-1 md:gap-4 shrink-0">
           <div className="relative" ref={bellRef}>
             <button
+              type="button"
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="relative p-2 rounded-xl hover:bg-ps-bg transition-colors group touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
+              aria-label="Notifications"
+              aria-expanded={isNotifOpen}
+              className="itx-bell relative p-2 transition-colors group touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
               title="Notifications"
             >
               <Bell size={20} className="text-ps-ink-2 group-hover:text-ps-ink-1 transition-colors" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-ps-ink-1 text-ps-surface text-xs font-semibold rounded-full flex items-center justify-center ring-2 ring-ps-surface">
+                <span className="itx-badge-count absolute top-1 right-1 w-4 h-4 bg-ps-ink-1 text-ps-surface text-xs font-semibold rounded-full flex items-center justify-center ring-2 ring-ps-surface">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -190,15 +217,16 @@ const Layout = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/20 z-20 lg:hidden"
+              className="itx-backdrop fixed inset-0 z-20 lg:hidden"
             />
           )}
         </AnimatePresence>
 
         {/* Sidebar */}
         <aside className={clsx(
-          "bg-ps-surface border-r border-ps-border flex flex-col flex-shrink-0 z-30 transition-all duration-300",
+          "bg-ps-surface border-r border-ps-border flex flex-col flex-shrink-0 z-30 transition-colors",
           "fixed lg:relative inset-y-0 left-0 h-full",
           isSidebarOpen 
             ? "w-64 translate-x-0" 
@@ -217,9 +245,10 @@ const Layout = () => {
               </div>
             </div>
             <button
+              type="button"
               onClick={() => setIsSidebarOpen(false)}
               aria-label="Close sidebar"
-              className="p-1.5 rounded-lg hover:bg-ps-bg text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
+              className="inline-flex min-h-9 min-w-9 items-center justify-center p-1.5 text-ps-ink-2 transition-colors touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent"
             >
               <X size={18} />
             </button>
@@ -238,11 +267,11 @@ const Layout = () => {
                   title={!isSidebarOpen ? link.label : ""}
                   className={({ isActive }) =>
                     clsx(
-                      "flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 touch-manipulation focus-visible:outline-2 focus-visible:outline-ps-accent",
+                      "flex items-center gap-3 text-sm font-medium touch-manipulation transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent",
                       // Phone/tablet rows keep a 44px touch target; desktop keeps its compact pitch.
                       "min-h-11 lg:min-h-0",
                       isSidebarOpen ? "px-3 py-2.5" : "p-3 justify-center",
-                      getNavStyle(link, isActive)
+                      getNavStyle(isActive)
                     )
                   }
                 >
@@ -257,25 +286,58 @@ const Layout = () => {
 
           {/* User Profile Section */}
           <div className={clsx("p-4 border-t border-ps-border", !isSidebarOpen && "p-2")}>
-            <div className={clsx(
-              "flex items-center bg-ps-bg rounded-xl relative group transition-all",
-              isSidebarOpen ? "gap-3 p-3" : "p-2 justify-center"
-            )}>
-              <div className="w-9 h-9 rounded-full bg-ps-accent-soft border-2 border-ps-surface flex items-center justify-center text-ps-accent font-semibold text-xs shrink-0 shadow-sm">
-                {getInitials(user?.name)}
-              </div>
+            <div
+              className={clsx(
+                "itx-profile flex items-center bg-ps-bg relative transition-all",
+                isSidebarOpen ? "gap-3 p-3" : "p-2 justify-center"
+              )}
+              onMouseEnter={collapsedProfile ? () => setIsProfileMenuOpen(true) : undefined}
+              onMouseLeave={collapsedProfile ? (e) => {
+                // Keep it open while keyboard focus is inside the panel.
+                if (!e.currentTarget.querySelector('#profile-menu')?.contains(document.activeElement)) setIsProfileMenuOpen(false);
+              } : undefined}
+              onBlur={collapsedProfile ? (e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setIsProfileMenuOpen(false);
+              } : undefined}
+              onKeyDown={collapsedProfile ? (e) => {
+                if (e.key === 'Escape') {
+                  setIsProfileMenuOpen(false);
+                  profileTriggerRef.current?.focus();
+                }
+              } : undefined}
+            >
+              {collapsedProfile ? (
+                <button
+                  ref={profileTriggerRef}
+                  type="button"
+                  aria-label="Account menu"
+                  aria-expanded={isProfileMenuOpen}
+                  aria-controls="profile-menu"
+                  onClick={() => setIsProfileMenuOpen(true)}
+                  className="flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-ps-accent"
+                >
+                  <span className={avatarClass}>
+                    {getInitials(user?.name)}
+                  </span>
+                </button>
+              ) : (
+                <div className={avatarClass}>
+                  {getInitials(user?.name)}
+                </div>
+              )}
               {isSidebarOpen && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-ps-ink-1 truncate">{user?.name || 'User'}</p>
-                  <p className="text-xs text-ps-ink-2 truncate">{ROLE_LABELS[appRole] || appRole || 'Loading...'}</p>
+                  <p className="itx-profile-name text-sm font-semibold text-ps-ink-1 truncate">{user?.name || 'User'}</p>
+                  <p className="itx-profile-role text-xs text-ps-ink-2 truncate">{ROLE_LABELS[appRole] || appRole || 'Loading...'}</p>
                 </div>
               )}
               
               {isSidebarOpen ? (
                 <div className="flex gap-1">
                   <button
+                    type="button"
                     onClick={() => setShowLogoutConfirm(true)}
-                    className="p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-surface rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
+                    className="-mx-1 inline-flex min-h-9 min-w-9 items-center justify-center p-1.5 text-ps-ink-2 hover:text-ps-ink-1 hover:bg-ps-surface transition-colors focus-visible:outline-2 focus-visible:outline-ps-accent"
                     title="Logout"
                     aria-label="Logout"
                   >
@@ -283,13 +345,22 @@ const Layout = () => {
                   </button>
                 </div>
               ) : (
-                <div className="absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border rounded-xl shadow-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all z-50 flex flex-col gap-2">
-                    <button 
-                      onClick={() => setShowLogoutConfirm(true)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg rounded-lg focus-visible:outline-2 focus-visible:outline-ps-accent"
-                    >
-                      <LogOut size={14} /> Logout
-                    </button>
+                <div
+                  id="profile-menu"
+                  aria-hidden={!isProfileMenuOpen}
+                  inert={!isProfileMenuOpen}
+                  className={clsx(
+                    "itx-menu absolute left-full ml-4 p-2 bg-ps-surface border border-ps-border transition-all z-50 flex flex-col gap-2",
+                    isProfileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ps-ink-1 hover:bg-ps-bg focus-visible:outline-2 focus-visible:outline-ps-accent"
+                  >
+                    <LogOut size={14} /> Logout
+                  </button>
                 </div>
               )}
             </div>
@@ -319,14 +390,16 @@ const Layout = () => {
 
         <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
           <button
+            type="button"
             onClick={() => setShowLogoutConfirm(false)}
-            className="sa-btn flex-1 justify-center min-h-11"
+            className="sa-btn flex-1 justify-center"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirmLogout}
-            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
+            className="sa-btn sa-btn--primary flex-1 justify-center"
           >
             Log out
           </button>
@@ -334,7 +407,7 @@ const Layout = () => {
       </AppModal>
 
       {/* Global Search Modal */}
-      <GlobalSearch isOpen={isSearchOpen} onToggle={() => setIsSearchOpen(prev => !prev)} onClose={() => setIsSearchOpen(false)} />
+      <GlobalSearch isOpen={isSearchOpen} onToggle={() => setIsSearchOpen(prev => !prev)} onClose={() => setIsSearchOpen(false)} returnFocusRef={searchTriggerRef} />
       
       {/* Forced Password Change Modal */}
       <ForceChangePasswordModal />

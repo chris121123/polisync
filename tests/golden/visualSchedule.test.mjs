@@ -20,11 +20,17 @@ const SESSIONS = [
   { id: 4 },
 ];
 
-test('sessionsOnDate: dated sessions match their own date, undated ones id % 5', () => {
+test('sessionsOnDate: dated sessions match their own date, undated ones their stored day', () => {
   assert.deepEqual(idsOf(sessionsOnDate(SESSIONS, '2026-11-03')), [1, 5]);
   assert.deepEqual(idsOf(sessionsOnDate(SESSIONS, '2026-11-04')), [3, 2, 7]);
   assert.deepEqual(idsOf(sessionsOnDate(SESSIONS, '2026-11-06')), [4]);
   assert.deepEqual(idsOf(sessionsOnDate(SESSIONS, '2026-11-05')), []);
+});
+
+test('a stored weekday wins over id % 5 in the planner week too', () => {
+  // 15/16 carry Wednesday (one as a numeric string), 18's weekend value falls back to 18 % 5 = 3.
+  const week = buildWeek([{ id: 15, dayOfWeek: 2 }, { id: 16, dayOfWeek: '2' }, { id: 18, dayOfWeek: 6 }], '2026-11-02');
+  assert.deepEqual(week.map((d) => idsOf(d.sessions)), [[], [], [15, 16], [18], []]);
 });
 
 test('buildWeek snaps to Monday and mirrors the day calendar grouping exactly', () => {

@@ -18,6 +18,7 @@ import { NowIndicator, SessionCard, WeeklySessionCard } from './SessionCard.jsx'
 import { AddSessionModal } from './AddSessionModal.jsx';
 import { ManageAvailabilityModal } from './ManageAvailabilityModal.jsx';
 import { PendingPanel } from './PendingPanel.jsx';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -85,6 +86,12 @@ const ScheduleCalendar = () => {
   }, []);
 
   const selectedSession = sessions.find(s => s.id === selectedSessionId);
+  const detailPanelRef = useRef(null);
+  // The desktop panel is inline; only the mobile bottom sheet is a modal dialog.
+  useFocusTrap(detailPanelRef, {
+    active: Boolean(selectedSession) && isMobile,
+    onClose: () => setSelectedSessionId(null),
+  });
   const isConflicted = id => conflicts.some(c => c.sessionIds.includes(id));
   const getConflictForSession = id => conflicts.find(c => c.sessionIds?.includes(id));
 
@@ -175,7 +182,7 @@ const ScheduleCalendar = () => {
   // Removed unused todayIdx
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-ps-bg max-h-[calc(100vh-64px)]">
+    <div className="flex h-full w-full overflow-hidden bg-[var(--sa-bg-base)] max-h-[calc(100vh-64px)]">
 
       {/* ── Left: Calendar ─────────────────────────────────────────────── */}
       <div 
@@ -184,7 +191,7 @@ const ScheduleCalendar = () => {
       >
 
         {/* ── Toolbar ───────── */}
-        <div className="flex-shrink-0 border-b border-[var(--sa-line-default)] bg-[var(--sa-surface-1)]">
+        <div className="flex-shrink-0 bg-[var(--sa-surface-1)]">
           {/* Top row */}
           <div className="px-6 py-3.5 sm:py-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -197,17 +204,14 @@ const ScheduleCalendar = () => {
               </div>
 
               {/* Section tabs: Calendar / Pending */}
-              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]" role="group" aria-label="Schedule section">
+              <div className="flex items-center" role="group" aria-label="Schedule section">
                 {[['calendar', 'Calendar'], ['pending', 'Pending']].map(([key, label]) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setTab(key)}
                     aria-pressed={tab === key}
-                    className={clsx(
-                      'px-3 py-1.5 text-xs',
-                      tab === key ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-                    )}
+                    className={clsx('itx-tab', tab === key && 'is-active')}
                   >
                     {label}
                   </button>
@@ -215,44 +219,41 @@ const ScheduleCalendar = () => {
               </div>
 
               {/* View toggle: Daily / Weekly */}
-              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
-                <button
-                  onClick={() => setCalendarView('daily')}
-                  className={clsx(
-                    'px-3 py-1.5 text-xs',
-                    calendarView === 'daily' ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-                  )}
-                >
-                  Daily
-                </button>
-                <button
-                  onClick={() => setCalendarView('weekly')}
-                  className={clsx(
-                    'px-3 py-1.5 text-xs',
-                    calendarView === 'weekly' ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-                  )}
-                >
-                  Weekly
-                </button>
+              <div className="flex items-center" role="group" aria-label="Calendar view">
+                {[['daily', 'Daily'], ['weekly', 'Weekly']].map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCalendarView(key)}
+                    aria-pressed={calendarView === key}
+                    className={clsx('itx-tab', calendarView === key && 'is-active')}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
 
               {/* Date nav */}
-              <div className="flex items-center border border-[var(--sa-line-default)]">
-                <button 
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  aria-label={calendarView === 'daily' ? 'Previous day' : 'Previous week'}
                   onClick={() => calendarView === 'daily' ? navigateDate(-1) : navigateWeek(-1)}
-                  className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
+                  className="flex h-9 w-9 items-center justify-center text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                 >
                   <ChevronLeft size={16} strokeWidth={1.5} />
                 </button>
-                <span className="px-3 text-[13px] tabular-nums text-[var(--sa-text-primary)]">
+                <span className="px-2 text-[13px] tabular-nums whitespace-nowrap text-[var(--sa-text-primary)]">
                   {calendarView === 'daily'
                     ? selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
                     : `Week of ${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[4].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                   }
                 </span>
-                <button 
+                <button
+                  type="button"
+                  aria-label={calendarView === 'daily' ? 'Next day' : 'Next week'}
                   onClick={() => calendarView === 'daily' ? navigateDate(1) : navigateWeek(1)}
-                  className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
+                  className="flex h-9 w-9 items-center justify-center text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                 >
                   <ChevronRight size={16} strokeWidth={1.5} />
                 </button>
@@ -266,9 +267,12 @@ const ScheduleCalendar = () => {
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full xl:w-auto xl:shrink-0 xl:flex-nowrap mt-2 xl:mt-0">
+            <div className={clsx(
+              'flex flex-wrap items-center gap-2.5 sm:gap-3 w-full mt-2 xl:mt-0',
+              !selectedSession && 'xl:w-auto xl:shrink-0 xl:flex-nowrap'
+            )}>
               {/* Type filters */}
-              <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]">
+              <div className="flex items-center" role="group" aria-label="Session type filter">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'sped', label: 'SPED' },
@@ -277,13 +281,10 @@ const ScheduleCalendar = () => {
                 ].map(f => (
                   <button
                     key={f.key}
+                    type="button"
                     onClick={() => setFilterType(f.key)}
-                    className={clsx(
-                      'px-3 py-1.5 text-xs',
-                      filterType === f.key
-                        ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
-                        : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-                    )}
+                    aria-pressed={filterType === f.key}
+                    className={clsx('itx-tab', filterType === f.key && 'is-active')}
                   >
                     {f.label}
                   </button>
@@ -291,13 +292,11 @@ const ScheduleCalendar = () => {
               </div>
 
               <button
+                type="button"
                 onClick={handleAutoSchedule}
                 disabled={isAutoScheduling || isWeekend}
                 title={isWeekend ? 'Scheduling is Monday–Friday only' : undefined}
-                className={clsx(
-                  "sa-btn",
-                  (isAutoScheduling || isWeekend) && "cursor-not-allowed opacity-40"
-                )}
+                className="sa-btn"
               >
                 {isAutoScheduling ? (
                   <RefreshCw size={16} strokeWidth={1.5} className="animate-spin" />
@@ -328,7 +327,7 @@ const ScheduleCalendar = () => {
           </div>
 
           {/* Stats strip */}
-          <div className="px-6 py-2.5 border-t border-[var(--sa-line-hairline)] flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="px-6 py-2.5 flex flex-wrap items-center gap-4 sm:gap-6">
             {[
               { label: 'Sessions', value: filteredSessions.length, icon: BookOpen, color: 'text-[var(--sa-text-primary)]' },
               { label: 'Students', value: totalStudents, icon: Users, color: 'text-[var(--sa-text-primary)]' },
@@ -346,7 +345,7 @@ const ScheduleCalendar = () => {
         </div>
 
         {/* ── Grid ───────── */}
-        <div ref={scrollRef} className="flex-1 overflow-auto bg-ps-bg">
+        <div ref={scrollRef} className="flex-1 overflow-auto bg-[var(--sa-bg-base)]">
 
           {tab === 'pending' ? (
             <PendingPanel selectedDateISO={selectedDateISO} dayOfWeek={scheduleDayOfWeek} />
@@ -357,20 +356,33 @@ const ScheduleCalendar = () => {
                 const provider = staff.find(s => String(s.id) === String(session.therapistId));
                 const hasConflict = isConflicted(session.id);
                 return (
-                  <div 
-                    key={session.id} 
+                  <div
+                    key={session.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selectedSessionId === session.id}
                     onClick={() => { setSelectedSessionId(session.id); setDetailTab('info'); setPendingDelete(false); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedSessionId(session.id);
+                        setDetailTab('info');
+                        setPendingDelete(false);
+                      }
+                    }}
                     className={clsx(
-                      "bg-[var(--sa-surface-1)] p-4 border relative overflow-hidden",
-                      hasConflict ? "border-[var(--sa-danger)]" : "border-[var(--sa-line-default)]",
-                      selectedSessionId === session.id ? "border-[var(--sa-gold)]" : ""
+                      "bg-[var(--sa-surface-1)] p-4 relative overflow-hidden cursor-pointer hover:bg-[var(--sa-surface-2)] active:bg-[var(--sa-surface-warm)]",
+                      selectedSessionId === session.id && "itx-selected"
                     )}
                   >
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--sa-bar-primary)]" />
+                    <div className={clsx(
+                      "absolute left-0 top-0 bottom-0 w-1",
+                      hasConflict ? "bg-[var(--danger)]" : "bg-[var(--sa-bar-primary)]"
+                    )} />
                     <div className="flex justify-between items-start mb-2 pl-2">
-                      <h3 className="text-base leading-tight pr-4 text-[var(--sa-text-primary)]">{session.title}</h3>
+                      <h3 className="text-[15px] leading-tight pr-4 text-[var(--sa-text-primary)]">{session.title}</h3>
                       {hasConflict ? (
-                        <span className="sa-badge sa-badge--warn shrink-0 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5}/> Conflict</span>
+                        <span className="sa-badge sa-t-danger shrink-0 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5}/> Conflict</span>
                       ) : (
                         <span className="sa-badge shrink-0">{cfg.label}</span>
                       )}
@@ -404,18 +416,22 @@ const ScheduleCalendar = () => {
               {calendarView === 'daily' && (
                 <div className="min-w-[760px] pb-10">
               {/* Room header row */}
-              <div className="flex sticky top-0 z-30 bg-[var(--sa-surface-1)] border-b border-[var(--sa-line-default)]">
+              <div className="flex sticky top-0 z-30 bg-[var(--sa-surface-1)]">
                 <div className="w-20 shrink-0 bg-[var(--sa-surface-1)] border-r border-[var(--sa-line-hairline)] flex flex-col justify-center items-center gap-1">
-                  <div className="flex border border-[var(--sa-line-default)]">
-                    <button 
+                  <div className="flex">
+                    <button
+                      type="button"
+                      aria-label="Previous room page"
                       onClick={() => setRoomPage(Math.max(0, roomPage - 1))}
                       disabled={roomPage === 0}
-                      className="p-1 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] disabled:opacity-30"
+                      className="flex h-9 w-9 items-center justify-center text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                     ><ChevronLeft size={14} strokeWidth={1.5}/></button>
-                    <button 
+                    <button
+                      type="button"
+                      aria-label="Next room page"
                       onClick={() => setRoomPage(Math.min(maxRoomPages - 1, roomPage + 1))}
                       disabled={roomPage === maxRoomPages - 1}
-                      className="p-1 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] disabled:opacity-30"
+                      className="flex h-9 w-9 items-center justify-center text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                     ><ChevronRight size={14} strokeWidth={1.5}/></button>
                   </div>
                   <span className="text-[11px] tabular-nums text-[var(--sa-text-muted)] text-center leading-tight">Page {roomPage + 1}/{maxRoomPages}</span>
@@ -427,7 +443,7 @@ const ScheduleCalendar = () => {
                       <div className="flex items-center gap-2 min-w-0">
                         <div className={clsx(
                           'w-2 h-2 shrink-0',
-                          roomSessions > 0 ? 'bg-[var(--sa-gold)]' : 'bg-[var(--sa-line-strong)]'
+                          roomSessions > 0 ? 'bg-[var(--ink-muted)]' : 'bg-[var(--sa-line-strong)]'
                         )} />
                         <span className="text-xs text-[var(--sa-text-primary)] truncate capitalize">{roomName}</span>
                       </div>
@@ -467,16 +483,16 @@ const ScheduleCalendar = () => {
                   </div>
                 </div>
 
-                <div className="flex-1 flex relative border-l border-ps-border">
+                <div className="flex-1 flex relative border-l border-[var(--sa-line-default)]">
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 96}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-[var(--sa-line-default)]' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 96}px` }} />
                     ))}
                     {HOURS.slice(0, -1).map((_, i) => (
                       <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-dashed border-[var(--sa-line-hairline)]" style={{ top: `${i * 96 + 48}px` }} />
                     ))}
                     {/* Bottom closing border line */}
-                    <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 96}px` }} />
+                    <div className="absolute left-0 right-0 border-t border-[var(--sa-line-default)]" style={{ top: `${HOURS.length * 96}px` }} />
                   </div>
 
                   {displayRooms.map((roomName, colIdx) => (
@@ -527,7 +543,7 @@ const ScheduleCalendar = () => {
                       <div className="flex items-center gap-2">
                         <div className={clsx(
                           'w-8 h-8 flex items-center justify-center text-sm tabular-nums',
-                          isToday ? 'border border-[var(--sa-gold)] text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
+                          isToday ? 'itx-selected text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]'
                         )}>
                           {dateNum}
                         </div>
@@ -574,14 +590,14 @@ const ScheduleCalendar = () => {
                 </div>
 
                 {/* Day columns */}
-                <div className="flex-1 flex relative border-l border-ps-border">
+                <div className="flex-1 flex relative border-l border-[var(--sa-line-default)]">
                   {/* Hour grid lines */}
                   <div className="absolute inset-0 pointer-events-none z-0">
                     {HOURS.map((_, i) => (
-                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-ps-border' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 64}px` }} />
+                      <div key={i} className={clsx('absolute left-0 right-0 border-t', i === 0 ? 'border-[var(--sa-line-default)]' : 'border-dashed border-[var(--sa-line-hairline)]')} style={{ top: `${i * 64}px` }} />
                     ))}
                     {/* Bottom closing border line */}
-                    <div className="absolute left-0 right-0 border-t border-ps-border" style={{ top: `${HOURS.length * 64}px` }} />
+                    <div className="absolute left-0 right-0 border-t border-[var(--sa-line-default)]" style={{ top: `${HOURS.length * 64}px` }} />
                   </div>
 
                   {WEEKDAYS.map((day, dayIdx) => {
@@ -636,20 +652,25 @@ const ScheduleCalendar = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setSelectedSessionId(null)}
-                className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+                className="fixed inset-0 itx-backdrop z-40 lg:hidden"
               />
             )}
             <motion.div
               key="detail"
-              initial={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
-              animate={isMobile ? { y: 0, opacity: 1 } : { x: 0, opacity: 1 }}
-              exit={isMobile ? { y: '100%', opacity: 0 } : { x: 380, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              ref={detailPanelRef}
+              role={isMobile ? 'dialog' : undefined}
+              aria-modal={isMobile ? 'true' : undefined}
+              aria-labelledby={isMobile ? 'session-detail-title' : undefined}
+              tabIndex={-1}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
               className={clsx(
                 "bg-[var(--sa-surface-1)] flex flex-col z-50",
-                isMobile 
-                  ? "fixed bottom-0 left-0 right-0 h-[85vh]" 
-                  : "w-[360px] shrink-0 border-l border-[var(--sa-line-default)] h-full relative"
+                isMobile
+                  ? "fixed bottom-0 left-0 right-0 h-[85vh]"
+                  : "w-[360px] shrink-0 h-full relative"
               )}
             >
             {(() => {
@@ -666,13 +687,15 @@ const ScheduleCalendar = () => {
                           {pendingDelete ? (
                             <>
                               <button
+                                type="button"
                                 onClick={() => { deleteSession(selectedSession.id); setSelectedSessionId(null); }}
                                 aria-label="Confirm delete session"
-                                className="px-3 py-2 border border-[var(--sa-danger)] text-[11px] uppercase tracking-[0.1em] text-[var(--sa-text-primary)] transition-colors hover:border-[var(--sa-line-strong)]"
+                                className="sa-btn itx-danger"
                               >
                                 Confirm
                               </button>
                               <button
+                                type="button"
                                 onClick={() => setPendingDelete(false)}
                                 aria-label="Cancel delete"
                                 className="sa-btn"
@@ -682,23 +705,26 @@ const ScheduleCalendar = () => {
                             </>
                           ) : (
                             <button
+                              type="button"
                               onClick={() => setPendingDelete(true)}
                               aria-label="Delete session"
-                              className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-danger)] hover:text-[var(--sa-danger)]"
+                              className="inline-flex min-h-9 min-w-9 items-center justify-center p-2 text-[var(--sa-text-secondary)] hover:text-[var(--sa-danger)]"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={14} strokeWidth={1.5} />
                             </button>
                           )}
                           <button
+                            type="button"
+                            data-autofocus
                             onClick={() => { setSelectedSessionId(null); setPendingDelete(false); }}
                             aria-label="Close session details"
-                            className="p-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
+                            className="inline-flex min-h-9 min-w-9 items-center justify-center p-2 text-[var(--sa-text-secondary)] hover:text-[var(--sa-text-primary)]"
                           >
-                            <X size={14} />
+                            <X size={14} strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-[var(--sa-text-primary)] text-lg leading-tight">{selectedSession.title}</h3>
+                      <h3 id="session-detail-title" className="text-[var(--sa-text-primary)] text-[17px] font-medium leading-tight">{selectedSession.title}</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-[11px] tabular-nums">
                           <Clock size={11} strokeWidth={1.5} /> {formatHour(selectedSession.startHour)} – {formatHour(selectedSession.startHour + selectedSession.span)}
@@ -709,7 +735,7 @@ const ScheduleCalendar = () => {
                         {provider && <span className="flex items-center gap-1 text-[var(--sa-text-muted)] text-[11px]"><Users size={11} strokeWidth={1.5} /> {provider.name}</span>}
                       </div>
                       {hasConflict && (
-                        <div className="mt-3 flex items-center gap-2 border border-[var(--sa-danger)] px-3 py-1.5 sa-t-danger">
+                        <div className="mt-3 flex items-center gap-2 sa-alert px-3 py-1.5 sa-t-danger">
                           <AlertCircle size={13} strokeWidth={1.5} />
                           <span className="text-[11px]">Scheduling Conflict Detected</span>
                         </div>
@@ -718,32 +744,39 @@ const ScheduleCalendar = () => {
                   </div>
 
                   {/* Tabs */}
-                  <div className="flex border-b border-[var(--sa-line-hairline)]">
+                  <div className="flex px-5" role="tablist" aria-label="Session details">
                     {[
                       { key: 'info', label: 'Details', icon: Info },
                       { key: 'reschedule', label: 'Reschedule', icon: RefreshCw },
                     ].map(tab => (
                       <button
                         key={tab.key}
+                        type="button"
+                        role="tab"
+                        id={`session-tab-${tab.key}`}
+                        aria-selected={detailTab === tab.key}
+                        aria-controls="session-detail-panel"
                         onClick={() => setDetailTab(tab.key)}
-                        className={clsx(
-                          'flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] uppercase tracking-[0.1em] border-b-2 transition-colors',
-                          detailTab === tab.key ? 'text-[var(--sa-text-primary)] border-[var(--sa-gold)]' : 'text-[var(--sa-text-muted)] border-transparent hover:text-[var(--sa-text-primary)]'
-                        )}
+                        className={clsx('itx-tab flex-1 justify-center', detailTab === tab.key && 'is-active')}
                       >
                         <tab.icon size={13} strokeWidth={1.5} />
                         {tab.label}
                         {tab.key === 'reschedule' && hasConflict && (
-                          <span className="w-1.5 h-1.5 bg-[var(--sa-danger)]" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)]" />
                         )}
                       </button>
                     ))}
                   </div>
 
                   {/* Tab content */}
-                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  <div
+                    id="session-detail-panel"
+                    role="tabpanel"
+                    aria-labelledby={`session-tab-${detailTab}`}
+                    className="flex-1 overflow-y-auto p-5 space-y-4"
+                  >
                     {detailTab === 'info' && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="sa-list">
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1">
                         {[
                           { icon: Users, label: 'Provider', value: provider?.name ?? '—', sub: provider?.role },
                           { icon: Clock, label: 'Time Slot', value: `${formatHour(selectedSession.startHour)} – ${formatHour(selectedSession.startHour + selectedSession.span)}`, sub: `${selectedSession.span}h duration` },
@@ -765,7 +798,7 @@ const ScheduleCalendar = () => {
                     {detailTab === 'reschedule' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                         {hasConflict && (
-                          <div className="p-4 border border-[var(--sa-danger)] space-y-1 sa-t-danger">
+                          <div className="p-4 sa-alert sa-alert--danger space-y-1">
                             <p className="text-[11px] flex items-center gap-2">
                               <AlertCircle size={13} strokeWidth={1.5} /> Conflict Detected
                             </p>
@@ -790,30 +823,31 @@ const ScheduleCalendar = () => {
                                 );
                               }
                               return suggestions.map(newHour => (
-                                <motion.button
+                                <button
                                   key={newHour}
+                                  type="button"
                                   onClick={() => handleReschedule(newHour)}
-                                  className="w-full text-left p-3.5 border border-[var(--sa-line-default)] hover:border-[var(--sa-line-strong)] sa-t-warm"
+                                  className="w-full text-left p-3.5 sa-row sa-t-warm"
                                 >
-                                  <div className="flex justify-between items-center">
-                                    <div>
-                                      <span className="text-sm tabular-nums">{formatHour(newHour)}</span>
-                                      <span className="text-[11px] mx-1">→</span>
-                                      <span className="text-sm tabular-nums">{formatHour(newHour + selectedSession.span)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center gap-3">
+                                      <div className="tabular-nums text-sm">
+                                        {formatHour(newHour)}
+                                        <span className="text-[11px] mx-1">→</span>
+                                        {formatHour(newHour + selectedSession.span)}
+                                      </div>
+                                      <span className="sa-link shrink-0">Move</span>
                                     </div>
-                                    <span className="px-3 py-2 border border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] text-[11px] uppercase tracking-[0.1em]">
-                                      Move
-                                    </span>
+                                    <p className="text-[11px] mt-1">{selectedSession.room} · no conflict at this time</p>
                                   </div>
-                                  <p className="text-[11px] mt-1">{selectedSession.room} · no conflict at this time</p>
-                                </motion.button>
+                                </button>
                               ));
                             })()}
                           </div>
                         </div>
 
                         {!hasConflict && (
-                          <div className="p-4 border border-[var(--sa-line-default)] flex items-center gap-3 sa-t-warm">
+                          <div className="p-4 sa-alert flex items-center gap-3 sa-t-warm">
                             <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0" />
                             <p className="text-[11px]">No conflicts — session is optimally placed.</p>
                           </div>

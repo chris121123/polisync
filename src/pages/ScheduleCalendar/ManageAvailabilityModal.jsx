@@ -41,7 +41,7 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            className="w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
+            className="w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 text-sm tabular-nums text-[var(--sa-text-primary)]"
           />
           <p className="mt-1 text-[11px] text-[var(--sa-text-muted)]">{dayLabel}</p>
         </div>
@@ -50,13 +50,13 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
           <span className="tabular-nums sa-t-warm">{availableStaffForDate.length}</span> / {therapistsAndTeachers.length} available
         </p>
 
-        <ul className="max-h-[300px] overflow-y-auto border border-[var(--sa-line-default)] sa-list">
+        <ul className="max-h-[300px] overflow-y-auto space-y-1">
           {therapistsAndTeachers.map(person => {
             const isAvailable = availableIdsForDate.includes(person.id);
             return (
               <li
                 key={person.id}
-                className="flex items-center gap-3 px-4 py-3"
+                className="sa-row items-center gap-3"
               >
                 {isAvailable
                   ? <CheckCircle2 size={16} strokeWidth={1.5} className="shrink-0 sa-t-warm" />
@@ -82,11 +82,11 @@ export const ManageAvailabilityModal = ({ isOpen, onClose, staff, staffAvailabil
         </ul>
       </div>
 
-      <div className="shrink-0 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+      <div className="shrink-0 px-5 py-4 md:px-6">
         <button
           type="button"
           onClick={onClose}
-          className="sa-btn w-full justify-center min-h-11"
+          className="sa-btn w-full justify-center"
         >
           Close
         </button>

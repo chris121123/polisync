@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
 import { formatDateISO, upcomingWeekdays } from '../pages/ScheduleCalendar/calendarMath.js';
 
@@ -21,7 +20,7 @@ const MyAvailabilityCard = () => {
         </div>
       </div>
 
-      <ul className="sa-list">
+      <ul className="mt-1 space-y-1">
         {days.map(day => {
           const iso = formatDateISO(day);
           const available = staffAvailability?.some(a => a.staff_id === user?.id && a.available_date === iso);
@@ -36,10 +35,7 @@ const MyAvailabilityCard = () => {
                 aria-pressed={Boolean(available)}
                 disabled={!user?.id}
                 onClick={() => (available ? removeStaffAvailability(user.id, iso) : addStaffAvailability(user.id, iso))}
-                className={clsx(
-                  'sa-badge py-1.5 cursor-pointer disabled:opacity-40',
-                  available && 'sa-badge--positive'
-                )}
+                className="sa-btn shrink-0"
               >
                 {available ? 'Available' : 'Not marked'}
               </button>

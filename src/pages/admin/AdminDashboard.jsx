@@ -5,14 +5,15 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { countAvailableStaff } from '../ScheduleCalendar/staff';
 import { formatDateISO } from '../ScheduleCalendar/calendarMath';
 
 export const StatCard = ({ title, value, icon: Icon, subtext, badge, badgeTone = '' }) => {
   return (
-    <div className="sa-panel sa-kpi">
-      <div className="sa-kpi-head">
+    <div className="sa-panel">
+      <div className="flex items-center gap-2 pb-2.5">
         <Icon size={16} strokeWidth={1.5} className="sa-kpi-icon" />
         <p className="sa-micro">{title}</p>
       </div>
@@ -62,7 +63,7 @@ const AdminDashboard = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
       {/* ── Page Header ────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="sa-title">Dashboard</h1>
           <p className="sa-sub">
@@ -135,7 +136,7 @@ const AdminDashboard = () => {
           </div>
 
           {conflicts.length > 0 ? (
-            <div className="sa-list">
+            <div className="space-y-1">
               {conflicts.map((conflict, idx) => (
                 <div key={idx} className="sa-row">
                   <span className="sa-marker sa-marker--danger" />
@@ -167,7 +168,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          <div className="pt-4 mt-auto border-t border-[var(--sa-line-hairline)] flex items-center justify-between">
+          <div className="pt-4 mt-auto flex items-center justify-between">
             <span className="text-xs sa-t-muted">Auto-scheduler active</span>
             <button
               onClick={() => navigate('/schedule')}
@@ -189,49 +190,46 @@ const AdminDashboard = () => {
             </div>
             {peakHourData.count > 0 && (
               <span className="text-xs sa-t-muted shrink-0">
-                Peak: <strong className="font-normal sa-t-warm tabular-nums">{peakHourData.label}</strong> ({peakHourData.count} sessions)
+                Peak: <span className="tabular-nums text-[var(--ink-body)]">{peakHourData.label}</span> ({peakHourData.count} sessions)
               </span>
             )}
           </div>
 
-          {/* Interactive Histogram */}
+          {/* Session load: one token bar per hour (no fixed heights). */}
           <div className="mt-4">
-            <div className="h-44 flex items-end justify-between gap-1 sm:gap-4 px-2 pb-2 border-b border-[var(--sa-line-default)]">
-              {hourlyData.map((d, i) => {
-                const heightPercent = d.count > 0 ? (d.count / maxSessionCount) * 100 : 0;
+            <div className="space-y-0.5">
+              {hourlyData.map((d) => {
+                const widthPercent = d.count > 0 ? (d.count / maxSessionCount) * 100 : 0;
                 const isHovered = hoveredHour === d.hour;
                 const isPeak = d === peakHourData && d.count > 0;
 
                 return (
                   <div
-                    key={i}
-                    className="flex flex-col items-center flex-1 min-w-0 h-full justify-end group cursor-pointer"
+                    key={d.hour}
+                    className="sa-bar-row px-2"
                     onMouseEnter={() => setHoveredHour(d.hour)}
                     onMouseLeave={() => setHoveredHour(null)}
                   >
-                    {/* Tooltip / Counter */}
-                    <div className={`text-xs tabular-nums mb-1 ${isHovered ? 'sa-t-warm' : 'sa-t-muted'}`}>
-                      {d.count > 0 ? d.count : '—'}
-                    </div>
-
-                    {/* Bar */}
-                    <div className="w-full h-32 flex items-end justify-center">
+                    <span className="w-10 shrink-0 text-xs sa-t-muted tabular-nums">{d.label}</span>
+                    <div className="sa-bar">
                       <div
-                        className={`w-full max-w-[36px] ${isPeak ? 'bg-[var(--sa-bar-accent)]' : 'bg-[var(--sa-bar-primary)]'}`}
-                        style={{ height: `${heightPercent}%` }}
+                        className={clsx('sa-bar-fill', isPeak && 'sa-bar-fill--accent')}
+                        style={{ width: `${widthPercent}%` }}
                       />
                     </div>
-
-                    {/* X-axis Label */}
-                    <span className={`text-xs mt-2 ${isHovered ? 'sa-t-warm' : 'sa-t-muted'}`}>
-                      <span className="xs:hidden">{d.hour}</span>
-                      <span className="hidden xs:inline">{d.label}</span>
+                    <span
+                      className={clsx(
+                        'w-6 shrink-0 text-right text-xs tabular-nums',
+                        isHovered ? 'text-[var(--ink-primary)]' : 'sa-t-muted'
+                      )}
+                    >
+                      {d.count > 0 ? d.count : '—'}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="flex justify-between items-center text-xs sa-t-muted px-2 pt-2">
+            <div className="flex justify-between items-center text-xs sa-t-muted pt-2">
               <span>Clinic Opens (8:00 AM)</span>
               <span>Clinic Closes (5:00 PM)</span>
             </div>
@@ -254,7 +252,7 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          <div className="sa-list">
+          <div className="space-y-1">
             {rooms.slice(0, 6).map((room) => {
               const roomSessions = sessions.filter(s => s.room === room.name);
               const isOccupied = roomSessions.length > 0;
@@ -287,14 +285,15 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="sa-list">
+          <div className="space-y-1">
             {todaysSessions.length > 0 ? todaysSessions.map((session) => {
               const provider = staff.find(s => String(s.id) === String(session.therapistId));
               return (
-                <div
+                <button
                   key={session.id}
+                  type="button"
                   onClick={() => navigate('/schedule')}
-                  className="sa-row cursor-pointer"
+                  className="sa-row w-full text-left"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="sa-row-title truncate">
@@ -314,7 +313,7 @@ const AdminDashboard = () => {
                       {session.type || 'SPED'}
                     </span>
                   </div>
-                </div>
+                </button>
               );
             }) : (
               <div className="sa-empty mt-4">

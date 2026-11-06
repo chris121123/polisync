@@ -81,8 +81,8 @@ const AuditPage = () => {
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
+      <div>
         <h1 className="sa-title">Security Audit Trail</h1>
         <p className="sa-sub">Privileged actions and account events.</p>
       </div>

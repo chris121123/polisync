@@ -6,7 +6,9 @@ import { supabase } from '../supabase.js';
 const readFailure = async (error) => {
   try {
     const body = await error?.context?.json?.();
-    if (body?.error?.code) return { code: body.error.code, message: body.error.message || error.message };
+    if (body?.error?.code) {
+      return { code: body.error.code, message: body.error.message || error.message, errors: body.error.errors };
+    }
   } catch {
     // non-JSON body: fall through to the transport message
   }
@@ -34,7 +36,7 @@ const invoke = async (fn, body, retried = false) => {
       if (failure.code === 'UNAUTHORIZED' || error?.context?.status === 401) {
         return retryOnExpired(fn, body, retried);
       }
-      return { error: { code: failure.code, message: failure.message } };
+      return { error: { code: failure.code, message: failure.message, errors: failure.errors } };
     }
     return { data };
   } catch (error) {
@@ -51,6 +53,11 @@ export const testAiConfig = () => invoke('ai-config', { action: 'test' });
 // Server-side model list for the selected provider; the browser never calls one.
 export const listProviderModels = ({ preset, baseUrl }) => invoke('ai-config', { action: 'models', preset, baseUrl });
 
+// Planner: a proposal is previewed first; applying needs the single-use token it returned.
+export const proposeAiPlan = (body) => invoke('ai-plan', { action: 'propose', ...body });
+
+export const commitAiPlan = ({ jobId, confirmToken }) => invoke('ai-plan', { action: 'commit', jobId, confirmToken });
+
 export const listThreads = () => invoke('ai-assistant', { action: 'threads' });
 
 export const getThreadMessages = (threadId) => invoke('ai-assistant', { action: 'messages', threadId });
@@ -61,3 +68,20 @@ export const sendAssistantMessage = ({ threadId, message, context }) => invoke('
   message,
   context,
 });
+
+// Import pipeline (plan §5.3). Excel rows are parsed in the browser and arrive as
+// plain objects; a photo is read from the `requirements` bucket after consent.
+export const stageImportExcel = ({ fileName, rows }) => invoke('ai-import', { action: 'stage-excel', fileName, rows });
+
+export const extractImportImage = ({ filePath, consent }) => invoke('ai-import', { action: 'extract-image', filePath, consent });
+
+export const resolveImportBatch = (batchId) => invoke('ai-import', { action: 'resolve', batchId });
+
+export const validateImportBatch = (batchId) => invoke('ai-import', { action: 'validate', batchId });
+
+export const applyImportBatch = ({ batchId, confirmToken }) => invoke('ai-import', { action: 'apply', batchId, confirmToken });
+
+export const discardImportBatch = (batchId) => invoke('ai-import', { action: 'discard', batchId });
+
+// Reports (plan §5.4): the edge computes every metric; the model writes prose only.
+export const generateAiReport = (body) => invoke('ai-reports', { action: 'generate', ...body });

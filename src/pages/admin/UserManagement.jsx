@@ -15,29 +15,68 @@ import {
   MoreVertical,
   Trash2,
   Search,
+  Loader2,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../../context/GlobalStateContext';
 import { ROLE_LABELS } from '../../lib/rolePalette';
 import { PASSWORD_RULES, isPasswordValid, validatePassword } from '../../lib/passwordPolicy';
 import clsx from 'clsx';
-import {
-  ROLE_PILL_COLORS,
-  ROLE_PILL_INACTIVE,
-} from './userManagementConstants.js';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
+import ItxSelect from '../../components/ItxSelect';
 
 const NAME_PATTERN = /^[A-Za-zÀ-ÿÑñ .,'-]+$/;
 const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const PHONE_PATTERN = /^09\d{9}$/;
 const normalizePhone = (phone) => phone.replace(/[\s-]/g, '');
 
-const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
+const fieldClass = 'w-full border bg-[var(--sa-bg-base)] px-3 text-[var(--sa-text-primary)]';
 // The border colour is chosen, never raced: two border-* utilities in one
 // className resolve by CSS order, not by class order (Rooms does the same).
 const fieldTone = (invalid) => (invalid
   ? 'border-[var(--sa-danger)]'
-  : 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]');
+  : 'border-[var(--sa-line-default)]');
+
+const ROLE_TILES = [
+  { value: 'superadmin', help: 'Full system access + user management + platform config' },
+  { value: 'admin', help: 'Schedule, directory, and room operations' },
+  { value: 'teacher', help: 'Manage classes and attendance' },
+  { value: 'therapist', help: 'Session notes and progress' },
+  { value: 'parent', help: 'View child schedule' },
+];
+
+// One segmented track for every role choice: sunken ground, raised surface cell,
+// no gold border. Native buttons keep keyboard/aria semantics.
+const RoleTrack = ({ value, onChange, help }) => (
+  <div>
+    <p className="sa-label">Role</p>
+    <div
+      role="group"
+      aria-label="Role"
+      className="grid grid-cols-5 gap-0.5 bg-[var(--surface-sunken)] p-1"
+      style={{ borderRadius: 'var(--x-radius-control)' }}
+    >
+      {ROLE_TILES.map(({ value: role }) => (
+        <button
+          key={role}
+          type="button"
+          onClick={() => onChange(role)}
+          aria-pressed={value === role}
+          className={clsx(
+            'min-h-11 whitespace-nowrap border px-0.5 transition-colors',
+            value === role
+              ? 'border-[var(--line-subtle)] bg-[var(--surface)] text-[var(--ink-primary)]'
+              : 'border-transparent text-[var(--ink-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink-primary)]'
+          )}
+          style={{ borderRadius: 'var(--x-radius-menu)' }}
+        >
+          <span className="text-[11px] sm:text-xs">{ROLE_LABELS[role] || role}</span>
+        </button>
+      ))}
+    </div>
+    {help && <p className="mt-2 text-xs text-[var(--sa-text-muted)]">{help}</p>}
+  </div>
+);
 
 const UserManagement = () => {
   const {
@@ -58,6 +97,18 @@ const UserManagement = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   // The row kebab outlives the menu item that opens a dialog, so it is the focus anchor to restore.
   const rowMenuTriggerRef = useRef(null);
+
+  // Escape closes the open kebab menu and returns focus to its trigger.
+  useEffect(() => {
+    if (!openMenuId) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      setOpenMenuId(null);
+      rowMenuTriggerRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [openMenuId]);
 
   // ── Delete User Modal State ──
   const [deleteModalData, setDeleteModalData] = useState(null);
@@ -247,17 +298,18 @@ const UserManagement = () => {
     });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 animate-page-entry">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="sa-title">Identity &amp; Access</h1>
           <p className="sa-sub">Accounts, roles, and access state.</p>
         </div>
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
-            className="sa-btn sa-btn--primary min-h-11 sm:min-h-0"
+            className="sa-btn sa-btn--primary"
           >
             <UserPlus size={16} strokeWidth={1.5} />
             Create User
@@ -268,16 +320,16 @@ const UserManagement = () => {
       <div className="space-y-4">
         {/* Role Filters + Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:flex-wrap">
-          <div className="flex flex-wrap gap-px sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
+          <div className="flex flex-wrap items-center">
             {['all', 'superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
               <button
                 key={role}
+                type="button"
                 onClick={() => setFilterRole(role)}
+                aria-pressed={filterRole === role}
                 className={clsx(
-                  "border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs whitespace-nowrap tabular-nums capitalize",
-                  filterRole === role
-                    ? ROLE_PILL_COLORS[role]
-                    : ROLE_PILL_INACTIVE
+                  'itx-tab whitespace-nowrap tabular-nums',
+                  filterRole === role && 'is-active'
                 )}
               >
                 {role === 'all' ? 'All' : (ROLE_LABELS[role] || role)} {role !== 'all' && `(${staff.filter(s => s.app_role === role).length})`}
@@ -285,71 +337,81 @@ const UserManagement = () => {
             ))}
           </div>
 
-          <div className="relative sm:ml-auto">
+          <div className="relative w-full sm:ml-auto sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={16} strokeWidth={1.5} />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search by name or email..."
-              className="w-full sm:w-72 pl-9 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+              aria-label="Search users"
+              className="sa-input"
             />
           </div>
         </div>
 
         {/* User Table */}
-        <div className="border border-[var(--sa-line-default)] overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left border-collapse">
+        <div className="itx-card overflow-x-auto">
+          {/* 4px cell pad on >=sm: the 36px kebab sets the row, landing it on the 45px tier. */}
+          <table className="itx-table text-left sm:min-w-[640px] sm:[&_td]:py-1!">
             <thead>
-              <tr className="border-b border-[var(--sa-line-default)]">
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">User</th>
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">App Role</th>
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Department</th>
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Email</th>
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)]">Status</th>
-                <th className="px-6 py-3 text-xs font-normal text-[var(--sa-text-muted)] text-right">Actions</th>
+              <tr>
+                <th scope="col" className="text-left">User</th>
+                <th scope="col" className="text-left">App Role</th>
+                <th scope="col" className="hidden text-left xl:table-cell">Department</th>
+                <th scope="col" className="text-left">Email</th>
+                <th scope="col" className="text-left">Status</th>
+                <th scope="col" className="text-right">
+                  <span className="xl:hidden sr-only">Actions</span>
+                  <span className="hidden xl:inline">Actions</span>
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--sa-line-hairline)]">
+            <tbody>
               {filteredStaff.map((member, index) => (
-                <tr key={member.id} className="hover:bg-[var(--sa-surface-2)] transition-colors">
-                  <td className="px-6 py-3.5">
+                <tr key={member.id}>
+                  <td data-label="Name" data-mobile="title">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 border border-[var(--sa-line-default)] sa-t-warm text-[11px] tabular-nums flex items-center justify-center shrink-0">
+                      <div
+                        className="flex h-7 w-7 shrink-0 items-center justify-center bg-[var(--surface-sunken)] text-xs font-medium text-[var(--ink-avatar)]"
+                        style={{ borderRadius: 'var(--x-radius-chip)' }}
+                      >
                         {member.name?.charAt(0) || 'U'}
                       </div>
-                      <div className="min-w-0">
-                        <p className="sa-row-title truncate">{member.name}</p>
-                        <p className="text-[11px] text-[var(--sa-text-muted)] truncate">{member.email}</p>
+                      <div className="min-w-0 sm:max-w-[120px] xl:max-w-[260px]">
+                        <p className="sa-row-title">{member.name}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-3.5">
+                  <td data-label="Role" data-mobile="role">
                     <span className="sa-badge whitespace-nowrap">{ROLE_LABELS[member.app_role] || member.app_role || 'teacher'}</span>
                   </td>
-                  <td className="px-6 py-3.5">
+                  <td data-label="Department" data-mobile="meta" className="hidden xl:table-cell">
                     <span className="text-sm text-[var(--sa-text-muted)]">{member.department || 'General'}</span>
                   </td>
-                  <td className="px-6 py-3.5">
-                    <span className="text-sm text-[var(--sa-text-muted)]">{member.email}</span>
+                  <td data-label="Email" data-mobile="meta">
+                    <span className="block truncate text-sm text-[var(--sa-text-muted)] sm:max-w-[110px] xl:max-w-[240px]">{member.email}</span>
                   </td>
-                  <td className="px-6 py-3.5">
+                  <td data-label="Status" data-mobile="meta">
                     <span className={clsx(
-                      'sa-badge',
+                      'sa-badge whitespace-nowrap',
                       member.is_active !== false && 'sa-badge--positive'
                     )}>
                       {member.is_active === false ? 'Inactive' : 'Active'}
                     </span>
                   </td>
-                  <td className="px-6 py-3.5 text-right">
-                    <div className="relative inline-block text-left">
+                  <td data-mobile="action" className="text-right">
+                    <div className="relative flex justify-end text-left">
                       <button
+                        type="button"
                         onClick={(e) => {
                           rowMenuTriggerRef.current = e.currentTarget;
                           setOpenMenuId(openMenuId === member.id ? null : member.id);
                         }}
                         aria-label={`Actions for ${member.name}`}
-                        className="p-1.5 text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)] transition-colors"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === member.id}
+                        className="flex h-11 w-11 items-center justify-center text-[var(--sa-text-muted)] hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)] transition-colors sm:h-9 sm:w-9"
                       >
                         <MoreVertical size={16} strokeWidth={1.5} />
                       </button>
@@ -361,17 +423,20 @@ const UserManagement = () => {
                             onClick={() => setOpenMenuId(null)}
                           />
                           <div className={clsx(
-                            'absolute right-0 w-48 bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] z-50 p-1',
+                            'absolute right-0 w-48 itx-menu z-50',
                             // The table scrolls (min-w), so it clips; the last rows open upward.
                             index >= 2 && index >= filteredStaff.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'
                           )}>
+                            <div className="p-1" role="menu">
                             <button
+                              type="button"
+                              role="menuitem"
                               onClick={() => {
                                 handleToggleActive(member.id, member.is_active !== false);
                                 setOpenMenuId(null);
                               }}
                               className={clsx(
-                                "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]",
+                                "w-full flex min-h-11 items-center gap-2.5 px-3 py-2 text-[13px] text-left transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]",
                                 member.is_active === false ? "sa-t-warm" : "text-[var(--sa-text-secondary)]"
                               )}
                             >
@@ -380,27 +445,30 @@ const UserManagement = () => {
                             </button>
 
                             <button
+                              type="button"
+                              role="menuitem"
                               onClick={() => {
                                 rowMenuTriggerRef.current?.focus();
                                 setShowRoleModal(member.id);
                                 setSelectedRole(member.app_role || 'teacher');
                                 setOpenMenuId(null);
                               }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left text-[var(--sa-text-secondary)] transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]"
+                              className="w-full flex min-h-11 items-center gap-2.5 px-3 py-2 text-[13px] text-left text-[var(--sa-text-secondary)] transition-colors hover:bg-[var(--sa-surface-2)] hover:text-[var(--sa-text-primary)]"
                             >
                               <Shield size={16} strokeWidth={1.5} />
                               Change Role
                             </button>
 
-                            <div className="h-px bg-[var(--sa-line-hairline)] my-1" />
-
                             <button
+                              type="button"
+                              role="menuitem"
                               onClick={() => handleDeleteUser(member)}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-left sa-t-danger transition-colors hover:bg-[var(--sa-surface-2)]"
+                              className="w-full flex min-h-11 items-center gap-2.5 px-3 py-2 text-[13px] text-left sa-t-danger transition-colors hover:bg-[var(--sa-surface-2)]"
                             >
                               <Trash2 size={16} strokeWidth={1.5} />
                               Delete User
                             </button>
+                            </div>
                           </div>
                         </>
                       )}
@@ -419,6 +487,7 @@ const UserManagement = () => {
                   <p className="sa-empty-title">No users yet</p>
                   <p className="sa-empty-sub">Create your first platform account to get started.</p>
                   <button
+                    type="button"
                     onClick={() => { setShowCreateModal(true); setCreateError(''); setCreateSuccess(''); setErrors({}); }}
                     className="sa-btn sa-btn--primary mt-4"
                   >
@@ -437,7 +506,7 @@ const UserManagement = () => {
       </div>
 
       {/* ── Change Role Modal ── */}
-      <AppModal isOpen={Boolean(showRoleModal)} onClose={() => setShowRoleModal(null)} labelledBy="change-role-title" maxWidth="max-w-sm">
+      <AppModal isOpen={Boolean(showRoleModal)} onClose={() => setShowRoleModal(null)} labelledBy="change-role-title" maxWidth="max-w-md">
         <ModalHeader
           titleId="change-role-title"
           title="Change User Role"
@@ -446,17 +515,17 @@ const UserManagement = () => {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
           {user && user.id === showRoleModal && selectedRole !== 'superadmin' ? (
-            <div className="mb-4 border border-[var(--sa-danger)] p-3 flex gap-3 items-start">
-              <ShieldAlert size={18} strokeWidth={1.5} className="sa-t-danger shrink-0 mt-0.5" />
+            <div className="sa-alert sa-alert--danger mb-4 items-start">
+              <ShieldAlert size={18} strokeWidth={1.5} className="shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-xs sa-t-danger mb-1">Critical Warning</p>
-                <p className="text-xs sa-t-danger leading-tight">
+                <p className="text-xs mb-1">Critical Warning</p>
+                <p className="text-xs leading-tight">
                   You are changing your OWN role. You will lose administrative access and be locked out of this console.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="mb-4 border border-[var(--sa-line-hairline)] p-3 flex gap-3 items-start">
+            <div className="sa-alert mb-4 items-start">
               <ShieldAlert size={16} strokeWidth={1.5} className="text-[var(--sa-text-muted)] shrink-0 mt-0.5" />
               <p className="text-xs text-[var(--sa-text-muted)] leading-tight">
                 This will immediately update access permissions across the system.
@@ -464,41 +533,25 @@ const UserManagement = () => {
             </div>
           )}
 
-          <div className="space-y-2">
-            {['superadmin', 'admin', 'teacher', 'therapist', 'parent'].map(role => (
-              <button
-                key={role}
-                onClick={() => setSelectedRole(role)}
-                className={clsx(
-                  "w-full text-left px-4 py-3 text-sm transition-colors border",
-                  selectedRole === role
-                    ? "border-[var(--sa-gold)] text-[var(--sa-text-primary)]"
-                    : "border-[var(--sa-line-default)] text-[var(--sa-text-secondary)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]"
-                )}
-              >
-                <span className="block">{ROLE_LABELS[role] || role}</span>
-                <span className="text-[11px] text-[var(--sa-text-muted)] block mt-0.5">
-                  {role === 'superadmin' ? 'Full system access + user management + platform config' :
-                   role === 'admin' ? 'Schedule, directory, and room operations' :
-                   role === 'teacher' ? 'Manage classes and attendance' :
-                   role === 'therapist' ? 'Session notes and progress' :
-                   'View child schedule'}
-                </span>
-              </button>
-            ))}
-          </div>
+          <RoleTrack
+            value={selectedRole}
+            onChange={setSelectedRole}
+            help={ROLE_TILES.find(({ value }) => value === selectedRole)?.help}
+          />
         </div>
 
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
+            type="button"
             onClick={() => handleUpdateRole(showRoleModal)}
-            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11"
+            className="sa-btn sa-btn--primary flex-1 justify-center"
           >
             Update Role
           </button>
           <button
+            type="button"
             onClick={() => setShowRoleModal(null)}
-            className="sa-btn justify-center min-h-11"
+            className="sa-btn justify-center"
           >
             Cancel
           </button>
@@ -513,7 +566,6 @@ const UserManagement = () => {
           title="Create New User"
           description="Administrator-provisioned account"
           onClose={handleCancelCreate}
-          className="bg-[var(--sa-surface-warm)]"
         />
 
         {/* Body */}
@@ -548,7 +600,7 @@ const UserManagement = () => {
                 placeholder="FirstName LastName"
                 className={clsx(fieldClass, fieldTone(errors.name))}
               />
-              {errors.name && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.name}</p>}
+              {errors.name && <p className="text-xs sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.name}</p>}
             </div>
 
             {/* Email */}
@@ -567,7 +619,7 @@ const UserManagement = () => {
                 placeholder="email@polisync.com"
                 className={clsx(fieldClass, fieldTone(errors.email))}
               />
-              {errors.email && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.email}</p>}
+              {errors.email && <p className="text-xs sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.email}</p>}
             </div>
 
             {/* Password */}
@@ -591,20 +643,22 @@ const UserManagement = () => {
                 />
                 <button
                   type="button"
+                  data-reveal
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                   className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center cursor-pointer text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
                 >
                   {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>
-              {errors.password && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.password}</p>}
-              {!errors.password && <p className="text-[11px] text-[var(--sa-text-muted)] mt-1">User will be prompted to change password on initial login.</p>}
-              <ul id="temp_password_rules" className="mt-2 border border-[var(--sa-line-hairline)] bg-[var(--sa-bg-base)] p-3 space-y-1.5">
+              {errors.password && <p className="text-xs sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.password}</p>}
+              {!errors.password && <p className="text-xs text-[var(--sa-text-muted)] mt-1">User will be prompted to change password on initial login.</p>}
+              <ul id="temp_password_rules" className="mt-2 bg-[var(--sa-surface-warm)] p-3 space-y-1.5">
                 {PASSWORD_RULES.map((rule) => {
                   const met = !validatePassword(newUser.password).some((r) => r.id === rule.id);
                   return (
-                    <li key={rule.id} className={clsx('flex items-center gap-1.5 text-[11px]', met ? 'text-[var(--sa-success)]' : 'text-[var(--sa-text-muted)]')}>
+                    <li key={rule.id} className={clsx('flex items-center gap-1.5 text-xs', met ? 'text-[var(--sa-text-primary)]' : 'text-[var(--sa-text-muted)]')}>
                       {met ? <Check size={12} strokeWidth={1.5} /> : <X size={12} strokeWidth={1.5} />}
                       {rule.label}
                     </li>
@@ -614,50 +668,22 @@ const UserManagement = () => {
             </div>
 
             {/* Role */}
-            <div>
-              <p id="new_user_role_label" className="sa-label">Role</p>
-              <div role="group" aria-labelledby="new_user_role_label" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  { value: 'teacher', label: 'Teacher' },
-                  { value: 'therapist', label: 'Therapist' },
-                  { value: 'parent', label: 'Parent' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'superadmin', label: ROLE_LABELS.superadmin },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setNewUser(p => ({ ...p, role: value }))}
-                    aria-pressed={newUser.role === value}
-                    className={clsx(
-                      'py-2.5 text-xs border cursor-pointer transition-colors',
-                      newUser.role === value
-                        ? 'border-[var(--sa-gold)] text-[var(--sa-text-primary)]'
-                        : 'border-[var(--sa-line-default)] text-[var(--sa-text-muted)] hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]'
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <RoleTrack
+              value={newUser.role}
+              onChange={(role) => setNewUser(p => ({ ...p, role }))}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {newUser.role !== 'parent' && (
                 <div>
                   <label htmlFor="new_user_department" className="sa-label">Department</label>
-                  <select
+                  <ItxSelect
                     id="new_user_department"
                     value={newUser.department}
-                    onChange={(e) => setNewUser(p => ({ ...p, department: e.target.value }))}
-                    className={clsx(fieldClass, 'border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]')}
-                  >
-                    <option value="General">General</option>
-                    <option value="SPED">SPED</option>
-                    <option value="Rehab">Rehab</option>
-                    <option value="Playschool">Playschool</option>
-                    <option value="Admin">Admin</option>
-                  </select>
+                    onChange={(department) => setNewUser(p => ({ ...p, department }))}
+                    className={clsx(fieldClass, 'border-[var(--sa-line-default)]')}
+                    options={['General', 'SPED', 'Rehab', 'Playschool', 'Admin'].map((department) => ({ value: department, label: department }))}
+                  />
                 </div>
               )}
 
@@ -677,18 +703,18 @@ const UserManagement = () => {
                   placeholder="09XX XXX XXXX"
                   className={clsx(fieldClass, fieldTone(errors.phone))}
                 />
-                {errors.phone && <p className="text-[11px] sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.phone}</p>}
+                {errors.phone && <p className="text-xs sa-t-danger mt-1 flex items-center gap-1"><AlertCircle size={10} strokeWidth={1.5} /> {errors.phone}</p>}
               </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
             type="button"
             onClick={handleCancelCreate}
-            className="sa-btn justify-center min-h-11 cursor-pointer"
+            className="sa-btn justify-center cursor-pointer"
           >
             Cancel
           </button>
@@ -696,10 +722,10 @@ const UserManagement = () => {
             type="button"
             onClick={handleCreateUser}
             disabled={createLoading || !newUser.name || !newUser.email || !isPasswordValid(newUser.password)}
-            className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="sa-btn sa-btn--primary flex-1 justify-center disabled:cursor-not-allowed"
           >
             {createLoading ? (
-              <div className="h-4 w-4 animate-spin border border-current border-t-transparent" />
+              <Loader2 size={16} strokeWidth={1.5} className="animate-spin" />
             ) : (
               <>
                 <UserPlus size={16} strokeWidth={1.5} />
@@ -720,29 +746,26 @@ const UserManagement = () => {
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
-          <div className="border border-[var(--sa-danger)] p-3.5">
-            <p className="text-xs sa-t-danger leading-relaxed">
+          <div className="sa-alert sa-alert--danger">
+            <p className="text-xs leading-relaxed">
               This action cannot be undone. This will permanently delete the user's account and revoke access immediately.
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
+            type="button"
             onClick={() => setDeleteModalData(null)}
-            className="sa-btn flex-1 justify-center min-h-11"
+            className="sa-btn flex-1 justify-center"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirmDeleteUser}
             disabled={deleteCountdown > 0}
-            className={clsx(
-              "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
-              deleteCountdown > 0
-                ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
-                : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
-            )}
+            className="sa-btn itx-danger flex-1 justify-center"
           >
             {deleteCountdown > 0 ? `Wait ${deleteCountdown}s` : 'Delete User'}
           </button>
@@ -759,8 +782,8 @@ const UserManagement = () => {
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
-          <div className="border border-[var(--sa-danger)] p-3.5">
-            <p className="text-xs sa-t-danger leading-relaxed">
+          <div className="sa-alert sa-alert--danger">
+            <p className="text-xs leading-relaxed">
               You are stripping yourself of IT Manager access.
               This action is irreversible from this account.
               You will be locked out immediately.
@@ -768,22 +791,19 @@ const UserManagement = () => {
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
+            type="button"
             onClick={() => setShowSelfRoleWarning(false)}
-            className="sa-btn flex-1 justify-center min-h-11"
+            className="sa-btn flex-1 justify-center"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={confirmSelfRoleChange}
             disabled={selfRoleCountdown > 0}
-            className={clsx(
-              "flex-1 py-3 text-[11px] uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2",
-              selfRoleCountdown > 0
-                ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
-                : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
-            )}
+            className="sa-btn itx-danger flex-1 justify-center"
           >
             {selfRoleCountdown > 0 ? `Wait ${selfRoleCountdown}s` : 'Confirm'}
           </button>

@@ -15,11 +15,25 @@ test('formatHour', () => {
   assert.equal(formatHour(17), '5:00 PM');
 });
 
-test('getSessionDay is the id modulo 5', () => {
+test('getSessionDay prefers the stored weekday, else the legacy id modulo 5', () => {
+  // Live rows 15-18 all carry day_of_week 2 although id % 5 would scatter them Mon-Thu.
+  assert.equal(getSessionDay({ id: 15, dayOfWeek: 2 }), 2);
+  assert.equal(getSessionDay({ id: 18, dayOfWeek: 2 }), 2);
+  // PostgREST/JSON may hand the value over as a string.
+  assert.equal(getSessionDay({ id: 16, dayOfWeek: '2' }), 2);
+  // 0 is Monday, not "missing".
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: 0 }), 0);
+  // Missing, null, weekend and out-of-range values fall back to id % 5.
+  assert.equal(getSessionDay({ id: 7 }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: null }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: '' }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: 5 }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: 6 }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: 1.5 }), 2);
+  assert.equal(getSessionDay({ id: 7, dayOfWeek: 'abc' }), 2);
+  // Legacy fallback keeps JS % semantics: '7' % 5 is 2, a non-numeric id is NaN.
   assert.equal(getSessionDay({ id: 1 }), 1);
   assert.equal(getSessionDay({ id: 5 }), 0);
-  assert.equal(getSessionDay({ id: 7 }), 2);
-  // String ids keep JS % semantics: '7' % 5 is 2, a non-numeric id is NaN.
   assert.equal(getSessionDay({ id: '7' }), 2);
   assert.ok(Number.isNaN(getSessionDay({ id: 'abc' })));
 });

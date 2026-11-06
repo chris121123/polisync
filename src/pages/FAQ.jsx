@@ -60,21 +60,27 @@ const FAQ = () => {
   const [openId, setOpenId] = useState(null);
 
   return (
-    <div className="min-h-screen bg-[var(--sa-bg-base)] font-sans text-[var(--sa-text-primary)]">
-      <header className="border-b border-[var(--sa-line-default)] bg-[var(--sa-surface-1)]">
-        <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="itx-scope min-h-screen bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      <header className="border-b border-[var(--line-subtle)] bg-[var(--surface)]">
+        <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            {/* crown-only crop: the source is square with the wordmark below y=60% */}
-            <div className="w-8 h-8 bg-white border border-[var(--sa-line-default)] overflow-hidden shrink-0 flex items-center justify-center">
-              <img src="/brand/polikids-logo.jpg" alt="Polikids crown" className="w-[135%] max-w-none shrink-0 aspect-[654/335] object-cover object-[50%_18%]" />
+            {/* crown-only crop: the lockup's wordmark sits below the crop line */}
+            <div className="h-10 w-10 shrink-0 overflow-hidden flex items-start justify-center">
+              <img
+                src="/brand/polikids-logo-removebg-preview.png"
+                alt="Polikids crown"
+                width={500}
+                height={499}
+                className="h-20 w-20 max-w-none shrink-0 dark:invert"
+              />
             </div>
             <p className="sa-wordmark">PoliSync</p>
           </div>
           <nav aria-label="Public pages" className="flex items-center gap-4">
-            <Link to="/login" className="sa-link min-h-11">
+            <Link to="/login" className="sa-link min-h-[44px]">
               <ArrowLeft size={14} strokeWidth={1.5} /> Back to Login
             </Link>
-            <Link to="/about" className="sa-link min-h-11">
+            <Link to="/about" className="sa-link min-h-[44px]">
               About
             </Link>
           </nav>
@@ -82,44 +88,54 @@ const FAQ = () => {
       </header>
 
       <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 lg:space-y-8">
-        <section className="space-y-2 pb-4 border-b border-[var(--sa-line-hairline)]">
-          <h1 className="sa-title">Frequently Asked Questions</h1>
-          <p className="sa-sub">
+        <section className="space-y-2 pb-4 border-b border-[var(--line-subtle)]">
+          <h1>Frequently Asked Questions</h1>
+          <p>
             Short answers to the questions new users ask most. For anything specific to your own account,
             contact your center’s administrator.
           </p>
         </section>
 
-        <ul className="sa-list border border-[var(--sa-line-default)] bg-[var(--sa-surface-1)]">
+        <ul className="space-y-2">
           {FAQS.map((item) => {
             const isOpen = openId === item.id;
             return (
               <li key={item.id}>
-                <h2 className="text-sm">
-                  <button
-                    type="button"
-                    id={`faq-button-${item.id}`}
-                    aria-expanded={isOpen}
-                    aria-controls={`faq-panel-${item.id}`}
-                    onClick={() => setOpenId(isOpen ? null : item.id)}
-                    className="w-full flex items-start justify-between gap-4 text-left px-4 py-4 sm:px-5 text-[var(--sa-text-primary)] hover:bg-[var(--sa-surface-2)]"
+                <div className="itx-card">
+                  <div className="p-2">
+                    <h2 className="text-sm">
+                      <button
+                        type="button"
+                        id={`faq-button-${item.id}`}
+                        aria-expanded={isOpen}
+                        aria-controls={`faq-panel-${item.id}`}
+                        onClick={() => setOpenId(isOpen ? null : item.id)}
+                        className={clsx(
+                          'w-full flex items-start justify-between gap-4 text-left px-4 py-3 text-[var(--ink-primary)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-sunken)]',
+                          isOpen && 'bg-[var(--surface-hover)]'
+                        )}
+                      >
+                        <span>{item.q}</span>
+                        <ChevronDown
+                          size={16}
+                          strokeWidth={1.5}
+                          className={clsx(
+                            'shrink-0 mt-0.5 transition-transform',
+                            isOpen ? 'rotate-180 text-[var(--ink-primary)]' : 'text-[var(--ink-muted)]'
+                          )}
+                        />
+                      </button>
+                    </h2>
+                  </div>
+                  <div
+                    id={`faq-panel-${item.id}`}
+                    role="region"
+                    aria-labelledby={`faq-button-${item.id}`}
+                    hidden={!isOpen}
+                    className="px-6 pb-4 sm:px-7 text-sm text-[var(--ink-body)] leading-relaxed"
                   >
-                    <span>{item.q}</span>
-                    <ChevronDown
-                      size={16}
-                      strokeWidth={1.5}
-                      className={clsx('shrink-0 mt-0.5 text-[var(--sa-text-muted)] transition-transform', isOpen && 'rotate-180')}
-                    />
-                  </button>
-                </h2>
-                <div
-                  id={`faq-panel-${item.id}`}
-                  role="region"
-                  aria-labelledby={`faq-button-${item.id}`}
-                  hidden={!isOpen}
-                  className="border-t border-[var(--sa-line-hairline)] px-4 py-4 sm:px-5 text-sm text-[var(--sa-text-secondary)] leading-relaxed"
-                >
-                  {item.a}
+                    {item.a}
+                  </div>
                 </div>
               </li>
             );
@@ -127,10 +143,10 @@ const FAQ = () => {
         </ul>
 
         <footer className="pt-2 flex flex-wrap items-center gap-4">
-          <Link to="/login" className="sa-link min-h-11">
+          <Link to="/login" className="sa-link min-h-[44px]">
             <ArrowLeft size={14} strokeWidth={1.5} /> Back to Login
           </Link>
-          <Link to="/about" className="sa-link min-h-11">About PoliSync</Link>
+          <Link to="/about" className="sa-link min-h-[44px]">About PoliSync</Link>
         </footer>
       </main>
     </div>

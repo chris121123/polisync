@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  AlertTriangle, Plus,
-  Info, Filter, AlertCircle
+  AlertTriangle, Plus, AlertCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,8 +8,12 @@ import { useGlobalState } from '../../context/GlobalStateContext';
 import { RoomCard } from './RoomCard.jsx';
 import { RoomDetail } from './RoomDetail.jsx';
 import { AppModal, ModalHeader } from '../../components/AppModal.jsx';
+import ItxSelect from '../../components/ItxSelect.jsx';
 
-const fieldCls = 'w-full px-3 py-2.5 border bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
+const fieldCls = 'w-full px-3 border bg-[var(--sa-bg-base)] text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] transition-colors';
+const fieldTone = (invalid) => (invalid
+  ? 'border-[var(--sa-danger)]'
+  : 'border-[var(--sa-line-default)]');
 
 const Rooms = () => {
   const { rooms, sessions, staff, students, addRoom, deleteRoom } = useGlobalState();
@@ -110,33 +113,27 @@ const Rooms = () => {
     if (status === 'Over Capacity') return {
       badge: 'sa-badge--warn',
       accent: 'bg-[var(--sa-danger)]',
-      dot: 'bg-[var(--sa-danger)]',
-      text: 'sa-t-danger',
-      bg: 'bg-[var(--sa-surface-warm)]'
+      dot: 'bg-[var(--sa-danger)]'
     };
     if (status === 'In Use') return {
       badge: '',
-      accent: 'bg-[var(--sa-gold)]',
-      dot: 'bg-[var(--sa-gold)]',
-      text: 'sa-t-warm',
-      bg: 'bg-[var(--sa-surface-warm)]'
+      accent: 'bg-[var(--sa-bar-primary)]',
+      dot: 'bg-[var(--sa-bar-primary)]'
     };
     return {
       badge: 'sa-badge--positive',
       accent: 'bg-[var(--sa-success)]',
-      dot: 'bg-[var(--sa-success)]',
-      text: 'sa-t-warm',
-      bg: 'bg-[var(--sa-surface-warm)]'
+      dot: 'bg-[var(--sa-success)]'
     };
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-ps-bg">
+    <div className="flex h-full w-full overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col space-y-6 lg:space-y-8">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-2 sa-rule-b">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="sa-micro">Venue Overview</span>
@@ -157,23 +154,23 @@ const Rooms = () => {
           </div>
         </div>
 
-        {/* Filters & Stats Bar */}
+        {/* Filters */}
         <div className="flex flex-col space-y-4">
-          <div className="flex divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] overflow-x-auto hide-scrollbar shrink-0 w-fit max-w-full">
+          <div className="flex w-fit max-w-full flex-wrap items-center overflow-x-auto hide-scrollbar shrink-0">
             {['All', 'Available', 'In Use', 'Issues', 'General SPED', 'Therapy Room', 'Playschool Area'].map(f => (
               <button
                 key={f}
+                type="button"
                 onClick={() => setFilterType(f)}
+                aria-pressed={filterType === f}
                 className={clsx(
-                  "px-3 py-2 text-xs whitespace-nowrap flex items-center gap-2",
-                  filterType === f 
-                    ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1" 
-                    : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
+                  'itx-tab whitespace-nowrap tabular-nums',
+                  filterType === f && 'is-active'
                 )}
               >
                 {f === 'Issues' && <AlertTriangle size={14} strokeWidth={1.5} />}
                 {f}
-                <span className="text-[11px] tabular-nums">
+                <span className="text-[11px]">
                   {f === 'All' ? stats.total : f === 'Available' ? stats.available : f === 'In Use' ? stats.occupied : f === 'Issues' ? stats.issues : roomData.filter(r => r.type.includes(f)).length}
                 </span>
               </button>
@@ -183,7 +180,6 @@ const Rooms = () => {
 
         {/* Grid View (Balanced 3-column grid for 6 rooms) */}
         <motion.div 
-          layout
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6"
         >
             {filteredRooms.map((room) => (
@@ -224,21 +220,21 @@ const Rooms = () => {
           titleId="add-room-title"
           title="Add New Room"
           onClose={() => { setIsAddModalOpen(false); setFormErrors({}); }}
-          className="bg-[var(--sa-surface-warm)]"
         />
 
         <form onSubmit={handleAddRoom} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 md:px-6">
           <div>
-            <label className="sa-label">Room Name</label>
+            <label htmlFor="room-name" className="sa-label">Room Name</label>
             <input 
+              id="room-name"
               data-autofocus
               type="text" 
               placeholder="e.g. Room 101"
+              aria-invalid={formErrors.name ? 'true' : undefined}
+              aria-describedby={formErrors.name ? 'room-name-error' : undefined}
               className={clsx(
                 fieldCls,
-                formErrors.name 
-                  ? "border-[var(--sa-danger)]" 
-                  : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
+                fieldTone(formErrors.name)
               )}
               value={newRoom.name}
               onChange={e => {
@@ -247,35 +243,33 @@ const Rooms = () => {
               }}
               onBlur={() => validateField('name')}
             />
-            {formErrors.name && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.name}</p>}
+            {formErrors.name && <p id="room-name-error" className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.name}</p>}
           </div>
 
           <div>
-            <label className="sa-label">Room Type</label>
-            <select 
-              className={clsx(fieldCls, "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]")}
+            <label htmlFor="room-type" className="sa-label">Room Type</label>
+            <ItxSelect
+              id="room-type"
               value={newRoom.type}
-              onChange={e => setNewRoom({...newRoom, type: e.target.value})}
-            >
-              <option>General SPED</option>
-              <option>Therapy Room</option>
-              <option>Playschool Area</option>
-              <option>Admin Office</option>
-            </select>
+              onChange={(type) => setNewRoom({...newRoom, type})}
+              className={clsx(fieldCls, fieldTone(false))}
+              options={['General SPED', 'Therapy Room', 'Playschool Area', 'Admin Office'].map((type) => ({ value: type, label: type }))}
+            />
           </div>
 
           <div>
-            <label className="sa-label">Max Capacity</label>
+            <label htmlFor="room-capacity" className="sa-label">Max Capacity</label>
             <input 
+              id="room-capacity"
               type="number" 
               min="1"
               max="50"
+              aria-invalid={formErrors.maxCapacity ? 'true' : undefined}
+              aria-describedby={formErrors.maxCapacity ? 'room-capacity-error' : undefined}
               className={clsx(
                 fieldCls,
-                "tabular-nums",
-                formErrors.maxCapacity 
-                  ? "border-[var(--sa-danger)]" 
-                  : "border-[var(--sa-line-default)] focus:border-[var(--sa-gold)]"
+                'tabular-nums',
+                fieldTone(formErrors.maxCapacity)
               )}
               value={newRoom.maxCapacity}
               onChange={e => {
@@ -284,21 +278,21 @@ const Rooms = () => {
               }}
               onBlur={() => validateField('maxCapacity')}
             />
-            {formErrors.maxCapacity && <p className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.maxCapacity}</p>}
+            {formErrors.maxCapacity && <p id="room-capacity-error" className="text-[11px] sa-t-danger mt-1.5 flex items-center gap-1"><AlertCircle size={12} strokeWidth={1.5} /> {formErrors.maxCapacity}</p>}
           </div>
 
           <div className="pt-4 flex gap-3">
             <button 
               type="button"
               onClick={() => { setIsAddModalOpen(false); setFormErrors({}); }}
-              className="sa-btn flex-1 justify-center min-h-11"
+              className="sa-btn flex-1 justify-center"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={!newRoom.name || !newRoom.maxCapacity}
-              className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:cursor-not-allowed disabled:opacity-40"
+              className="sa-btn sa-btn--primary flex-1 justify-center"
             >
               Create Room
             </button>
@@ -317,7 +311,6 @@ const Rooms = () => {
           eyebrow="Room management"
           title="Delete room"
           onClose={closeDeleteModal}
-          className="bg-[var(--sa-surface-warm)]"
         />
         <div className="space-y-3 px-5 py-5 md:px-6">
           <div className="flex items-start gap-3">
@@ -327,7 +320,7 @@ const Rooms = () => {
             </p>
           </div>
           {roomSessionCount > 0 ? (
-            <div className="flex items-start gap-2 border border-[var(--sa-danger)] px-3 py-2.5 sa-t-danger">
+            <div className="sa-alert sa-alert--danger items-start">
               <AlertCircle size={14} strokeWidth={1.5} className="mt-0.5 shrink-0" />
               <p className="text-[11px]">
                 This room still has {roomSessionCount} scheduled session{roomSessionCount === 1 ? '' : 's'}. Move or delete them before removing the room.
@@ -337,12 +330,12 @@ const Rooms = () => {
             <p className="text-sm text-[var(--sa-text-muted)]">This permanently removes the room. This cannot be undone.</p>
           )}
         </div>
-        <div className="flex shrink-0 gap-3 border-t border-[var(--sa-line-hairline)] px-5 py-4 md:px-6">
+        <div className="flex shrink-0 gap-3 px-5 py-4 md:px-6">
           <button
             type="button"
             onClick={closeDeleteModal}
             disabled={isDeletingRoom}
-            className="sa-btn flex-1 justify-center min-h-11 disabled:opacity-40"
+            className="sa-btn flex-1 justify-center"
           >
             Cancel
           </button>
@@ -350,7 +343,7 @@ const Rooms = () => {
             type="button"
             onClick={handleDeleteRoom}
             disabled={isDeletingRoom || roomSessionCount > 0}
-            className="flex-1 border border-[var(--sa-danger)] py-3 text-[11px] uppercase tracking-[0.1em] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)] disabled:cursor-default disabled:opacity-50"
+            className="sa-btn itx-danger flex-1 justify-center"
           >
             {isDeletingRoom ? 'Deleting…' : 'Delete Room'}
           </button>

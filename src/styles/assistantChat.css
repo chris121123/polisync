@@ -1,0 +1,38 @@
+/* Plan 15 — the Atelier reset (.sa-theme * in superadminTheme.css) squares and
+   flattens everything app-wide, so the chat re-grants only the shapes it uses.
+   Plan 20 — every value is an ITX token; no radii, colours or shadows here. */
+.sa-theme .chat-scope .rounded-xl { border-radius: var(--x-radius-control); }
+.sa-theme .chat-scope .rounded-2xl { border-radius: var(--x-radius-card); }
+.sa-theme .chat-scope .rounded-full { border-radius: var(--x-radius-chip); }
+
+/* Composer pill: the resting card treatment; focus adds the 2px accent ring.
+   Dark re-pins the stack so the lift drops but the hairline ring stays. */
+.sa-theme .chat-scope .chat-pill {
+  box-shadow: var(--x-shadow-card), var(--x-ring-card);
+}
+.sa-theme .chat-scope .chat-pill:focus-within {
+  box-shadow: var(--x-shadow-card), var(--x-ring-card), 0 0 0 2px var(--accent);
+}
+.sa-theme.dark .chat-scope .chat-pill {
+  box-shadow: var(--x-shadow-card), var(--x-ring-card);
+}
+.sa-theme.dark .chat-scope .chat-pill:focus-within {
+  box-shadow: var(--x-ring-card), 0 0 0 2px var(--accent);
+}
+
+/* One focus indicator: the pill's 2px ring. The textarea's layered
+   `outline-none` loses to itxBase's unscoped focus rule, so this scoped rule
+   (same specificity family as the pill) is the one that wins. */
+.sa-theme .itx-scope .chat-scope textarea:focus-visible {
+  outline: none;
+}
+
+/* Chips (New chat, suggestion pills): the shared row fill pair. The 2px accent
+   focus ring is itxBase's; only the two fills are added. `:not([aria-label])`
+   keeps the composer's accent send button out of the family. */
+.sa-theme .chat-scope button.rounded-full:not([aria-label]):hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-hover);
+}
+.sa-theme .chat-scope button.rounded-full:not([aria-label]):active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--surface-sunken);
+}

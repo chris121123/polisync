@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle, ShieldCheck, ShieldOff, ArrowRight, Eye, EyeOff } from 'lucide-react';
@@ -23,8 +23,22 @@ const Login = () => {
   const [demoError, setDemoError] = useState('');
   const [demoLoading, setDemoLoading] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const demoToggleRef = useRef(null);
   // supersedes ADR-019: superadmin demo is intentionally shown on the public login (user-approved)
   const demoAccounts = parseDemoAccounts(import.meta.env.VITE_DEMO_ACCOUNTS);
+  const passwordHint = password.length > 0 && password !== password.trim();
+
+  // Escape collapses the demo disclosure; its buttons unmount, so focus goes back to the toggle.
+  useEffect(() => {
+    if (!showDemo) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      setShowDemo(false);
+      demoToggleRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showDemo]);
 
   const handleDemoLogin = async (account) => {
     setDemoError('');
@@ -136,15 +150,16 @@ const Login = () => {
 
   return (
     <AuthShell>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full max-w-[420px] bg-ps-surface border border-ps-border p-6 sm:p-8 space-y-6"
-        >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="itx-card w-full max-w-[420px]"
+      >
+        <div className="p-6 sm:p-8 space-y-6">
           {/* Form Header */}
           <div className="flex flex-col items-start gap-2">
-            <h1 className="text-2xl text-ps-ink-1">Sign in to PoliSync</h1>
-            <p className="text-sm text-ps-ink-2">Accounts are created by the center’s administrator.</p>
+            <h1>Sign in to PoliSync</h1>
+            <p>Accounts are created by the center’s administrator.</p>
           </div>
 
           {/* Lockout State */}
@@ -152,6 +167,7 @@ const Login = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              role="alert"
               className="sa-alert sa-alert--danger flex-col"
             >
               <div className="flex items-center gap-3">
@@ -167,14 +183,14 @@ const Login = () => {
               {resetSent ? (
                 <div className="sa-alert sa-alert--success items-center">
                   <ShieldCheck size={16} strokeWidth={1.5} className="shrink-0" />
-                  <span>A recovery email has been sent to <strong className="font-medium">{email.trim()}</strong>.</span>
+                  <span className="break-words">A recovery email has been sent to <span className="font-medium">{email.trim()}</span>.</span>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => sendResetEmail(email)}
-                    className="sa-link min-h-[44px] self-start"
+                    className="sa-link min-h-[44px] self-start break-words text-left"
                   >
                     Send password reset email to {email.trim()} →
                   </button>
@@ -195,6 +211,7 @@ const Login = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              role="alert"
               className="sa-alert sa-alert--danger items-center"
             >
               <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
@@ -225,11 +242,12 @@ const Login = () => {
                   onBlur={() => validateField('email')}
                   placeholder="name@center.com"
                   aria-invalid={fieldErrors.email ? 'true' : undefined}
-                  className="sa-input disabled:opacity-40"
+                  aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
+                  className="sa-input"
                 />
               </div>
               {fieldErrors.email && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-ps-danger">
+                <p id="login-email-error" className="mt-2 flex items-center gap-1 text-xs text-[var(--x-notice-ink)]">
                   <AlertCircle size={12} strokeWidth={1.5} /> {fieldErrors.email}
                 </p>
               )}
@@ -256,7 +274,11 @@ const Login = () => {
                   onBlur={() => validateField('password')}
                   placeholder="••••••••"
                   aria-invalid={fieldErrors.password ? 'true' : undefined}
-                  className="sa-input sa-input--reveal disabled:opacity-40"
+                  aria-describedby={
+                    [fieldErrors.password && 'login-password-error', passwordHint && 'login-password-hint']
+                      .filter(Boolean).join(' ') || undefined
+                  }
+                  className="sa-input sa-input--reveal"
                 />
                 <button
                   type="button"
@@ -266,26 +288,31 @@ const Login = () => {
                   disabled={isLockedOut}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   aria-pressed={showPassword}
-                  className="absolute right-0.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center text-ps-ink-2 hover:text-ps-ink-1 disabled:opacity-40 cursor-pointer"
+                  data-reveal
+                  className="absolute right-0 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-[var(--ink-muted)] hover:text-[var(--ink-primary)]"
                 >
                   {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
                 </button>
               </div>
               {fieldErrors.password && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-ps-danger">
+                <p id="login-password-error" className="mt-2 flex items-center gap-1 text-xs text-[var(--x-notice-ink)]">
                   <AlertCircle size={12} strokeWidth={1.5} /> {fieldErrors.password}
                 </p>
               )}
-              {password.length > 0 && password !== password.trim() && (
-                <p className="mt-1 text-xs text-ps-warn">Spaces at the start or end count as part of your password.</p>
+              {passwordHint && (
+                <p id="login-password-hint" className="mt-2 text-xs text-[var(--ink-muted)]">Spaces at the start or end count as part of your password.</p>
               )}
             </div>
 
             {/* Failed-attempt marks */}
             {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && !isLockedOut && (
               <div className="flex items-center justify-between gap-1.5 pt-1">
-                <span className="text-xs text-ps-ink-2">Security check</span>
-                <div className="flex gap-1.5">
+                <span className="text-xs text-[var(--ink-muted)]">Security check</span>
+                <div
+                  className="flex gap-1.5"
+                  role="img"
+                  aria-label={`${failedAttempts} of ${MAX_ATTEMPTS} attempts used`}
+                >
                   {[...Array(MAX_ATTEMPTS)].map((_, i) => (
                     <div
                       key={i}
@@ -300,10 +327,10 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || demoLoading || isLockedOut}
-              className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="sa-btn sa-btn--primary sa-btn--block"
             >
               {loading ? (
-                <div className="w-4 h-4 border-2 border-[var(--sa-gold)] border-t-transparent animate-spin" />
+                <div className="w-4 h-4 border-2 border-[var(--action-text)] border-t-transparent animate-spin" />
               ) : isLockedOut ? (
                 'Access Locked'
               ) : (
@@ -327,24 +354,27 @@ const Login = () => {
           {demoAccounts.length > 0 && (
             <div className="space-y-2">
               <button
+                ref={demoToggleRef}
                 type="button"
                 onClick={() => setShowDemo((s) => !s)}
                 aria-expanded={showDemo}
-                aria-controls="demo-accounts-grid"
-                className="w-full flex flex-col items-center justify-center gap-1 min-h-[44px] px-3 border border-ps-border bg-transparent transition-colors cursor-pointer hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)]"
+                aria-controls={showDemo ? 'demo-accounts-grid' : undefined}
+                className="sa-btn w-full justify-center"
               >
-                <span className="block text-xs text-ps-ink-1">Demo accounts</span>
-                <span className="block text-xs text-ps-ink-2">{showDemo ? 'Tap a role to sign in.' : 'Tap to show demo accounts.'}</span>
+                <span>Demo accounts</span>
               </button>
+              <p className="text-xs text-center text-[var(--ink-muted)]">
+                {showDemo ? 'Tap a role to sign in.' : 'Tap to show demo accounts.'}
+              </p>
               {showDemo && (
-                <div id="demo-accounts-grid" className="flex flex-wrap gap-2">
+                <div id="demo-accounts-grid" className="grid gap-2">
                   {demoAccounts.map((account) => (
                     <button
                       key={account.role}
                       type="button"
                       onClick={() => handleDemoLogin(account)}
                       disabled={demoLoading}
-                      className="grow basis-[calc(50%-0.25rem)] min-h-[44px] px-2 border border-ps-border bg-transparent text-xs text-ps-ink-1 hover:border-[var(--sa-line-strong)] hover:bg-[var(--sa-surface-2)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className="sa-btn w-full justify-center"
                     >
                       {`Use ${DEMO_ROLE_LABELS[account.role]} demo`}
                     </button>
@@ -352,15 +382,15 @@ const Login = () => {
                 </div>
               )}
               {showDemo && demoError && (
-                <p role="alert" className="text-xs text-ps-danger text-center">{demoError}</p>
+                <p role="alert" className="text-xs text-center text-[var(--x-notice-ink)]">{demoError}</p>
               )}
             </div>
           )}
 
           {/* Trust line at bottom */}
-          <div className="pt-6 border-t border-ps-border flex flex-col items-center gap-3">
-            <p className="flex items-center gap-2 text-[11px] text-ps-ink-2">
-              <ShieldCheck size={14} strokeWidth={1.5} className="text-ps-success" />
+          <div className="flex flex-col items-center gap-3">
+            <p className="flex items-center gap-2 text-xs text-[var(--ink-muted)]">
+              <ShieldCheck size={14} strokeWidth={1.5} className="text-[var(--success)]" />
               <span>Secure access • Role-based • SPED Center</span>
             </p>
             <nav aria-label="About PoliSync" className="flex items-center gap-4">
@@ -368,7 +398,8 @@ const Login = () => {
               <Link to="/faq" className="sa-link min-h-[44px]">FAQ</Link>
             </nav>
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
     </AuthShell>
   );
 };

@@ -58,7 +58,7 @@ const ForceChangePasswordModal = () => {
         <div className="w-14 h-14 sm:w-16 sm:h-16 border border-[var(--sa-line-default)] sa-t-warm flex items-center justify-center mb-3 sm:mb-4">
           <ShieldAlert size={28} strokeWidth={1.5} className="sm:w-8 sm:h-8" />
         </div>
-        <h2 id="force-password-title" className="text-lg sm:text-xl text-[var(--sa-text-primary)]">Action Required</h2>
+        <h2 id="force-password-title" className="text-[17px] font-medium text-[var(--sa-text-primary)]">Action Required</h2>
         <p className="text-sm text-[var(--sa-text-secondary)] mt-2">
           For security reasons, you must change your temporary password before accessing your account.
         </p>
@@ -87,7 +87,10 @@ const ForceChangePasswordModal = () => {
             />
             <button
               type="button"
+              data-reveal
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
               className="absolute right-0.5 top-1/2 flex min-h-[40px] min-w-[40px] -translate-y-1/2 items-center justify-center text-[var(--sa-text-muted)] transition-colors hover:text-[var(--sa-text-primary)]"
             >
               {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
@@ -115,7 +118,7 @@ const ForceChangePasswordModal = () => {
             type="button"
             onClick={handleSubmit}
             disabled={loading || !newPassword || !confirmPassword}
-            className="sa-btn sa-btn--primary sa-btn--block disabled:opacity-40 disabled:cursor-default"
+            className="sa-btn sa-btn--primary sa-btn--block"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-current border-t-transparent animate-spin" />
@@ -127,7 +130,7 @@ const ForceChangePasswordModal = () => {
             type="button"
             onClick={logout}
             disabled={loading}
-            className="sa-btn sa-btn--block disabled:opacity-40 disabled:cursor-default"
+            className="sa-btn sa-btn--block"
           >
             Cancel and Logout
           </button>

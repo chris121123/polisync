@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import { DAY_NAMES as dayNames, sessionDayIndex, sessionDayName, formatTime } from '../../lib/sessionDay';
 import { StatCard } from '../admin/AdminDashboard';
 import MyAvailabilityCard from '../../components/MyAvailabilityCard';
+import ItxSelect from '../../components/ItxSelect';
 import { AppModal, ModalHeader } from '../../components/AppModal';
 
 const TherapistDashboard = () => {
@@ -65,7 +66,7 @@ const TherapistDashboard = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 sa-rule-b">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
         <div>
           <h1 className="sa-title">
             My Caseload
@@ -121,31 +122,28 @@ const TherapistDashboard = () => {
               </button>
             </div>
 
-            {/* Day Pill Selector */}
-            <div className="flex w-fit max-w-full py-1 divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)] my-4 overflow-x-auto">
+            {/* Day Selector */}
+            <div className="my-4 flex w-fit max-w-full items-center overflow-x-auto">
               {dayNames.map((day, idx) => {
                 const count = mySessions.filter(s => sessionDayIndex(s) === idx).length;
                 const isActive = selectedDay === idx + 1;
                 return (
                   <button
                     key={day}
+                    type="button"
                     onClick={() => setSelectedDay(idx + 1)}
-                    className={clsx(
-                      "px-3 py-2 text-xs flex items-center gap-2 shrink-0",
-                      isActive
-                        ? "text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1"
-                        : "text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]"
-                    )}
+                    aria-pressed={isActive}
+                    className={clsx('itx-tab shrink-0', isActive && 'is-active')}
                   >
                     <span>{day.slice(0, 3)}</span>
-                    <span className="tabular-nums">{count}</span>
+                    <span className="tabular-nums text-[11px]">{count}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* Session List */}
-            <div className="sa-list">
+            <div className="space-y-1">
               {todaySessions.length > 0 ? (
                 todaySessions.map((session, i) => (
                   <motion.div 
@@ -153,7 +151,7 @@ const TherapistDashboard = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.05 }}
-                    className="sa-row flex-col sm:flex-row border-l-2 border-l-[var(--sa-gold)] pl-3"
+                    className="sa-row flex-col sm:flex-row"
                   >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Time Column */}
@@ -226,10 +224,10 @@ const TherapistDashboard = () => {
               <h2 className="sa-panel-title">My Programs</h2>
             </div>
             
-            <div className="sa-list">
+            <div className="mt-1 space-y-1">
               {myAssignments.length > 0 ? (
                 myAssignments.map(a => (
-                  <div key={a.id} className="sa-row border-l-2 border-l-[var(--sa-gold)] pl-3">
+                  <div key={a.id} className="sa-row h-11">
                     <p className="sa-row-title flex-1 min-w-0 truncate">{a.programs?.name}</p>
                     <span className="sa-badge shrink-0">
                       Active
@@ -254,46 +252,52 @@ const TherapistDashboard = () => {
           title="Session Note"
           description={selectedSession && `${selectedSession.title} • ${sessionDayName(selectedSession)}`}
           onClose={closeNoteModal}
-          className="bg-[var(--sa-surface-warm)]"
         />
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 md:px-6">
           {/* Student Select */}
           <div>
-            <label className="sa-label">Select Student</label>
-            <select
-              data-autofocus
+            <span id="note-student-label" className="sa-label">Select Student</span>
+            <ItxSelect
               value={noteStudentId}
-              onChange={(e) => setNoteStudentId(e.target.value)}
-              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] focus:border-[var(--sa-gold)]"
-            >
-              {(selectedSession?.studentIds || []).map(sid => {
+              onChange={setNoteStudentId}
+              options={(selectedSession?.studentIds || []).map(sid => {
                 const student = getStudent(sid);
-                return <option key={sid} value={String(sid)}>{student?.name || `Student ${sid}`}</option>;
+                return { value: String(sid), label: student?.name || `Student ${sid}` };
               })}
-            </select>
+              ariaLabelledby="note-student-label"
+              listboxLabel="Student"
+              autoFocus
+            />
           </div>
 
           {/* Star Rating */}
           <div>
-            <label className="sa-label">Progress & Engagement Rating</label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map(rating => (
-                <button
-                  key={rating}
-                  type="button"
-                  onMouseEnter={() => setHoverRating(rating)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  onClick={() => setNoteRating(rating)}
-                  className="p-1.5 text-ps-warn"
-                >
-                  <Star 
-                    size={22} 
-                    fill={(hoverRating || noteRating) >= rating ? 'currentColor' : 'none'} 
-                    strokeWidth={1.5}
-                  />
-                </button>
-              ))}
+            <span id="note-rating-label" className="sa-label">Progress & Engagement Rating</span>
+            <div className="flex gap-2" role="group" aria-labelledby="note-rating-label">
+              {[1, 2, 3, 4, 5].map(rating => {
+                const filled = (hoverRating || noteRating) >= rating;
+                return (
+                  <button
+                    key={rating}
+                    type="button"
+                    onMouseEnter={() => setHoverRating(rating)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => setNoteRating(rating)}
+                    aria-pressed={noteRating === rating}
+                    aria-label={`Rate ${rating} of 5`}
+                    className="flex h-9 w-9 items-center justify-center"
+                  >
+                    <Star 
+                      size={22} 
+                      fill={filled ? 'currentColor' : 'none'} 
+                      strokeWidth={1.5}
+                      className={filled ? 'text-[var(--accent)]' : 'text-[var(--ink-muted)]'}
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -305,7 +309,7 @@ const TherapistDashboard = () => {
               onChange={e => setNoteContent(e.target.value)}
               placeholder="Record behavioral response, milestone breakthroughs, or parent recommendations..."
               rows={4}
-              className="w-full px-3 py-2.5 border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)] resize-none"
+              className="w-full resize-none border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--accent)]"
             />
           </div>
 
@@ -314,13 +318,13 @@ const TherapistDashboard = () => {
             <button
               onClick={handleAddNote}
               disabled={!noteContent.trim()}
-              className="sa-btn sa-btn--primary flex-1 justify-center min-h-11 disabled:opacity-40"
+              className="sa-btn sa-btn--primary flex-1 justify-center"
             >
               Save Progress Note
             </button>
             <button
               onClick={closeNoteModal}
-              className="sa-btn justify-center min-h-11"
+              className="sa-btn justify-center"
             >
               Cancel
             </button>

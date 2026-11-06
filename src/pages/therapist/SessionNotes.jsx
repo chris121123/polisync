@@ -36,33 +36,31 @@ const SessionNotes = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
+      <div className="pb-4">
         <h1 className="sa-title">Session Notes</h1>
         <p className="sa-sub">Review and manage your therapy session notes</p>
       </div>
 
-      <div className="bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] overflow-hidden">
-        <div className="p-4 border-b border-[var(--sa-line-hairline)] flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div className="sa-panel">
+        <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" />
+            <Search size={16} strokeWidth={1.5} className="sa-field-icon" aria-hidden="true" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full pl-10 pr-3 py-2 bg-[var(--sa-bg-base)] border border-[var(--sa-line-default)] text-sm text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]"
+              className="sa-input"
             />
           </div>
-          <div className="flex flex-wrap gap-px shrink-0 sm:flex-nowrap sm:gap-0 sm:divide-x sm:divide-[var(--sa-line-default)] sm:border sm:border-[var(--sa-line-default)]">
+          <div className="flex flex-wrap shrink-0 sm:flex-nowrap">
             {['all', 'progress', 'general', 'attendance', 'incident'].map(type => (
               <button
                 key={type}
+                type="button"
                 onClick={() => setFilter(type)}
-                className={`border border-[var(--sa-line-default)] sm:border-0 px-3 py-1.5 text-xs capitalize shrink-0 ${
-                  filter === type
-                    ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1'
-                    : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]'
-                }`}
+                aria-pressed={filter === type}
+                className="itx-tab shrink-0 capitalize"
               >
                 {type}
               </button>
@@ -70,9 +68,9 @@ const SessionNotes = () => {
           </div>
         </div>
 
-        <div className="sa-list">
+        <div className="space-y-1">
           {filteredNotes.length > 0 ? filteredNotes.map(note => (
-            <div key={note.id} className="sa-row p-5 hover:bg-[var(--sa-surface-2)]">
+            <div key={note.id} className="sa-row">
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -85,18 +83,21 @@ const SessionNotes = () => {
                       {new Date(note.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className={`text-sm text-[var(--sa-text-muted)] leading-relaxed ${expandedNote === note.id ? '' : 'line-clamp-2'}`}>
+                  <p id={`note-content-${note.id}`} className={`text-sm text-[var(--sa-text-muted)] leading-relaxed ${expandedNote === note.id ? '' : 'line-clamp-2'}`}>
                     {note.content}
                   </p>
                   <div className="flex items-center gap-3 mt-2">
-                    <div className="flex gap-0.5">
+                    <div className="flex gap-0.5" role="img" aria-label={`Rated ${note.rating || 0} of 5`}>
                       {[1, 2, 3, 4, 5].map(r => (
-                        <Star key={r} size={12} strokeWidth={1.5} className={note.rating >= r ? 'sa-t-warm' : 'sa-t-muted'} fill={note.rating >= r ? 'currentColor' : 'none'} />
+                        <Star key={r} size={12} strokeWidth={1.5} className={note.rating >= r ? 'sa-t-warm' : 'sa-t-muted'} fill={note.rating >= r ? 'currentColor' : 'none'} aria-hidden="true" />
                       ))}
                     </div>
                     {note.content && note.content.length > 120 && (
                       <button
+                        type="button"
                         onClick={() => setExpandedNote(expandedNote === note.id ? null : note.id)}
+                        aria-expanded={expandedNote === note.id}
+                        aria-controls={`note-content-${note.id}`}
                         className="sa-link flex items-center gap-1"
                       >
                         {expandedNote === note.id ? 'Show less' : 'Show more'}

@@ -6,8 +6,8 @@ import { AddRequirementForm } from './AddRequirementForm.jsx';
 import { AvailabilityEditor } from './AvailabilityEditor.jsx';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const primaryBtn = 'sa-btn sa-btn--primary disabled:opacity-40 disabled:cursor-not-allowed';
-const ghostBtn = 'sa-btn disabled:opacity-40 disabled:cursor-not-allowed';
+const primaryBtn = 'sa-btn sa-btn--primary';
+const ghostBtn = 'sa-btn';
 
 export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
   const { studentPrograms, sessions, students, programs, staff, studentAvailability, smartSchedule, notify } = useGlobalState();
@@ -75,15 +75,14 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center divide-x divide-[var(--sa-line-default)] border border-[var(--sa-line-default)]" role="group" aria-label="Scheduling scope">
+          <div className="flex items-center" role="group" aria-label="Scheduling scope">
             {[['whole-week', 'Whole week'], ['selected-day', 'This day only']].map(([key, label]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setScope(key)}
                 aria-pressed={scope === key}
-                className={clsx('px-3 py-1.5 text-xs',
-                  scope === key ? 'text-[var(--sa-text-primary)] outline-1 outline-[var(--sa-gold)] -outline-offset-1' : 'text-[var(--sa-text-muted)] hover:text-[var(--sa-text-primary)]')}
+                className={clsx('itx-tab', scope === key && 'is-active')}
               >
                 {label}
               </button>
@@ -110,53 +109,58 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
           <p className="sa-empty-sub">Every requirement has its weekly sessions. Add one below to schedule more.</p>
         </div>
       ) : (
-        <div className="border border-[var(--sa-line-default)] overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="itx-card overflow-x-auto">
+          <table className="itx-table text-left">
             <caption className="sr-only">Pending student requirements</caption>
             <thead>
-              <tr className="text-left text-xs text-[var(--sa-text-muted)] border-b border-[var(--sa-line-default)]">
-                <th scope="col" className="px-3 py-2.5 w-10">
-                  <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all pending requirements" className="accent-ps-primary" />
+              <tr>
+                <th scope="col" className="w-10">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all pending requirements" />
                 </th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Student</th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Program</th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Scheduled</th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Priority</th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Teacher</th>
-                <th scope="col" className="px-3 py-2.5 font-normal">Availability</th>
-                <th scope="col" className="px-3 py-2.5 font-normal text-right">Actions</th>
+                <th scope="col">Student</th>
+                <th scope="col">Program</th>
+                <th scope="col">Scheduled</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Teacher</th>
+                <th scope="col">Availability</th>
+                <th scope="col" className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {pending.map(sp => {
                 const days = dayChips(sp.student_id);
+                const teacher = staff.find(p => p.id === sp.assigned_teacher_id)?.name ?? '—';
                 return (
-                  <tr key={sp.id} className="border-b border-[var(--sa-line-hairline)] last:border-0">
-                    <td className="px-3 py-2.5">
+                  <tr key={sp.id} className={clsx(selected.includes(sp.id) && 'itx-selected')}>
+                    <td data-mobile="role">
                       <input type="checkbox" checked={selected.includes(sp.id)} onChange={() => toggle(sp.id)}
-                        aria-label={`Select ${studentName(sp.student_id)} — ${programName(sp.program_id)}`} className="accent-ps-primary" />
+                        aria-label={`Select ${studentName(sp.student_id)} — ${programName(sp.program_id)}`} />
                     </td>
-                    <td className="px-3 py-2.5 text-[var(--sa-text-primary)]">{studentName(sp.student_id)}</td>
-                    <td className="px-3 py-2.5 text-[var(--sa-text-muted)]">{programName(sp.program_id)}</td>
-                    <td className="px-3 py-2.5 tabular-nums text-[var(--sa-text-primary)]">{linkedCount(sp.id)}/{sp.sessions_per_week || 1}</td>
-                    <td className="px-3 py-2.5 tabular-nums text-[var(--sa-text-muted)]">{sp.priority ?? 5}</td>
-                    <td className="px-3 py-2.5 text-[var(--sa-text-muted)]">{staff.find(p => p.id === sp.assigned_teacher_id)?.name ?? '—'}</td>
-                    <td className="px-3 py-2.5">
+                    <td data-mobile="title" className="text-[var(--sa-text-primary)]">{studentName(sp.student_id)}</td>
+                    <td data-mobile="meta" className="text-[var(--sa-text-muted)]">{programName(sp.program_id)}</td>
+                    <td data-mobile="meta" className="tabular-nums text-[var(--sa-text-primary)]">{linkedCount(sp.id)}/{sp.sessions_per_week || 1}</td>
+                    <td data-mobile="hidden" className="tabular-nums text-[var(--sa-text-muted)]">{sp.priority ?? 5}</td>
+                    <td data-mobile="hidden" className="text-[var(--sa-text-muted)]">{teacher}</td>
+                    <td data-mobile="hidden">
                       {days.length === 0 ? (
                         <span className="text-[var(--sa-text-muted)]">—</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {days.map(d => (
-                            <span key={d} className="px-1.5 py-0.5 border border-[var(--sa-line-hairline)] text-[11px] tabular-nums text-[var(--sa-text-muted)]">
+                            <span key={d} className="sa-badge tabular-nums">
                               {DAY_NAMES[d] ?? d}
                             </span>
                           ))}
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td data-mobile="action" className="text-right">
                       <button type="button" onClick={() => setAvailabilityFor({ id: sp.student_id, name: studentName(sp.student_id) })}
                         className="sa-link">Availability</button>
+                    </td>
+                    {/* Phones: priority, teacher and days keep their desktop columns and repeat here. */}
+                    <td className="hidden text-[11px] leading-tight text-[var(--sa-text-muted)] max-sm:block">
+                      Priority {sp.priority ?? 5} · {teacher} · {days.length === 0 ? 'No availability' : days.map(d => DAY_NAMES[d] ?? d).join(', ')}
                     </td>
                   </tr>
                 );
@@ -167,7 +171,7 @@ export const PendingPanel = ({ selectedDateISO, dayOfWeek }) => {
       )}
 
       {lastRun && (
-        <div aria-live="polite" className="border border-[var(--sa-line-default)] p-4 space-y-1.5">
+        <div aria-live="polite" className="sa-alert p-4 space-y-1.5">
           <p className="sa-micro flex items-center gap-2">
             <CheckCircle2 size={14} strokeWidth={1.5} className="text-[var(--sa-success)]" /> Last run
           </p>

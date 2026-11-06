@@ -94,7 +94,8 @@ export const GlobalStateProvider = ({ children }) => {
         studentProgramId: s.student_program_id ?? null,
         dayOfWeek: s.day_of_week,
         sessionDate: s.session_date || null,
-        isConfirmed: s.is_confirmed
+        isConfirmed: s.is_confirmed,
+        source: s.source || 'manual'
       })));
     }
     if (staffAvailRes.status === 'fulfilled' && staffAvailRes.value.data) {
@@ -238,7 +239,8 @@ export const GlobalStateProvider = ({ children }) => {
               studentProgramId: payload.new.student_program_id ?? null,
               dayOfWeek: payload.new.day_of_week,
               sessionDate: payload.new.session_date || null,
-              isConfirmed: payload.new.is_confirmed
+              isConfirmed: payload.new.is_confirmed,
+              source: payload.new.source || 'manual'
             }];
           });
         } else if (payload.eventType === 'UPDATE') {
@@ -255,7 +257,8 @@ export const GlobalStateProvider = ({ children }) => {
             studentProgramId: payload.new.student_program_id ?? null,
             dayOfWeek: payload.new.day_of_week,
             sessionDate: payload.new.session_date || null,
-            isConfirmed: payload.new.is_confirmed
+            isConfirmed: payload.new.is_confirmed,
+            source: payload.new.source || 'manual'
           } : s));
         } else if (payload.eventType === 'DELETE') {
           setSessions(prev => prev.filter(s => s.id !== payload.old.id));

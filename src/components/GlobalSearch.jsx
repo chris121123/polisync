@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Calendar, CalendarRange, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Loader2, Calendar, CalendarRange, User, Users, FileText, ArrowRight, DoorOpen, BookOpen, Settings as SettingsIcon, Moon, FileClock, SlidersHorizontal, Activity, Cpu, Sparkles, FileBarChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
 import {
   matchesStaff, matchesStudent, matchesSession, matchesRoom, matchesAnyKeyword,
 } from '../lib/search/matchers.js';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
-const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
+const GlobalSearch = ({ isOpen, onToggle, onClose, returnFocusRef }) => {
   const { staff, students, sessions, rooms, appRole, parentChildren, fetchParentChildren } = useGlobalState();
   const isParent = appRole === 'parent';
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState([]);
+  const panelRef = useRef(null);
 
   // Parents search only linked children: load links on mount so results
   // fail closed (empty) until the links arrive.
@@ -28,13 +30,10 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         if (onToggle) onToggle();
         else onClose();
       }
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onToggle, onClose]);
+  }, [onToggle, onClose]);
 
   // Reset logic moved to a handler to avoid sync setState in effect
   const handleClose = useCallback(() => {
@@ -42,6 +41,8 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
     setResults([]);
     onClose();
   }, [onClose]);
+
+  useFocusTrap(panelRef, { active: isOpen, onClose: handleClose, returnFocusRef });
 
   const roomOccupancy = useCallback((roomName) => {
     const count = sessions.filter(s => s.room === roomName).length;
@@ -153,6 +154,15 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
           sub: 'Privileged actions and account events',
           icon: FileClock,
           action: () => navigate('/admin/audit'),
+        });
+      }
+      if ((isAdminOnly || appRole === 'superadmin') && matchesAnyKeyword(lowerQuery, ['reports', 'report', 'audit', 'usage', 'brief'])) {
+        searchResults.push({
+          id: 'nav-reports',
+          title: 'Reports',
+          sub: 'Audit, usage, and schedule health — metrics first, AI prose second',
+          icon: FileBarChart,
+          action: () => navigate('/admin/reports'),
         });
       }
       if (appRole === 'superadmin' && matchesAnyKeyword(lowerQuery, ['config', 'configuration', 'engine', 'runtime'])) {
@@ -270,9 +280,8 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
   if (!isOpen) return null;
 
   const handleResultClick = (result) => {
-    if (result.action) {
-      result.action();
-    }
+    if (!result.action) return;
+    result.action();
     handleClose();
   };
 
@@ -282,24 +291,30 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-[10vh] bg-black/40 px-3 sm:px-4"
+        transition={{ duration: 0.15 }}
+        className="itx-search-backdrop fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-[10vh] px-3 sm:px-4"
         onClick={handleClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -20 }}
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Global search"
+          tabIndex={-1}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-2xl bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] overflow-hidden max-h-[85vh] flex flex-col"
+          className="itx-search-panel w-full max-w-2xl bg-[var(--sa-surface-1)] border border-[var(--sa-line-default)] overflow-hidden max-h-[85vh] flex flex-col"
         >
           <div className="relative border-b border-[var(--sa-line-hairline)] p-3 sm:p-4 shrink-0">
             <Search className="absolute left-5 sm:left-6 top-1/2 -translate-y-1/2 text-[var(--sa-text-muted)]" size={18} strokeWidth={1.5} />
             <input
               type="text"
-              autoFocus
               placeholder={isParent ? "Search your children... (Ctrl+K)" : "Search students, staff, rooms, sessions... (Ctrl+K)"}
               aria-label="Global search"
-              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-transparent border-none outline-none text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)]"
+              className="w-full pl-11 sm:pl-12 pr-4 py-2.5 sm:py-3 bg-transparent border-none outline-none text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)]"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -316,23 +331,40 @@ const GlobalSearch = ({ isOpen, onToggle, onClose }) => {
               </div>
             )}
             
-            <div className="sa-list">
-              {results.map((result) => (
-                <button
-                  key={result.id}
-                  onClick={() => handleResultClick(result)}
-                  className="sa-row w-full px-4 text-left group"
-                >
-                  <result.icon size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)]" />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm text-[var(--sa-text-primary)]">{result.title}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-[var(--sa-text-muted)]">{result.sub}</p>
-                  </div>
-                  {result.action && (
+            <div>
+              {results.map((result) => {
+                if (!result.action) {
+                  return (
+                    <div
+                      key={result.id}
+                      role="status"
+                      aria-live="polite"
+                      className="flex w-full items-start gap-3 px-4 py-2.5 text-left"
+                    >
+                      <result.icon size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)]" />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm text-[var(--sa-text-muted)]">{result.title}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-[var(--sa-text-muted)]">{result.sub}</p>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={result.id}
+                    type="button"
+                    onClick={() => handleResultClick(result)}
+                    className="sa-row w-full px-4 text-left group"
+                  >
+                    <result.icon size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)]" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-sm text-[var(--sa-text-primary)]">{result.title}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-[var(--sa-text-muted)]">{result.sub}</p>
+                    </div>
                     <ArrowRight size={14} strokeWidth={1.5} className="mt-0.5 shrink-0 text-[var(--sa-text-muted)] transition-colors group-hover:text-[var(--sa-text-primary)]" />
-                  )}
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </motion.div>

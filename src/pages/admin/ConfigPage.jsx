@@ -47,21 +47,23 @@ const ConfigPage = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto w-full space-y-6 lg:space-y-8 animate-page-entry">
-      <div className="pb-4 sa-rule-b">
-        <h1 className="sa-title">System Engine &amp; Runtime</h1>
-        <p className="sa-sub">Scheduler rules and runtime settings for the platform.</p>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-page-entry">
+      <div className="space-y-6 lg:max-w-3xl">
+        <div>
+          <h1 className="sa-title">System Engine &amp; Runtime</h1>
+          <p className="sa-sub">Scheduler rules and runtime settings for the platform.</p>
+        </div>
+
+        <ConfigPanel
+          configForm={configForm}
+          setConfigForm={setConfigForm}
+          handleSaveConfig={handleSaveConfig}
+          configLoading={configLoading}
+          isConfigDirty={isConfigDirty}
+        />
+
+        <SchedulerConsole />
       </div>
-
-      <ConfigPanel
-        configForm={configForm}
-        setConfigForm={setConfigForm}
-        handleSaveConfig={handleSaveConfig}
-        configLoading={configLoading}
-        isConfigDirty={isConfigDirty}
-      />
-
-      <SchedulerConsole />
     </div>
   );
 };

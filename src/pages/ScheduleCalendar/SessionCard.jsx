@@ -25,14 +25,23 @@ export const NowIndicator = ({ rowHeight = 96 }) => {
   return (
     <div className="absolute left-0 right-0 z-30 pointer-events-none" style={{ top }}>
       <div className="flex items-center gap-0">
-        <div className="w-2.5 h-2.5 rounded-full bg-ps-danger shadow-sm shrink-0 -ml-1" />
-        <div className="flex-1 h-0.5 bg-ps-danger/80" />
+        <div className="w-2.5 h-2.5 rounded-full bg-[var(--danger)] shrink-0 -ml-1" />
+        <div className="flex-1 h-0.5 bg-[var(--danger)]" />
       </div>
     </div>
   );
 };
 
 // ─── Session Card (Daily View) ───────────────────────────────────────────────
+// Clickable cards are keyboard controls; selection is an accent inset ring (the
+// shared selected-state language), never a gold border.
+const cardKeyboard = (onClick) => (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    onClick?.(event);
+  }
+};
+
 export const SessionCard = ({ session, staffList, isSelected, hasConflict, conflict, onClick, onDragEnd }) => {
   const cfg = TYPE_CONFIG[session.type] || TYPE_CONFIG.sped;
   const provider = staffList.find(s => String(s.id) === String(session.therapistId));
@@ -45,18 +54,22 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
   return (
     <motion.div
       layoutId={`session-${session.id}`}
+      role="button"
+      tabIndex={0}
+      aria-pressed={!!isSelected}
       onClick={onClick}
+      onKeyDown={cardKeyboard(onClick)}
       drag
       dragSnapToOrigin={true}
       dragMomentum={false}
       onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
-      whileHover={{ scale: 1.01, zIndex: 30 }}
-      whileDrag={{ scale: 1.03, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
+      whileDrag={{ zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
       className={clsx(
         'absolute left-1.5 right-1.5 cursor-grab select-none overflow-hidden',
-        'bg-[var(--sa-surface-1)] border',
-        isSelected ? 'border-[var(--sa-gold)] z-20' : 'border-[var(--sa-line-default)] hover:border-[var(--sa-line-strong)] z-10',
-        hasConflict ? 'border-[var(--sa-danger)]' : ''
+        'bg-[var(--sa-surface-1)] hover:bg-[var(--sa-surface-2)] active:bg-[var(--sa-surface-warm)]',
+        isSelected
+          ? 'itx-selected z-20 outline outline-2 -outline-offset-2 outline-[var(--accent)]'
+          : 'z-10'
       )}
       style={{
         top: `${(session.startHour - 8) * 96 + 2}px`,
@@ -66,7 +79,7 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
       {/* One accent tone for every type; conflict overrides it. */}
       <div className={clsx(
         'absolute left-0 top-0 bottom-0 w-1',
-        hasConflict ? 'bg-ps-danger' : 'bg-[var(--sa-bar-primary)]'
+        hasConflict ? 'bg-[var(--danger)]' : 'bg-[var(--sa-bar-primary)]'
       )} />
 
       <div className="relative z-10 p-2.5 pl-3.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
@@ -75,15 +88,15 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
         <div>
           <div className="flex items-start justify-between gap-1.5 min-w-0">
             <p className={clsx(
-              'font-semibold text-xs leading-snug line-clamp-1 truncate',
-              hasConflict ? 'text-ps-danger font-bold' : 'text-ps-ink-1'
+              'font-medium text-xs leading-snug line-clamp-1 truncate',
+              hasConflict ? 'text-[var(--danger)]' : 'text-[var(--sa-text-primary)]'
             )}>
               {session.title}
             </p>
 
             <div className="flex items-center gap-1 shrink-0">
               {hasConflict ? (
-                <span className="inline-flex items-center gap-1 sa-badge sa-badge--warn">
+                <span className="inline-flex items-center gap-1 sa-badge sa-t-danger">
                   <AlertCircle size={10} strokeWidth={1.5} className="shrink-0" />
                   <span>{conflictLabel}</span>
                 </span>
@@ -96,21 +109,21 @@ export const SessionCard = ({ session, staffList, isSelected, hasConflict, confl
           </div>
 
           {/* Time range */}
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-ps-ink-2 mt-1">
-            <Clock size={11} className="shrink-0 opacity-70" />
+          <div className="flex items-center gap-1.5 text-[11px] text-[var(--sa-text-secondary)] mt-1">
+            <Clock size={11} strokeWidth={1.5} className="shrink-0" />
             <span>{formatHour(session.startHour)} – {formatHour(session.startHour + session.span)}</span>
           </div>
         </div>
 
         {/* Bottom line: Provider and Student count */}
-        <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-ps-border/50 text-ps-ink-2 mt-auto">
-          <div className="flex items-center gap-1 truncate font-medium text-ps-ink-1 min-w-0">
-            <User size={11} className="shrink-0 text-ps-ink-2" />
+        <div className="flex items-center justify-between gap-2 text-[11px] pt-1 border-t border-[var(--sa-line-hairline)] text-[var(--sa-text-secondary)] mt-auto">
+          <div className="flex items-center gap-1 truncate text-[var(--sa-text-primary)] min-w-0">
+            <User size={11} strokeWidth={1.5} className="shrink-0 text-[var(--sa-text-secondary)]" />
             <span className="truncate">{provider ? provider.name : 'Unassigned'}</span>
           </div>
           {studentCount > 0 && (
-            <div className="flex items-center gap-1 shrink-0 text-ps-ink-2 font-medium">
-              <Users size={11} className="shrink-0" />
+            <div className="flex items-center gap-1 shrink-0">
+              <Users size={11} strokeWidth={1.5} className="shrink-0" />
               <span>{studentCount}</span>
             </div>
           )}
@@ -132,18 +145,22 @@ export const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict,
 
   return (
     <motion.div
+      role="button"
+      tabIndex={0}
+      aria-pressed={!!isSelected}
       onClick={onClick}
+      onKeyDown={cardKeyboard(onClick)}
       drag
       dragSnapToOrigin={true}
       dragMomentum={false}
       onDragEnd={(e, info) => onDragEnd && onDragEnd(session.id, e, info)}
-      whileHover={{ scale: 1.02, zIndex: 30 }}
-      whileDrag={{ scale: 1.04, zIndex: 50, cursor: 'grabbing', opacity: 0.95 }}
+      whileDrag={{ zIndex: 50, cursor: 'grabbing', opacity: 0.9 }}
       className={clsx(
         'absolute left-1 right-1 cursor-grab select-none overflow-hidden',
-        'bg-[var(--sa-surface-1)] border',
-        isSelected ? 'border-[var(--sa-gold)] z-20' : 'border-[var(--sa-line-default)] z-10',
-        hasConflict ? 'border-[var(--sa-danger)]' : ''
+        'bg-[var(--sa-surface-1)] hover:bg-[var(--sa-surface-2)] active:bg-[var(--sa-surface-warm)]',
+        isSelected
+          ? 'itx-selected z-20 outline outline-2 -outline-offset-2 outline-[var(--accent)]'
+          : 'z-10'
       )}
       style={{
         top: `${(session.startHour - 8) * 64 + 2}px`,
@@ -152,20 +169,20 @@ export const WeeklySessionCard = ({ session, staffList, isSelected, hasConflict,
     >
       <div className={clsx(
         'absolute left-0 top-0 bottom-0 w-1',
-        hasConflict ? 'bg-ps-danger' : 'bg-[var(--sa-bar-primary)]'
+        hasConflict ? 'bg-[var(--danger)]' : 'bg-[var(--sa-bar-primary)]'
       )} />
 
       <div className="relative z-10 p-1.5 pl-2.5 h-full flex flex-col justify-between overflow-hidden pointer-events-none">
         <div>
           <div className="flex items-center justify-between gap-1">
             <p className={clsx(
-              'font-semibold text-xs leading-tight truncate',
-              hasConflict ? 'text-ps-danger' : 'text-ps-ink-1'
+              'font-medium text-xs leading-tight truncate',
+              hasConflict ? 'text-[var(--danger)]' : 'text-[var(--sa-text-primary)]'
             )}>
               {session.title}
             </p>
             {hasConflict ? (
-              <span className="sa-badge sa-badge--warn">
+              <span className="sa-badge sa-t-danger">
                 {conflictLabel}
               </span>
             ) : (

@@ -13,6 +13,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.104.0'
 import {
   asFailure,
   assertCap,
+  assertRateLimit,
   buildAliasSource,
   callProvider,
   corsHeaders,
@@ -195,6 +196,7 @@ Deno.serve(async (req: Request) => {
       if (!config.baseUrl || !config.model || !config.apiKey) {
         return jsonError('CONFIG_MISSING', 'Save a base URL, model and API key first', 409, req)
       }
+      await assertRateLimit(service, user.id, config.rateLimitPerHour)
 
       const used = await monthUsage(service)
       assertCap(config, used, estimateTokens(message) + MAX_REPLY_TOKENS)
@@ -236,14 +238,21 @@ Deno.serve(async (req: Request) => {
         `Caller role: ${role}. Page context: ${route || 'unknown'}${dateISO ? ` on ${dateISO}` : ''}.`,
       ].join('\n')
 
-      const result = await callProvider(config, {
-        messages: [
-          { role: 'system', content: `${systemPrompt}\n\nSNAPSHOT (JSON):\n${JSON.stringify(snapshot)}` },
-          { role: 'user', content: map.forward(message) },
-        ],
-        maxTokens: Math.min(config.maxOutputTokens ?? MAX_REPLY_TOKENS, MAX_REPLY_TOKENS),
-        temperature: 0.2,
-      })
+      let result
+      try {
+        result = await callProvider(config, {
+          messages: [
+            { role: 'system', content: `${systemPrompt}\n\nSNAPSHOT (JSON):\n${JSON.stringify(snapshot)}` },
+            { role: 'user', content: map.forward(message) },
+          ],
+          maxTokens: Math.min(config.maxOutputTokens ?? MAX_REPLY_TOKENS, MAX_REPLY_TOKENS),
+          temperature: 0.2,
+        })
+      } catch (error) {
+        // A failed reply still costs the caller its hourly slot.
+        await recordUsage(service, { kind: 'assistant', userId: user.id, model: config.model, status: 'error' })
+        throw error
+      }
 
       const reply = restore(result.text, map).trim()
 
@@ -259,6 +268,7 @@ Deno.serve(async (req: Request) => {
 
       await recordUsage(service, {
         kind: 'assistant',
+        userId: user.id,
         model: result.model,
         usage: result.usage,
         ms: result.latencyMs,

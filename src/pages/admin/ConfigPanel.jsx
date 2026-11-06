@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 
-const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 py-2.5 text-sm tabular-nums text-[var(--sa-text-primary)] placeholder:text-[var(--sa-text-subtle)] focus:border-[var(--sa-gold)]';
+const fieldClass = 'w-full border border-[var(--sa-line-default)] bg-[var(--sa-bg-base)] px-3 tabular-nums text-[var(--sa-text-primary)]';
 
 export const ConfigPanel = ({
   configForm,
@@ -15,23 +15,23 @@ export const ConfigPanel = ({
       <Info size={16} strokeWidth={1.5} className="shrink-0 mt-0.5 text-[var(--sa-text-muted)]" />
       <div className="text-xs text-[var(--sa-text-secondary)] leading-relaxed">
         <span className="text-[var(--sa-text-primary)]">Audit Notice: </span>
-        Changes are logged when audit schema supports <code className="sa-mono border border-[var(--sa-line-hairline)] px-1 py-0.5">config_changed</code>.
+        Changes are logged when audit schema supports <code className="sa-mono">config_changed</code>.
       </div>
     </div>
 
-    <form onSubmit={handleSaveConfig} className="space-y-6">
+    <form onSubmit={handleSaveConfig} className="space-y-4">
       {/* Auto-Scheduler Toggle — primary control, moved to top */}
-      <div className="border border-[var(--sa-line-default)] p-4 flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <input
           type="checkbox"
           id="auto_schedule_enabled"
           checked={configForm.auto_schedule_enabled}
           onChange={e => setConfigForm(p => ({ ...p, auto_schedule_enabled: e.target.checked }))}
-          className="mt-1 h-4 w-4 accent-[var(--sa-gold)]"
+          className="mt-1"
         />
         <label htmlFor="auto_schedule_enabled" className="cursor-pointer">
           <span className="block text-sm text-[var(--sa-text-primary)]">Auto-Scheduler Engine</span>
-          <span className="mt-0.5 block text-[11px] text-[var(--sa-text-muted)]">Enable automated constraint-satisfaction solver runs for pending student assignments. Disable to use manual scheduling only.</span>
+          <span className="mt-0.5 block text-xs text-[var(--sa-text-muted)]">Enable automated constraint-satisfaction solver runs for pending student assignments. Disable to use manual scheduling only.</span>
         </label>
       </div>
 
@@ -74,7 +74,7 @@ export const ConfigPanel = ({
             onChange={e => setConfigForm(p => ({ ...p, max_daily_hours_per_student: e.target.value }))}
             className={fieldClass}
           />
-          <span className="mt-1 block text-[11px] text-[var(--sa-text-muted)]">Upper limit on daily scheduled therapy time</span>
+          <span className="mt-1 block text-xs text-[var(--sa-text-muted)]">Upper limit on daily scheduled therapy time</span>
         </div>
 
         <div>
@@ -89,12 +89,12 @@ export const ConfigPanel = ({
             onChange={e => setConfigForm(p => ({ ...p, min_break_minutes: e.target.value }))}
             className={fieldClass}
           />
-          <span className="mt-1 block text-[11px] text-[var(--sa-text-muted)]">Buffer between back-to-back sessions</span>
+          <span className="mt-1 block text-xs text-[var(--sa-text-muted)]">Buffer between back-to-back sessions</span>
         </div>
       </div>
 
       {/* School year window — read by the Year Planner */}
-      <div className="border-t border-[var(--sa-line-hairline)] pt-4">
+      <div>
         <p className="sa-label">School year window</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -120,35 +120,35 @@ export const ConfigPanel = ({
             />
           </div>
         </div>
-        <span className="mt-1 block text-[11px] text-[var(--sa-text-muted)]">Used by the Year Planner. Leave empty for the current calendar year.</span>
+        <span className="mt-1 block text-xs text-[var(--sa-text-muted)]">Used by the Year Planner. Leave empty for the current calendar year.</span>
       </div>
 
       {/* Allow Overbooking Toggle */}
-      <div className="border-t border-[var(--sa-line-hairline)] pt-4">
+      <div>
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={configForm.allow_overbook}
             onChange={e => setConfigForm(p => ({ ...p, allow_overbook: e.target.checked }))}
-            className="mt-1 h-4 w-4 accent-[var(--sa-gold)]"
+            className="mt-1"
           />
           <div>
             <span className="block text-sm text-[var(--sa-text-primary)]">Allow Overbooking</span>
-            <span className="block text-[11px] text-[var(--sa-text-muted)]">Permit scheduling sessions beyond room maximum capacity when explicitly approved</span>
+            <span className="block text-xs text-[var(--sa-text-muted)]">Permit scheduling sessions beyond room maximum capacity when explicitly approved</span>
           </div>
         </label>
       </div>
 
-      <div className="pt-4 border-t border-[var(--sa-line-hairline)] flex items-center gap-4">
+      <div className="flex items-center gap-4">
         <button
           type="submit"
           disabled={configLoading}
-          className="sa-btn sa-btn--primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="sa-btn sa-btn--primary disabled:cursor-not-allowed"
         >
           {configLoading ? 'Saving...' : 'Save Configuration'}
         </button>
         {isConfigDirty && !configLoading && (
-          <span className="flex items-center gap-2 text-[11px] text-[var(--sa-text-muted)]">
+          <span className="flex items-center gap-2 text-xs text-[var(--sa-text-muted)]">
             <span className="sa-marker sa-marker--danger" />
             Unsaved changes
           </span>

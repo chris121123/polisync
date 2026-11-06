@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Lock, Mail, Key, ShieldAlert, X } from 'lucide-react';
-import clsx from 'clsx';
 import { useGlobalState } from '../context/GlobalStateContext';
 import { fetchWipeCounts } from '../state/settings';
 import { AppModal } from './AppModal.jsx';
@@ -102,57 +101,55 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
             className="flex min-h-0 flex-1 flex-col"
           >
             <div className="p-5 sm:p-8 flex min-h-0 flex-col items-center text-center overflow-y-auto">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 border border-[var(--sa-danger)] flex items-center justify-center mb-5 sm:mb-6 shrink-0">
+              <div className="itx-card w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-5 sm:mb-6 shrink-0">
                 <ShieldAlert size={28} strokeWidth={1.5} className="sa-t-danger" />
               </div>
-              
-              <h2 id="wipe-critical-title" className="text-lg sm:text-xl sa-t-danger mb-2">
+
+              <h2 id="wipe-critical-title" className="mb-2 sa-t-danger text-[17px] font-medium">
                 CRITICAL WARNING
               </h2>
               <p className="text-sm text-[var(--sa-text-secondary)] mb-6 leading-relaxed">
-                You are about to <strong className="font-medium sa-t-danger">PERMANENTLY ERASE</strong> all data in the system. This includes all students, staff, rooms, and sessions. This action <strong className="font-medium">CANNOT BE UNDONE</strong>.
+                You are about to <span className="font-medium sa-t-danger">PERMANENTLY ERASE</span> all data in the system. This includes all students, staff, rooms, and sessions. This action <span className="font-medium">CANNOT BE UNDONE</span>.
               </p>
 
-              <div className="w-full border border-[var(--sa-line-default)] px-3 sm:px-4 mb-6 sm:mb-8 text-left">
-                <div className="sa-list">
-                  {[
-                    ['Sessions', counts?.sessions],
-                    ['Students', counts?.students],
-                    ['Rooms', counts?.rooms],
-                    ['Profiles', counts?.profiles == null ? null : Math.max(0, counts.profiles - 1)],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-start justify-between gap-3 py-2">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.1em] text-[var(--sa-text-secondary)]">{label}</p>
-                        {label === 'Profiles' && <p className="sa-micro">current account retained</p>}
-                      </div>
-                      <p className="text-sm tabular-nums text-[var(--sa-text-primary)]">{displayCount(value, counts === null)}</p>
+              <div className="itx-card w-full mb-6 sm:mb-8 text-left">
+                <div className="px-4">
+                {[
+                  ['Sessions', counts?.sessions],
+                  ['Students', counts?.students],
+                  ['Rooms', counts?.rooms],
+                  ['Profiles', counts?.profiles == null ? null : Math.max(0, counts.profiles - 1)],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-start justify-between gap-3 py-2">
+                    <div>
+                      <p className="sa-micro">{label}</p>
+                      {label === 'Profiles' && <p className="sa-micro">current account retained</p>}
                     </div>
-                  ))}
-                  <p className="py-2 text-[11px] text-[var(--sa-text-muted)]">Audit log retained</p>
+                    <p className="text-sm tabular-nums text-[var(--sa-text-primary)]">{displayCount(value, counts === null)}</p>
+                  </div>
+                ))}
+                <p className="py-2 text-[11px] text-[var(--sa-text-muted)]">Audit log retained</p>
                 </div>
               </div>
 
-              <div className="w-full border border-[var(--sa-danger)] p-3 sm:p-4 mb-6 sm:mb-8 text-xs sm:text-sm sa-t-danger">
-                Please wait {countdown} seconds to proceed...
+              <div className="sa-alert sa-alert--danger items-center w-full mb-6 sm:mb-8">
+                <AlertTriangle size={14} strokeWidth={1.5} className="shrink-0" />
+                <p className="text-xs sm:text-sm">Please wait {countdown} seconds to proceed...</p>
               </div>
 
               <div className="flex flex-col-reverse sm:flex-row w-full gap-3">
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="sa-btn w-full sm:flex-1 justify-center min-h-11"
+                  className="sa-btn w-full sm:flex-1 justify-center"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStep(2)}
                   disabled={countdown > 0}
-                  className={clsx(
-                    "w-full sm:flex-1 min-h-11 px-4 text-center text-[11px] uppercase tracking-[0.1em] transition-colors",
-                    countdown > 0
-                      ? "border border-[var(--sa-line-default)] text-[var(--sa-text-muted)] cursor-not-allowed"
-                      : "border border-[var(--sa-danger)] text-[var(--sa-danger)] hover:border-[var(--sa-line-strong)]"
-                  )}
+                  className="sa-btn itx-danger w-full sm:flex-1 justify-center"
                 >
                   {countdown > 0 ? `Wait ${countdown}s` : 'I Understand, Proceed'}
                 </button>
@@ -171,9 +168,9 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3 sa-t-danger">
                   <Lock size={20} strokeWidth={1.5} />
-                  <h3 id="admin-verify-title" className="text-lg">Admin Verification</h3>
+                  <h3 id="admin-verify-title" className="text-[15px] font-medium">Admin Verification</h3>
                 </div>
-                <button onClick={onClose} aria-label="Close" className="shrink-0 border border-[var(--sa-line-default)] p-2 text-[var(--sa-text-secondary)] transition-colors hover:border-[var(--sa-line-strong)] hover:text-[var(--sa-text-primary)]">
+                <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 itx-modal-close">
                   <X size={18} strokeWidth={1.5} />
                 </button>
               </div>
@@ -191,11 +188,13 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
 
               <div className="space-y-4 mb-8">
                 <div>
-                  <label className="sa-label">Admin Email</label>
+                  <label htmlFor="wipe-email" className="sa-label">Admin Email</label>
                   <div className="relative">
                     <Mail className="sa-field-icon" size={16} strokeWidth={1.5} />
                     <input
+                      id="wipe-email"
                       type="email"
+                      autoComplete="username"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="sa-input"
@@ -205,11 +204,13 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
                 </div>
 
                 <div>
-                  <label className="sa-label">Password</label>
+                  <label htmlFor="wipe-password" className="sa-label">Password</label>
                   <div className="relative">
                     <Key className="sa-field-icon" size={16} strokeWidth={1.5} />
                     <input
+                      id="wipe-password"
                       type="password"
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="sa-input"
@@ -235,16 +236,18 @@ const ClearDatabaseModal = ({ isOpen, onClose, onConfirm }) => {
               </div>
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setStep(1)}
                   disabled={loading}
-                  className="sa-btn flex-1 justify-center min-h-11 disabled:opacity-40 disabled:cursor-default"
+                  className="sa-btn flex-1 justify-center"
                 >
                   Back
                 </button>
                 <button
+                  type="button"
                   onClick={handleVerifyAndClear}
                   disabled={loading || !email || !password || passphrase !== WIPE_PHRASE}
-                  className="flex-[2] min-h-11 py-3 text-[11px] uppercase tracking-[0.1em] border border-[var(--sa-danger)] text-[var(--sa-danger)] transition-colors hover:border-[var(--sa-line-strong)] disabled:opacity-40 disabled:cursor-default flex justify-center items-center gap-2"
+                  className="sa-btn itx-danger flex-[2] justify-center"
                 >
                   {loading ? (
                     <>
